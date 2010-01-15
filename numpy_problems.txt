@@ -1,0 +1,3 @@
+dividing one matrix by another is done element wize
+
+log(M) calculates an element-wiselog
