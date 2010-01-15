@@ -393,116 +393,7 @@ class Mvar(object):
         return self*(undo*new_std)
     
     def __mul__(self,other):
-        other = self._mulconvert(other)
-        return Mvar.multiplier[
-            (type(self),type(other))
-        ](self,other)
-    
-    def __lmul__(self,other):
-        other = self._mulconvert(other)
-        return Mvar.multiplier[
-            (type(other),type(self))
-        ](other,self)
-    
-    def __imul__(self,other):
-        other = self._mulconvert(other)
-        self.affine = Mvar.multiplier[
-            (type(self),type(other))
-        ](self,other).affine
-    
-    @staticmethod
-    def _mulconvert(item): 
-        return (
-            Mvar if isinstance(item,Mvar) else 
-            numpy.matix(item) if numpy.array(item).ndim else
-            numpy.ndarray(item)
-        )
-        
-    multipliers=(
-        lambda scalarmul,lmul,rmul:{
-            (Mvar,Mvar):lmul,
-            (numpy.matrix, Mvar): lmul,
-            (Mvar, numpy.matrix): rmul,
-            (Mvar, numpy.ndarray): scalarmul,
-            (numpy.ndarray, Mvar): scalarmul,
-        }
-    )(
-        scalarmul=lambda self,constant: Mvar.from_mean_cov(
-            mean= first.mean*constant,
-            cov = first.cov*constant,
-        ),
-        lmul=lambda other,self:(
-            other*self.rotate.T*self.std
-        ),
-        rmul=lambda self,matrix: Mvar(
-            first.affine*diagstack([mat, 1])
-        ).refresh(),
-    )
-    
-    def prod(*maybe_mvars):
-        """
-        multiply is not asociative.
-        not really good for large iterables, 
-        maybe I'll make an iprod verson for that (why?) 
-        """
-        #split the iterator into two, one that produces Mvars, and another for 
-        #everything else.
-        ismvar=split(
-            enumerate(maybe_mvars),
-            lambda item:isinstance(item[1],Mvar),
-        )
-        
-        #pull out the two iterators
-        #one composedd of Mvars
-        mvars=list(ismvar[True])
-        #and one composed of everything else, converted to numpy arrays
-        others=list((n,numpy.array(item)) for n,item in ismvar[False])
-        
-        #split the others again into two iterators: 
-        #scalars and everything else
-        hasdims= split(
-            others,
-            lambda item:bool(item[1].ndim),
-        )
-        
-        #everything with at least 1 dimension will be assumed to be a matrix
-        #remember that 1x1 matrixes are still 2 dimensional
-        mats = list((n,numpy.matrix(item)) for n,item in hasdims[True])
-        
-        #multiply is not asociative, but constants still commute(!),
-        #so we can pull them all out of the list and product them.
-        const = product(item for n,item in hasdims[False])
-        
-        #if there are no mvars, we're done
-        if not mvars:
-            return const*prod([item for n,item in mats])
-        
-        #get the first item, whether it's a matrix, or Mvar
-        first = sorted((mats[0],mvars[0]))[1] if mats else mvars[0][1]
-        
-        #if there are no mats, or the first mvar is before the first mat
-        if isinstance(first,Mvar):
-            mats = product(
-                item[1] 
-                for item in sorted(itertools.chain(
-                    (mvar.lconvert() for mvar in mvars[1:]),
-                    mats
-                ))
-            )
-            
-            return mvar.matrix_mul(mat).scalar_mul(const)
-            
-        else:
-            return product(
-                item[1] 
-                for item in sorted(itertools.chain(
-                    (mvar.rotate.T*mvar.std for mvar in mvars),
-                    mats
-                ))
-            )
-               
-    def __mul__(self, other):
-        """
+                """
         Mvar*Mvar
             multiplying two Mvars together fits with the definition of power
             
@@ -561,27 +452,10 @@ class Mvar(object):
             the refresh() here is necessary to ensure that the rotation matrix
             stored in the object stays well behaved. 
         """
-        if isinstance(other,Mvar):
-            #handled in __rmul__, converts the left opperand to a matrix, and 
-            #calls multiply again.
-            return other.__rmul__(self)
-        else:
-            #convert to a numpy array
-            other = numpy.array(other)
-            return (
-                #scalar multiplication 
-                Mvar.from_mean_cov(
-                    mean= self.mean*other,
-                    std = self.cov*other,
-                )
-                #if the other item is zero dimensional
-                #(a numpy.matrix, even a 1x1, is still 2 dimensional)
-                if other.ndim == 0
-                #otherwise return matrix multiplication
-                else  Mvar(self.affine*diagstack([numpy.matrix(other), 1])).refresh()
-                
-            )
-
+        other = self._mulconvert(other)
+        return Mvar.multiplier[
+            (type(self),type(other))
+        ](self,other)
     
     def __rmul__(self,other):
         """
@@ -621,35 +495,50 @@ class Mvar(object):
         
         assert Mvar*constant == constant*Mvar
         """
-        #if the left object is an Mvar
-        if isinstance(other,Mvar):
-            #do the multiplication (this will bounce back to __mul__)
-            return other*(self.rotate.T*self.std)
-        else:
-            #otherwise convert it to a numpy array
-            other = numpy.array(other)
-            
-            #and return
-            return (
-                #scalar multiplication
-                Mvar.from_mean_cov(
-                    mean= self.mean*other,
-                    std = self.cov*other,
-                )
-                #if the other item is zero dimensional
-                #(a numpy.matrix, even a 1x1, is still 2 dimensional)
-                if other.ndim == 0
-                #otherwise do the matrix multiplication
-                else other*(self.rotate.T*self.std)
-            )
-
+        other = self._mulconvert(other)
+        return Mvar.multiplier[
+            (type(other),type(self))
+        ](other,self)
+    
     def __imul__(self,other):
         """
         This is why I have things set up for left multply, it's 
         so that __imul__ works.
         """
-        self.affine = (self*other).affine
-
+        other = self._mulconvert(other)
+        self.affine = Mvar.multiplier[
+            (type(self),type(other))
+        ](self,other).affine
+    
+    @staticmethod
+    def _mulconvert(item): 
+        return (
+            Mvar if isinstance(item,Mvar) else 
+            numpy.matix(item) if numpy.array(item).ndim else
+            numpy.ndarray(item)
+        )
+        
+    multipliers=(
+        lambda scalarmul,rmul,lmul:{
+            (Mvar,Mvar):rmul,
+            (numpy.matrix, Mvar): rmul,
+            (Mvar, numpy.matrix): lmul,
+            (Mvar, numpy.ndarray): scalarmul,
+            (numpy.ndarray, Mvar): scalarmul,
+        }
+    )(
+        scalarmul=lambda self,constant: Mvar.from_mean_cov(
+            mean= first.mean*constant,
+            cov = first.cov*constant,
+        ),
+        rmul=lambda other,self:(
+            other*self.rotate.T*self.std
+        ),
+        lmul=lambda self,matrix: Mvar(
+            self.affine*diagstack([mat, 1])
+        ).refresh(),
+    )
+    
     def __div__(self,other):
         """
         see __mul__ and __pow__
