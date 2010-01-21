@@ -31,7 +31,8 @@ class Mvar(object):
     
     since the operations are defined for kalman filtering, the entire process 
     becomes:
-        state[t]= (state[t-1]*STM + noise) & measurment
+        
+        state[t+1] = (state[t]*STM + noise) & measurment
         
         where state, noise and measurment are Mvars, (noise having a zero mean)
         and 'STM' is the state transition matrix
@@ -145,19 +146,14 @@ class Mvar(object):
     #to make them all writeable
     
     @staticmethod
-    def from_mean_std(mean=None,std=None):
+    def from_mean_std(mean=numpy.zeros,std=numpy.zeros):
         """
-        if either parameter is missing it gets filled with zeros,
-        at least one must be supplied so the size is known.
+            mean - row vectors or callable with a shape tuple as the 
+                only parameter
+                
+            std - vstack of scaled row eigen-vectors or callable with a shape tuple as the 
+                only argument
         """
-        assert (mean is not None) or (std is not None)
-        
-        mean=numpy.matrix(mean) if mean is not None else None
-        std=numpy.matrix(std) if mean is not None else None
-        
-        #if only one input is supplied, assume the other is all zeros
-        std = zeros((mean.size,mean.size)) if std is None else std
-        mean = zeros((1,std.shape[0])) if mean is None else mean
         
         return Mvar(autostack([
             [ std, numpy.zeros],
@@ -166,29 +162,17 @@ class Mvar(object):
             
     
     @staticmethod
-    def from_mean_cov(mean = None,cov = None):
-        """
-        if either one is missing it gets filled with zeros,
-        at least one must be supplied so the size can be calculated.
-        """
-        #convert inputs to matrixes 
-        cov = None if cov is None else numpy.matrix(cov) 
-        mean = None if mean is None else numpy.matrix(mean)
-        
-        #if only one input is supplied, assume the other is all zeros
-        cov = numpy.zeros((mean.size,mean.size)) if cov is None else cov
-        mean = numpy.zeros((1,cov.shape[0])) if mean is None else mean
-        
+    def from_mean_cov(cov,mean = numpy.zeros):
+        #get the scale and rotation matracies
         scale,rotation = numpy.linalg.eigh(cov)
         
         #get the square root of the scales 
         scale = scale**0.5
         
         #create the affine transform, and from it the Mvar
-        return Mvar.from_roto_scale(
-            rotation = rotation,
-            scale = scale,
-            mean = mean,
+        return Mvar.from_mean_std(
+            mean=mean,
+            std=scale*rotate,
         )
     
     @staticmethod
@@ -207,7 +191,7 @@ class Mvar(object):
         return Mvar.from_mean_cov(numpy.mean(data), numpy.cov(data, bias=bias))
     
     @staticmethod
-    def from_roto_scale(rotation,scale,mean=None):
+    def from_roto_scale(rotation,scale,mean=numpy.zeros):
         """
         Rotation can be either a matrix or, if the mean and scale are 
         two dimensional, it can be the rotation angle (radians) and the 
@@ -217,14 +201,9 @@ class Mvar(object):
         Each element in the scale matrix is the scale 
         along the corresponding vector in the rotation matrix 
         """
-        #convert everything to matrixes
-        rotation,scale,mean=(
-            numpy.matrix(data) if data is not None else None 
-            for data in (rotation,scale,mean)
-        )
         
         #if the scale matrix is not square
-        if scale.shape[0] != scale.shape[1]:
+        if scale.ndim == 1 or min(scale.shape)==1:
             #convert it to a diagonal matrix
             scale=numpy.matrix(numpy.diagflat(numpy.array(scale)))
         
@@ -232,13 +211,10 @@ class Mvar(object):
         if rotation.size==1 and scale.shape==(2,2):
             # then rotation is the rotation angle, 
             #create the apropriate rotation matrix
-            rotation=autostack([
+            rotation=numpy.array([
                 [ numpy.cos(rotation),numpy.sin(rotation)],
                 [-numpy.sin(rotation),numpy.cos(rotation)],
             ])
-        
-        #if they didn't give a mean create zeros of the correct shape
-        mean = numpy.zeros((1,scale.shape[0])) if mean is None else mean
         
         #create the Mvar
         return Mvar(autostack([
@@ -775,57 +751,42 @@ def diagstack(arrays):
     type matches first input, if it is a numpy array or matrix, 
     otherwise this returns a numpy array
     """
-    #latch the input iterable
-    arrays = list(arrays)
-    
-    #get the type 
-    atype = (
-        type(arrays[0]) 
-        if isinstance(arrays[0], numpy.ndarray) 
-        else numpy.array
+    #make a nested matrix, with the inputs on the diagonal, and the numpy.zeros
+    #function everywhere else
+    arrays=numpy.where(
+        eye,
+        numpy.diag(numpy.array(arrays,dtype=object)),
+        numpy.zeros,
     )
     
-    #convert each object in the list to a matrix
-    arrays = list(numpy.matrix(array) for array in arrays)
-
-    
-    corners = numpy.vstack((
-        #starting from zero
-        (0,0),
-        #get the index to where the upper right of each array will be
-        numpy.cumsum(
-            numpy.array([array.shape for array in arrays]),
-            axis = 0
-        )
-    ))
-
-    #make the block of zeros thatthe other arrays will be copied to
-    result = numpy.zeros(corners[-1,:])
-    
-    #copy each arry into it's slot
-    for (array,start,stop) in itertools.izip(arrays,corners[:-1],corners[1:]):
-        result[start[0]:stop[0],start[1]:stop[1]] = array
-    
-    #set the array to the requested type
-    return atype(result)
+    return autostack(result)
 
 def autostack(rows):
     """
     simplify matrix stacking
-    vertically stack the results of horizontally stacking each list
-
-    hopefully in the future I will be able to overload this to automatically 
-    call any callables in the list with sizes determined by their locations so 
-    that
+    vertically stack the results of horizontally stacking each row in rows, 
+    with no need to explicitly declare the size of the zeros
     
-    autostack([
+    autostack([ 
         [std,numpy.zeros]
         [mean,1]
     ])
     
-    just works without having to explicitly declare the size of the zeros.
+    rows are horizontally stacked first, then vertically stacked, so the cells 
+    do not need to line up vertically they just need the same total size
+    
+    if there are callables in the data things must align vertically as well 
+
+    callables are called with a shape tuple as the only argument. or zeros 
+    where a row or column contains only callables.
     """
+    #convert the data items into an object array 
     data=numpy.array(rows,dtype = object)
+    #store the shape
+    shape=data.shape
+    #and the type
+    arrays=[item for item in data if isinstance(item,numpy.ndarray)]
+    atype=type(arrays[0]) if arrays else numpy.array
     
     #make a bool aray of the callable status of each item 
     calls = numpy.array([
@@ -833,48 +794,40 @@ def autostack(rows):
         for row in rows
     ])
     
+    #convert everything that's not callable to a matrix
+    data=numpy.array(
+        [
+            item if call else numpy.matrix(item) 
+            for item,call 
+            in izip(calls.flat,data.flat)
+        ],
+        dtype=object,
+    ).reshape(shape)
+    
     if calls.any():
-        #store the shape
-        shape=calls.shape
-        
-        #flatten all the rows into one list
-        items = [item for item in row for row in rows]
-       
         #get all the sizes, drop NaN's for callables
         sizes = numpy.array([
-            (numpy.NaN,none.NaN) if call else item.shape 
-            for item,call in itertools.izip(items,calls.flat)
-        ])
+            (0,0) if call else item.shape 
+            for call,item in itertools.izip(calls.flat,data.flat)
+        ]).reshape(shape+(2,))
         
-        heights=numpy.rezise(sizes[:,0],shape)
-        widths=numpy.resize(sizes[:,1],shape)
+        heights=sizes[...,0]
+        widths=sizes[...,1]
         
-        for indexes in numpy.argwhere(calls):
-            #get the whole row of heights
-            height=heights[indexes[0],:]
-            #and the whole column of widths 
-            width=widths[:,indexes[1]]
-            
-            #filter out the NaN's where the callables were, and take the first 
-            #element 
-            height=height[~numpy.isnan(height)][0]
-            width=width[~numpy.isnan(width)][0]
-            
+        for (down,right) in numpy.argwhere(calls):
             #call the callable with (height,width) as the only argument
-            data[
-                indexes[0],indexes[1]
-            ] = data[
-                indexes[0],indexes[1]
-            ]((height,width))
-    else:
-        #do the stacking
-        return numpy.vstack(
-            numpy.hstack(
-                numpy.matrix(item) 
-                for item in row
-            ) 
-            for row in data
-        )
+            #and drop it into the data slot
+            data[down,right] = data[down,right](
+                (heights[down,:].max(),widths[:,right].max())
+            )
+    #do the stacking
+    return atype(numpy.vstack(
+        numpy.hstack(
+            numpy.matrix(item) 
+            for item in row
+        ) 
+        for row in data
+    ))
 
 
 def paralell(*items):
@@ -940,6 +893,7 @@ def isplit(sequence,fkey=bool):
     >>>list(bytype[dict])
     []
     """
+    
     return collections.defaultdict(
         list,
         itertools.groupby(sequence,fkey),
