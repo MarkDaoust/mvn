@@ -1,9 +1,15 @@
+##imports
+#internals
+from __future__ import division
 
+#builtins
 import itertools
+from itertools import izip as zip
+
 import operator
 
+#3rd party
 import numpy
-from numpy import all
 
 try:
     from matplotlib.patches import Ellipse
@@ -16,11 +22,14 @@ except ImportError:
             "Ellipse is required, from matplotlib.patches, to get a patch"
         )
 
+#local
+from helpers import autostack,diagstack,astype,paralell,close,rotation2d
+
+
 class Mvar(object):
     """
     Multivariate normal distributions packaged to act like a vector.
-       
-    really they are an extension of the vectors
+        (it's an extension of the vectors)
     
     This is done with kalman filtering in mind, but is good for anything where 
         you need to track linked uncertianties across multiple variables.
@@ -34,48 +43,59 @@ class Mvar(object):
         
         state[t+1] = (state[t]*STM + noise) & measurment
         
-        where state, noise and measurment are Mvars, (noise having a zero mean)
-        and 'STM' is the state transition matrix
+        state is a list of mvars (indexed by time), noise and measurment are 
+        Mvars, (noise having a zero mean) and 'STM' is the state transition 
+        matrix
+        
     
     A nice side effect of this is that sensor fusion is just:
     
         result = measurment1 & measurrment2 & measurment3
-        
+       
         or
         
-        result = Mvar.__and__(measurment1, measurrment2, measurment3)
+        result = paralell(*measurments)
         
-    The data is stored as an affine transformation, that is one large matrix 
-    containing the mean and standard-deviation matrixes:
+    normally these things are handled with mean and covariance, but I find
+    mean,scale,vectors to be more useful, so that is how the data is actually, 
+    managed, but other useful info in accesable through virtual attributes
+    (properties).
     
-        >>>assert A.affine == autostack([
-        ...    [A.std,numpy.zeros],
-        ...    [A.mean,1],
-        ...])
-        
-        The "standard deviation" matrix is a scaled eigenvector matrix
-        where each row is a scaled vector.
-        
-        It will make compression easier in the future when I get to it.  
-        
-        you can think of everything as being embeded on a sheet in a space 
-        with 1 extra dimension with the sheet located 1 unit "up" along the 
-        extra dimension.
-        
-        with this setup some math operations are greatly simplified.
+    This system make compression much easier (and more useful)
     
+    actual attributes:
+        mean
+            mean of the distribution
+        scale
+            the eiggenvalue asociated with each eigenvector
+        vectors
+            unit eigenvectors, as rows
+    virtual attributes:    
+        scaled
+            scaled eigenvectors, as rows
+        cov
+            covariance matrix
+        affine
+            autostack([
+                [self.scaled,numpy.zeros]
+                [self.mean  ,          1]
+            ])
+            
+        
     the from* functions all create new instances from varous 
     common constructs.
         
     the get* functions all grab useful things out of the structure, 
     all have equivalent properties linked to them
     
-    the inplace operators work but, unlike in many classes, do not currently
-    speed up any operations.
+    the do* functions all modify the structure inplace
     
-    the mean of the iistribution is stored as a row vector, so make sure align 
+    the inplace operators (like +=) work but, unlike in many classes, 
+    do not currently speed up any operations.
+    
+    the mean of the distribution is stored as a row vector, so make sure align 
     your transforms apropriately and have the Mvar on left the when attempting 
-    to do a matrix transform on it. this is for two reasons: 
+    to do a matrix multiplies on it. this is for two reasons: 
 
         1) inplace operators work nicely (Mvar on the left)
 
@@ -83,148 +103,154 @@ class Mvar(object):
         itself, might as well go straight to it instead of passing around 
         'NotImplemented's 
         
-    No work has been done to make things fast, because until they work 
+    No work has been done to make things fast, because until they work at all
     and speed actually is a problem it's not worth working on. 
     """
     
     ############## Creation
-    def __init__(self,data):
+    def __init__(self,
+        mean = numpy.zeros,
+        vectors = numpy.zeros, 
+        scale = numpy.ones,
+        do_square=False,
+        do_compress=True,
+    ):
         """
-        create an instance directly from an affine transform.
-        the transform should be of the format:
+        create the Mvar directly from it's attributes.
         
-        affine = autostack([
-            [std,numpy.zeros],
-            [mean,1],
+        uses autostack to automatically size any callables passed to the 
+        attributes, it's rarely useful, it's just convienient.
+        
+            autostack([
+                [scale,vectors],
+                [    1,   mean],
+            ])
+        
+        mean
+            defaults to numpy.zeros, sounld be a row vector
+            
+        vectors
+            defaults to numpy.zeros, row vectors
+            does not need to be orthogonal, or unit vectors
+            
+        scale
+            defaults to numpy.ones
+            
+        do_square 
+            calls self.do_square() on the result if true. To set the vectors 
+            to orthogonal and unit length, do_square automatically calls 
+            do_compress, 
+            
+        do_compress
+            calls self.do_compress() on the result if true. To clear out any 
+            low valued vectors uses the same defaults as numpy.allclose()
+        """
+        scale=(
+            scale if callable(scale) else 
+            numpy.matrix(numpy.array(scale).flat).T
+        )
+        
+        #use autostack to determine unknown sizes, and matrix everything
+        stack=autostack([
+            [scale,vectors],
+            [    1,   mean],
         ])
-            
-        The affine transform is the only real attribute in these things. 
-        everything else is calculated on the fly using properties.
         
-        standard deviation, 'std' is not a common term when dealing with these:
+        #and unpack the stack into the object's parameters 
+        self.mean = stack[-1,1:]
+        self.scale = stack[:-1,0]
+        self.vectors = stack[:-1,1:]
         
-            it's a vertical stack of scaled row-eigenvectors, each 
-            perpendicular to all the others. their length must match the
-            mean. 
+        if do_square:
+            assert do_compress
         
-            it can be complsed into std==scale*rotate
-        
-        'scale' is a diagonal matrix of eigenvalues
-        
-        >>>assert (A.scale == numpy.matrix(numpy.diag(numpy.sqrt(
-        ...    numpy.linalg.eigenvalues(A.cov)
-        ...))))
-        
-        'rotate' is a matrix of row-eigenvectors
-        
-        >>>assert all(A.rotate == numpy.linalg.eigh(A.cov)[1])
-        
-        put them together to form the std matrix.
-        >>>assert all(A.std==A.scale*A.rotate)
-        >>>assert all(A.std**(-1)==A.rotate.T*A.scale**(-1))
-        
-        >>>assert all(A.rotate.T == A.rotate**(-1))
-        
-        >>>assert all(A.std.T*A.std == A.rotate.T*A.scale*A.scale*A.rotate)
-        >>>assert all(A.std.T*A.std == A.cov)
-            
-        >>>assert all(A.std*A.std.T == A.scale*A.rotate*A.rotate.T*A.scale)
-        >>>assert all(A.std.T*A.std == A.scale**2)
-        
-        (A.std*A.std.T behaves like a dot product, A.std.T*A.std behaves like 
-        an outer product, a covariance matrix is the average outerproduct of 
-        the distribution.... interesting, I wonder what it means)
+        if do_square:
+            self.do_square()
+        elif do_compress:
+            self.do_compress()
+    
+    def do_square(self,**kwargs):
         """
-        if isinstance(data,Mvar):
-            self.affine=data.affine
-        else:
-            self.affine=numpy.matrix(data)
-            self.refresh()
-    
-    ############## alternate creation methods
-    #maybe eventually I'll link these to the properties 
-    #to make them all writeable
-    
+        this is NOT x**2 it is to set the vectors to perpendicular
+        **kwargs is just passed on to do_compress
+        """
+        V=self.vectors
+        if not numpy.allclose(V*V.T,numpy.eye(V.shape[0])):
+            (scale2,self.vectors) = numpy.linalg.eigh(self.V.T*V)
+            self.scale*=scale2**(0.5)
+        
+        self.do_compress(**kwargs)
+        
+    def do_compress(self,rtol=1e-5,atol=1e-8):
+        """
+        drop and vector/scale pairs which are under the tolerence limits
+        the defaults match numpy's for 'allclose'
+        """
+        #convert the scale to a column vector
+        scale=numpy.matrix(numpy.array(self.scale).flat).T
+        #get the vectors
+        vectors=numpy.array(self.vectors)
+        
+        stack=numpy.hstack([scale,vectors])
+
+        stack=stack[numpy.argsort(scale.flat),:]
+        
+        C=~numpy.array(close(stack[:,0],rtol=rtol,atol=atol)).squeeze()
+        #drop the scale/vectors where the scale is close to zero
+        stack=stack[C,:]
+        #unstack them
+        self.scale = stack[:,0]
+        self.vectors=stack[:,1:] 
+        ############## alternate creation methods
     @staticmethod
-    def from_mean_std(mean=numpy.zeros,std=numpy.zeros):
+    def from_cov(cov,**kwargs):
         """
-            mean - row vectors or callable with a shape tuple as the 
-                only parameter
-                
-            std - vstack of scaled row eigen-vectors or callable with a shape tuple as the 
-                only argument
+        everything in kwargs is passed directly to the constructor
+        don't set do_square to true, they will automatically be orthogonal when 
+        pulled out of the covariance
         """
-        
-        return Mvar(autostack([
-            [ std, numpy.zeros],
-            [mean, 1],
-        ]))
-            
-    
-    @staticmethod
-    def from_mean_cov(cov,mean = numpy.zeros):
         #get the scale and rotation matracies
-        scale,rotation = numpy.linalg.eigh(cov)
+        scale,vectors = numpy.linalg.eigh(cov)
         
-        #get the square root of the scales 
-        scale = scale**0.5
-        
-        #create the affine transform, and from it the Mvar
-        return Mvar.from_mean_std(
-            mean=mean,
-            std=scale*rotate,
+        return Mvar(
+            vectors=vectors,
+            #square root the scales
+            scale=scale**0.5,
+            **kwargs
         )
     
     @staticmethod
-    def from_data(data, bias=0):
+    def from_data(data, bias=0, rowvar=0, **kwargs):
         """
+        the kwargs are just passed to the basic constructor.
+        
         create an Mvar with the same mean and covariance as the supplied data
         with each row being a sample and each column being a dimenson
         
         remember numpy's default covariance calculation divides by (n-1) not 
-        (n) set bias = 1 to use N
+        (n) set bias = 1 to use N,
+        
+        my default for rowvar is the opposite of numpy's
         """
+        #if variables are along rows, switch to colums
+        if rowvar:
+            data=data.T
+            
         #convert the data to a matrix 
         data=numpy.matrix(data)
-        
         #create the mvar from the mean and covariance of the data
-        return Mvar.from_mean_cov(numpy.mean(data), numpy.cov(data, bias=bias))
-    
-    @staticmethod
-    def from_roto_scale(rotation,scale,mean=numpy.zeros):
-        """
-        Rotation can be either a matrix or, if the mean and scale are 
-        two dimensional, it can be the rotation angle (radians) and the 
-        rotation matrix will be created automatically.
-        
-        Scale can be a vector, or a diagonal matrix. 
-        Each element in the scale matrix is the scale 
-        along the corresponding vector in the rotation matrix 
-        """
-        
-        #if the scale matrix is not square
-        if scale.ndim == 1 or min(scale.shape)==1:
-            #convert it to a diagonal matrix
-            scale=numpy.matrix(numpy.diagflat(numpy.array(scale)))
-        
-        #if the rotatin matrix is a scalar, and we're working in 2 dimensions
-        if rotation.size==1 and scale.shape==(2,2):
-            # then rotation is the rotation angle, 
-            #create the apropriate rotation matrix
-            rotation=numpy.array([
-                [ numpy.cos(rotation),numpy.sin(rotation)],
-                [-numpy.sin(rotation),numpy.cos(rotation)],
-            ])
-        
-        #create the Mvar
-        return Mvar(autostack([
-            [scale*rotation, numpy.zeros],
-            [mean, 1],
-        ]))
+        return Mvar.from_cov(
+            cov = numpy.cov(data.T, bias=bias,rowvar=0),
+            mean= numpy.mean(data,axis=0),
+            **kwargs
+        )
 
+    def copy(self,other):
+        self.__dict__=other.__dict__.copy()
+        
     ########## Utilities
     @staticmethod
-    def stack(*mvars):
+    def stack(*mvars,**kwargs):
         """
         it's a static method to make it clear that it's not happening in place
         Stack two Mvars together, equivalent to hstacking the vectors, and 
@@ -237,21 +263,14 @@ class Mvar(object):
         """
         #no 'refresh' is necessary here because the vectors are in entierly 
         #different dimensions
-        return Mvar.from_mean_std(
-            #stack the vectors horizontally
-            numpy.hstack([mvar.mean for mvar in mvars]),
-            #stack the covariances diagonally
-            diagstack([mvar.std for mvar in mvars]),
+        return Mvar(
+            #stack the means horizontally
+            mean=numpy.hstack([mvar.mean for mvar in mvars]),
+            #stack the vector packets diagonally
+            vectors=diagstack([mvar.vectors for mvar in mvars]),
+            scale=numpy.hstack([numpy.matrix(mvar.scale) for scale in mvars]),
+            **kwargs
         )
-    
-    def refresh(self):
-        """
-        transforms knock the eigenvectors out of orthogonality, 
-        this function just realigns them. It is done in place intentionally. 
-        it also returns the self... (could that cause problems) 
-        """
-        self.affine = Mvar.from_mean_cov(self.mean, self.cov).affine
-        return self
     
     def sample(self,n=1):
         """
@@ -259,98 +278,65 @@ class Mvar(object):
         n is the number of samples, the default is 1
         each sample is a numpy matrix row vector.
         
-        the samles will have the same mean and cov as the distribution bing sampled
+        the samles will have the same mean and cov as the distribution 
+        being sampled
         """
-        
-        return (
-            numpy.hstack([
-                numpy.matrix(numpy.random.randn(n,self.std.shape[0])),
-                numpy.matrix(numpy.ones([n,1])),
-            ])*diagstack([self.rotate,1])*self.affine
-        )[:,:-1]
-    
-    ############ get methods for all the properties
-    def get_rotate(self):
-        """
-        get the rotation matrix used in the object
-        aka a matrix of normalized eigenvectors as rows
-        
-        >>>assert A.rotate*A.rotate.T == eye
-        >>>assert A.cov = A.rotate*A.scale**2*A.rotate.T
-        """
-        return autostack([
-            vector/numpy.sqrt(vector*vector.T) 
-            for vector in self.std
+        data=numpy.hstack([
+            numpy.matrix(numpy.random.randn(n,self.mean.size)),
+            numpy.matrix(numpy.ones([n,1])),
         ])
         
+        transform=numpy.vstack([
+            self.scaled,
+            self.mean,
+        ])
 
-    def get_scale(self):
-        """
-        get the scale matrix used in the object
-        aka a diagonal matrix of eigenvalues (
-        
-        >>>assert A.std == A.scale*A.rotate
-        >>>assert A.scale**2 == A.std.T*A.std
-        >>>assert A.cov == A.rotate*A.scale**2*A.rotate
-        """
-        return numpy.matrix(numpy.diag(numpy.sqrt(numpy.diag(
-            #all you're left with is the square of the scales on the diagonal
-            self.std*self.std.T
-        ))))
-
+        return data*transform
+    
+    ############ get methods for all the properties
 
     def get_cov(self):
         """
         get the covariance matrix used by the object
         
-        >>>assert A.cov == A.std.T*A.std 
-        >>>assert A.cov == A.rotate.T*A.scale.T*A.scale*A.rotate 
-        >>>assert A.cov == A.rotate.T*A.scale**2*A.rotate
+        >>>assert A.cov == A.scaled.T*A.scaled 
+        >>>assert A.cov == A.vectors.T*A.scale.T*A.scale*A.vectors 
+        >>>assert A.cov == A.vectors.T*A.scale**2*A.vectors
         """
-        return self.std.T*self.std
+        scaled=self.scaled
+        return scaled.T*scaled
     
-    def get_mean(self):
+    def get_scaled(self):
         """
-        get the mean of the distribution (row vector)
-        
-        >>>assert Mvar.from_data(data).mean == numpy.mean(data)
-        """
-        return self.affine[-1,:-1]
-    
-    def get_std(self):
-        """
-        get the standard deviation of the distribution,
-        aka matrix of scaled eigenvectors (as rows)
+        get the matrix of scaled eigenvectors (as rows)
 
-        >>>assert A.std = A.scale*A.rotate 
+        >>>assert A.scaled = numpy.diagflat(A.scale)*A.vectors 
         """
-        return self.affine[:-1,:-1]
-    
+        return numpy.diagflat(self.scale)*self.vectors 
+
     ############ Properties
     #maybe later I'll add in some of those from functions
-    rotate= property(fget=get_rotate)
-    scale = property(fget=get_scale)
     cov   = property(fget=get_cov)
-    mean  = property(fget=get_mean)
-    std   = property(fget=get_std)
+    scaled   = property(fget=get_scaled)
     
     ############ Math
 
     #### logical operations
     def __eq__(self,other):
         """
-        ==
+        A==
+        compares the means and covariances or the distributions
         """
-        return numpy.allclose(
-            self.affine.T*self.affine, 
-            other.affine.T*other.affine.T
-        )
+        return (self.mean==other.mean).all() and (self.cov == other.cov).all()
         
     def __and__(*mvars):
         """
+        A & 
+        
         This is awsome.
         
-        optimally blend together any number of mvars.
+        optimally blend together any number of mvars, this is done in and 
+        because the elipses look like ven-diagrams
         
         And just choosing an apropriate inversion operator (1/A) allows us to 
         define kalman blending as a standard 'paralell' operation, like with 
@@ -371,7 +357,7 @@ class Mvar(object):
         >>>assert A & B & C == Mvar.__and__(B,A,C)
         
         the proof that this is identical to the wikipedia definition of blend 
-        is a little too involved to write here. just try it (see the wiki 
+        is a little too involved to write here. Just try it (see the wiki 
         function below)
         
         >>>assert A & B == wiki(A,B)
@@ -380,13 +366,17 @@ class Mvar(object):
 
     def __iand__(*mvars):
         """
-        see __and__
+        A&=
+        
+        see documentation of __and__
         """
-        self.affine= paralell(mvars).affine
+        self.copy(paralell(mvars))
 
     ## operators
     def __pow__(self,power):
         """
+        A**
+        
         This definition was developed to turn kalman blending into a standard 
         resistor-style 'paralell' operation
         
@@ -399,7 +389,7 @@ class Mvar(object):
         
         But the mean is also affected by the stretching. It's as if the usual 
         value of the mean is a "zero power mean" transformed by whatever is 
-        the current value of the A.rotate.T*A.std matrix and if you change that 
+        the current value of the A.vectors.T*A.scaled matrix and if you change that 
         the mean changes with it..
         
         Most things you expect to work just work.
@@ -407,7 +397,7 @@ class Mvar(object):
             >>>assert A**0== A**(-1)*A== A*A**(-1)== A/A        
             >>>assert (A**K1)*(A**K2)=A**(K1+K2)
             >>>assert A**K1/A**K2=A**(K1-K2)
-
+        
         Zero power has some interesting properties: 
             
             The resulting ellipse is always a unit sphere, with the orientation 
@@ -415,32 +405,44 @@ class Mvar(object):
             transform the ellipse to a sphere
               
             >>>assert (A**0).scale== eye
-            >>>assert (A**0).rotate== A.rotate
-            >>>assert (A**0).mean == A.mean*A.rotate.T*A.scale**-1*A.rotate
+            >>>assert (A**0).vectors== A.vectors
+            >>>assert (A**0).mean == A.mean*A.vectors.T*A.scale**-1*A.vectors
             
         derivation of multiplication:
         
-            >>>assert A.std== A.scale*A.rotate
-            >>>assert (A**K).std== (A.scale**K)*A.rotate
-            >>>assert (A**K).std== A.std* A.rotate.T*A.scale**(K-1)*A.rotate
-            >>>assert (A**K).mean== A.mean* A.rotate.T*A.scale**(K-1)*A.rotate
+            >>>assert A.scaled== A.scale*A.vectors
+            >>>assert (A**K).scaled== (A.scale**K)*A.vectors
+            >>>assert (A**K).scaled== A.scaled* A.vectors.T*A.scale**(K-1)*A.vectors
+            >>>assert (A**K).mean== A.mean* A.vectors.T*A.scale**(K-1)*A.vectors
             
             that's a matrix multiply.
             
             So all Mvars on the right,in a multiply, can just be converted to 
             matrix:
             
-            >>>assert A*B==A*(B.rotate.T*B.scale*B.rotate)
+            >>>assert A*B==A*(B.vectors.T*B.scale*B.vectors)
         """
-        rotate = self.rotate
-        scale = numpy.diag(self.scale)
-        undo=rotate.T*numpy.matrix(numpy.diag(scale**(-1)))
-        new_std=numpy.matrix(numpy.diag(scale**(power)))*rotate
+        vectors = self.vectors
+        scale = self.scale
         
-        return self*(undo*new_std)
+        transform = (
+            vectors.T*
+            numpy.matrix(numpy.diag(scale**(power-1)))*
+            vectors
+        )
+        
+        return self*transform
     
+    def __ipow__(self,power):
+        """
+        A**=
+        """
+        self.copy(self**power)
+        
     def __mul__(self,other):
         """
+        A*
+        
         coercion notes:
             All non Mvar imputs will be converted to numpy arrays, then 
             treated as constants if zero dimensional, or matrixes otherwise 
@@ -455,7 +457,7 @@ class Mvar(object):
             >>>assert isinstance(K*A,Mvar)
             
             whenever an mvar is found on the right it is converted to a 
-            rotate.T*scale*rotate matrix and the multiplication is 
+            vectors.T*scale*vectors matrix and the multiplication is 
             re-called.
             
         general properties:
@@ -477,9 +479,9 @@ class Mvar(object):
             multiplying two Mvars together is defined to fit with power
             
             >>>assert A*A==A**2
-            >>>assert (A*B).affine=A.affine*B.rotate.T*B.std
-            >>>assert (A*B).std == A.std*B.rotate.T*B.scale*B.rotate
-            >>>assert (A*B).mean == A.mean*B.rotate.T*B.scale*B.rotate
+            >>>assert (A*B).affine=A.affine*B.vectors.T*B.scaled
+            >>>assert (A*B).scaled == A.scaled*B.vectors.T*B.scale*B.vectors
+            >>>assert (A*B).mean == A.mean*B.vectors.T*B.scale*B.vectors
             
             Note that the result does not depend on the mean of the 
             second mvar(!) (really any mvar after the leftmost mvar or matrix)
@@ -492,37 +494,37 @@ class Mvar(object):
             multiplication must fit with addition, and addition here is 
             defined so it can be used in the kalman noise addition step so: 
             
-            >>>assert all((A+A).std == (2*A).std)
-            >>>assert all((A+A) == sqrt(2)*A.std)
-            >>>assert all((A+A).mean == (2*A).mean)
-            >>>assert all((A+A).mean == 2*A.mean)
+            >>>assert ((A+A).scaled == (2*A).scaled).all()
+            >>>assert ((A+A) == sqrt(2)*A.scaled).all()
+            >>>assert ((A+A).mean == (2*A).mean).all()
+            >>>assert ((A+A).mean == 2*A.mean).all()
             
-            >>>assert all((A*K).std == sqrt(K)*A.std)
-            >>>assert all((A*K).mean == K*A.mean)
+            >>>assert ((A*K).scaled == sqrt(K)*A.scaled).all()
+            >>>assert ((A*K).mean == K*A.mean).all()
             
             >>>assert sum(itertools.repeat(A,K-1),A) == A*(K) == (K)*A 
             
-            >>>assert all((A*K).cov == A.cov*K)
+            >>>assert ((A*K).cov == A.cov*K).all()
             
             be careful with negative constants because you will end up with 
-            imaginary numbers in you std matrix, (and lime in your coconut) as 
+            imaginary numbers in you scaled matrix, (and lime in your coconut) as 
             a direct result of:            
             
-            assert ((A*K).std == sqrt(K)*A.std).all()
+            assert ((A*K).scaled == sqrt(K)*A.scaled).all()
             assert B+(-A) == B+(-1)*A == B-A and (B-A)+A==B
             
             if you want to scale the distribution linearily with the mean
             then use matrix multiplication
         
         Mvar*matrix
-
+        
             matrix multiplication transforms the mean and ellipse of the 
             distribution. Defined this way to work with the kalman state 
             update step.
             
             simple scale is like this
-            >>>assert all((A(*eye*K)).std == A.std*K)
-            >>>assert all((A(*eye*K)).mean == A.mean*K)
+            >>>assert ((A(*eye*K)).scaled == A.scaled*K).all()
+            >>>assert ((A(*eye*K)).mean == A.mean*K).all()
             
             or more generally
             >>>assert (A*M).cov == M.T*A.cov*M
@@ -539,6 +541,8 @@ class Mvar(object):
     
     def __rmul__(self,other):
         """
+        *A
+        
         multiplication order for constants doesn't matter
         
         >>>assert k*A == A*k
@@ -561,7 +565,7 @@ class Mvar(object):
             multiplying two Mvars together fits with the definition of power
             
             assert prod(itertools.repeat(A,N)) == A**N
-            assert A*B == A*(B.rotate.T*B.std) 
+            assert A*B == A*(B.vectors.T*B.scaled) 
             
             the second Mvar is automatically converted to a matrix, and the 
             result is handled by matrix multiply
@@ -570,14 +574,14 @@ class Mvar(object):
             second mvar(!)
 
         for consistancy when right multiplied, an Mvar is always converted to 
-        the A.rotate.T*A.std matrix, and Matrix multiplication follows 
+        the A.vectors.T*A.scaled matrix, and Matrix multiplication follows 
         automatically, and yields a matrix, not an Mvar.
         
         the one place this automatic conversion is not applied is when 
         right multiplying by a constant so: 
         
         martix*Mvar
-            assert T*A == T*(A.rotate.T*A.scale*A.rotate)
+            assert T*A == T*(A.vectors.T*A.scale*A.vectors)
 
         scalar multiplication however is not changed.
         
@@ -587,6 +591,8 @@ class Mvar(object):
     
     def __imul__(self,other):
         """
+        A*=
+        
         This is why I have things set up for left multply, it's 
         so that __imul__ works.
         """
@@ -594,6 +600,8 @@ class Mvar(object):
     
     def __div__(self,other):
         """
+        A/
+        
         see __mul__ and __pow__
         it would be immoral to overload power and multiply but not divide 
         >>>assert A/B == A*(B**(-1))
@@ -604,6 +612,8 @@ class Mvar(object):
         
     def __rdiv__(self,other):
         """
+        /A
+        
         see __rmul__ and __pow__
         >>>assert K/A == K*(A**(-1))
         >>>assert M/A == M*(A**(-1))
@@ -612,6 +622,8 @@ class Mvar(object):
         
     def __idiv__(self,other):
         """
+        A/=
+        
         see __mul__ and __pow__
         >>self.affine=(self*other**(-1)).affine
         """
@@ -619,6 +631,8 @@ class Mvar(object):
         
     def __add__(self,other):
         """
+        A+
+        
         When using addition keep in mind that rand()+rand() is not like scaling 
         one random number by 2, it adds together two random numbers.
 
@@ -631,7 +645,7 @@ class Mvar(object):
         
         scalar multiplication however fits with addition:
         
-        >>>assert (A+A).std == (2*A).std == sqrt(2)*A.std
+        >>>assert (A+A).scaled == (2*A).scaled == sqrt(2)*A.scaled
         >>>assert (A+A).mean == (2*A).mean == 2*A.mean
 
         >>>assert (A+B).mean== A.mean+B.mean
@@ -641,22 +655,33 @@ class Mvar(object):
         
         assert B+(-A) == B+(-1)*A == B-A and (B-A)+A=B
         
-        but watchout you'll end up with complex eigenvalues in your std 
+        but watchout you'll end up with complex eigenvalues in your scaled 
         matrix's
         """
         try:
-            return Mvar.from_mean_cov(
+            return Mvar.from_cov(
                 mean= (self.mean+other.mean),
                 cov = (self.cov + other.cov),
             )
         except AttributeError:
             return NotImplemented
 
+    def __radd__(self,other):
+        """
+        +A
+        """
+        self.copy(self+other)
+
     def __iadd__(self,other):
-            self.affine = (self+other).affine
+        """
+        A+=
+        """
+        self.affine = (self+other).affine
 
     def __sub__(self,other):
         """
+        A-
+        
         watch out subtraction is the inverse of addition 
          
             assert (A-B)+B == A
@@ -679,12 +704,20 @@ class Mvar(object):
             )
         except AttributError:
             return NotImplemented
+
+    def __rsub__(self,other):
+        return self+other
     
     def __isub__(self, other):
-        self.affine = (self - other).affine
+        """
+        A-=
+        """
+        self.copy(self-other)
 
     def __neg__(self):
         """
+        -A
+        
         it would be silly to overload __sub__ without overloading __neg__
         
         assert B+(-A) == B+(-1)*A == B-A and (B-A)+A==B
@@ -693,10 +726,22 @@ class Mvar(object):
     
     ################# Non-Math python internals
     def __str__(self):
-        return ''.join('  Mvar(',self.affine.__str__(),')')
+        return '\n'.join([
+            'Mvar(',
+            '    mean=',8*' '+str(self.mean).replace('\n','\n'+8*' ')+',',
+            '    scale=',8*' '+str(self.scale).replace('\n','\n'+8*' ')+',',
+            '    vectors=',8*' '+str(self.vectors).replace('\n','\n'+8*' ')+',',
+            ')',
+        ])
     
     def __repr__(self):
-        return self.affine.__repr__().replace('matrix','  Mvar')
+        return '\n'.join([
+            'Mvar(',
+            '    mean=',8*' '+self.mean.__repr__().replace('\n','\n'+8*' ')+',',
+            '    scale=',8*' '+self.scale.__repr__().replace('\n','\n'+8*' ')+',',
+            '    vectors=',8*' '+self.vectors.__repr__().replace('\n','\n'+8*' ')+',',
+            ')',
+        ])
 
     ################ Art
     def get_patch(self,nstd=4,**kwargs):
@@ -728,7 +773,7 @@ class Mvar(object):
             #and rotation angle pulled from the rotation matrix
             angle=numpy.rad2deg(
                 numpy.angle(astype(
-                    self.rotate,
+                    self.vectors,
                     complex,
                 )).flat[0]
             ),
@@ -736,109 +781,8 @@ class Mvar(object):
             **kwargs
         )
 
-    
-        
-############### Helpers
-def astype(self,newtype):
-    duplicate=self
-    duplicate.dtype=newtype
-    return duplicate
 
-def diagstack(arrays):
-    """
-    output is two dimensional
-
-    type matches first input, if it is a numpy array or matrix, 
-    otherwise this returns a numpy array
-    """
-    #make a nested matrix, with the inputs on the diagonal, and the numpy.zeros
-    #function everywhere else
-    arrays=numpy.where(
-        eye,
-        numpy.diag(numpy.array(arrays,dtype=object)),
-        numpy.zeros,
-    )
-    
-    return autostack(result)
-
-def autostack(rows):
-    """
-    simplify matrix stacking
-    vertically stack the results of horizontally stacking each row in rows, 
-    with no need to explicitly declare the size of the zeros
-    
-    autostack([ 
-        [std,numpy.zeros]
-        [mean,1]
-    ])
-    
-    rows are horizontally stacked first, then vertically stacked, so the cells 
-    do not need to line up vertically they just need the same total size
-    
-    if there are callables in the data things must align vertically as well 
-
-    callables are called with a shape tuple as the only argument. or zeros 
-    where a row or column contains only callables.
-    """
-    #convert the data items into an object array 
-    data=numpy.array(rows,dtype = object)
-    #store the shape
-    shape=data.shape
-    #and the type
-    arrays=[item for item in data if isinstance(item,numpy.ndarray)]
-    atype=type(arrays[0]) if arrays else numpy.array
-    
-    #make a bool aray of the callable status of each item 
-    calls = numpy.array([
-        [callable(item) for item in row] 
-        for row in rows
-    ])
-    
-    #convert everything that's not callable to a matrix
-    data=numpy.array(
-        [
-            item if call else numpy.matrix(item) 
-            for item,call 
-            in izip(calls.flat,data.flat)
-        ],
-        dtype=object,
-    ).reshape(shape)
-    
-    if calls.any():
-        #get all the sizes, drop NaN's for callables
-        sizes = numpy.array([
-            (0,0) if call else item.shape 
-            for call,item in itertools.izip(calls.flat,data.flat)
-        ]).reshape(shape+(2,))
-        
-        heights=sizes[...,0]
-        widths=sizes[...,1]
-        
-        for (down,right) in numpy.argwhere(calls):
-            #call the callable with (height,width) as the only argument
-            #and drop it into the data slot
-            data[down,right] = data[down,right](
-                (heights[down,:].max(),widths[:,right].max())
-            )
-    #do the stacking
-    return atype(numpy.vstack(
-        numpy.hstack(
-            numpy.matrix(item) 
-            for item in row
-        ) 
-        for row in data
-    ))
-
-
-def paralell(*items):
-    """
-    resistors in paralell, and thanks to 
-    duck typing and operator overloading, this happens 
-    to be exactly what we need for kalman sensor fusion. 
-    """
-    inverted=[item**(-1) for item in items]
-    return sum(inverted[1:],inverted[0])**(-1)
-    
+## extras    
 
 def wiki(P,M):
     """
@@ -937,7 +881,7 @@ def multiply(
             cov = first.cov*constant,
         ),
         rmul=lambda other,self:(
-            other*self.rotate.T*self.std
+            other*self.vectors.T*self.scaled
         ),
         lmul=lambda self,matrix: Mvar(
             self.affine*diagstack([mat, 1])
@@ -948,3 +892,21 @@ def multiply(
     return multipliers[
         (type(self),type(other))
     ](self,other)
+    
+def issquare(matrix):
+    shape=numpy.matrix(matrix).shape
+    return shape[0] == shape[1]
+
+def isflat(matrix):
+    shape=numpy.matrix(matrix).shape
+    return min(shape)==1
+
+def isrotate(matrix):
+    R=numpy.martix(matrix)
+    return (R*R.T == eye(R.shape[0])).all()
+
+
+"""
+>>>assert A.vectors*A.vectors.T == eye
+>>>assert A.cov = A.vectors*A.scale**2*A.vectors.T
+"""
