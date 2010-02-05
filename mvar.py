@@ -5,6 +5,7 @@ from __future__ import division
 #builtins
 import itertools
 from itertools import izip as zip
+import collections 
 
 import operator
 
@@ -59,10 +60,12 @@ class Mvar(object):
     normally (at least in what I read on wikipedia) these things are handled 
     with mean and covariance, but I find mean,scale,rotation to be more useful, 
     so that is how the data is actually managed, but other useful info in 
-    accesable through virtual attributes (properties).
+    accessable through virtual attributes (properties).
     
     This system make compression (think principal component analysis) much 
-    easier and more useful.
+    easier and more useful, but until I can think of a way to get directly 
+    from data to the eigenvectors of the covariance matrix of the data, without 
+    calculating the covariance, it is of limited utility).
     
     actual attributes:
         mean
@@ -78,8 +81,8 @@ class Mvar(object):
             covariance matrix
         affine
             autostack([
-                [self.vectors,numpy.zeros]
-                [self.mean   ,          1]
+                [self.vectors,numpy.zeros],
+                [self.mean   ,          1],
             ])
             
         
@@ -113,15 +116,15 @@ class Mvar(object):
         mean = numpy.zeros,
         vectors = numpy.zeros, 
         scale = numpy.ones,
-        do_square=False,
+        do_square=True,
         do_compress=True,
     ):
         """
         create the Mvar directly from available attributes.
         
-        rotation isn't listed because vectors can do anything it would, the 
-        scales are automatically pulled off the vectors and if 'do_square' is 
-        on the results will be orthogonalized.
+        rotation (like rotation matrix) isn't listed because vectors can do 
+        anything it would, the scales are automatically pulled off the vectors 
+        and if 'do_square' is on the results will be orthogonalized.
         
         this function uses autostack to automatically size any callables passed 
         to the attributes, it's rarely useful, it's just convienient.
@@ -135,8 +138,8 @@ class Mvar(object):
             defaults to numpy.zeros, sounld be a row vector
             
         vectors
-            defaults to numpy.zeros. Row vectors. They do not need to be 
-            orthogonal, or unit length, 
+            defaults to numpy.zeros. again row vectors. They do not need to be 
+            orthogonal, or unit length.
             
         scale
             defaults to numpy.ones
@@ -158,16 +161,15 @@ class Mvar(object):
         #use autostack to determine unknown sizes, and matrix everything
         stack=autostack([
             [scale,vectors],
-            [    1,   mean],
-        ])
+            [  1.0,   mean],
+        ]))
         
         #and unpack the stack into the object's parameters 
         self.mean = stack[-1,1:]
         self.scale = numpy.diagflat(stack[:-1,0])
         self.rotation = stack[:-1,1:]
         
-        if do_square:
-            assert do_compress,"do_square calls do_compress"
+        assert not do_square or do_compress,"do_square calls do_compress"
         
         if do_square:
             self.do_square()
@@ -182,12 +184,14 @@ class Mvar(object):
         **kwargs is just passed on to do_compress
         """
         #to decouple compress from square you'll need do the square on the 
-        #Mvar's brane instead of the full-space.?
+        #Mvar's brane instead of the full-space, to do that you'll need
+        #something like theplane class I've started developing in the adjacent file
         V=self.rotation
-        if not numpy.allclose(V*V.T,numpy.eye(V.shape[0]),**kwargs):
-            (scale2,self.rotation) = numpy.linalg.eigh(V.T*V)
-            self.scale*=scale2**(0.5)
-        
+        if not numpy.allclose(dot(V,V.T),numpy.eye(V.shape[0]),**kwargs):
+            (scale2,rotation) = numpy.linalg.eigh(dot(V.T,V))
+            sign=numpy.diag(numpy.sign(scale2))
+            self.rotation=dot(sign,rotation)
+            self.scale=dot(self.scale,numpy.diagflat(numpy.abs(scale2)**(0.5)))
         self.do_compress(**kwargs)
         
     def do_compress(self,rtol=1e-5,atol=1e-8):
@@ -197,13 +201,12 @@ class Mvar(object):
         """
         #convert the scale to a column vector
         diag=numpy.diag(self.scale)[:,numpy.newaxis]
-        
         #get the rotation
         rotation=numpy.array(self.rotation)
         
-        stack=numpy.hstack([scale,rotation])
-
-        stack=stack[numpy.argsort(scale.flatten()),:]
+        stack=numpy.hstack([diag,rotation])
+        
+        stack=stack[numpy.argsort(diag.flatten()),:]
         
         C=~numpy.array(close(stack[:,0],rtol=rtol,atol=atol)).squeeze()
         #drop the scale/rotation where the scale is close to zero
@@ -224,7 +227,7 @@ class Mvar(object):
         scale,rotation = numpy.linalg.eigh(cov)
         
         return Mvar(
-            rotation=rotation,
+            vectors=rotation,
             #square root the scales
             scale=scale**0.5,
             **kwargs
@@ -261,9 +264,29 @@ class Mvar(object):
             mean= numpy.mean(data,axis=0),
             **kwargs
         )
+        
+    def from_affine(affine,**kwargs):
+        """
+        unpack an affine transform, into an Mvar.
+        the transform should be in the format below:
+        
+        autostack([
+            [self.vectors,numpy.zeros]
+            [self.mean   ,        1.0]
+        ])
+        """
+        return Mvar(
+            mean = stack[-1,:-1],
+            vectors = stack[:-1,:-1],
+            **kwargs
+        )
 
-    def copy(self,other):
-        self.__dict__=other.__dict__.copy()
+    
+    def copy(self,other=None):
+        if other is None:
+            return Mvar(mean=self.mean,rotation=self.rotation,scale=self.scale)
+        else:
+            self.__dict__=other.__dict__.copy()
         
     ########## Utilities
     @staticmethod
@@ -299,8 +322,8 @@ class Mvar(object):
         being sampled
         """
         data=numpy.hstack([
-            numpy.matrix(numpy.random.randn(n,self.mean.size)),
-            numpy.matrix(numpy.ones([n,1])),
+            numpy.random.randn(n,self.mean.size),
+            numpy.ones([n,1]),
         ])
         
         transform=numpy.vstack([
@@ -308,7 +331,7 @@ class Mvar(object):
             self.mean,
         ])
 
-        return data*transform
+        return dot(data,transform)
     
     ############ get methods for all the properties
 
@@ -316,25 +339,31 @@ class Mvar(object):
         """
         get the covariance matrix used by the object
         
-        >>>assert A.cov == A.vectors.T*A.vectors 
-        >>>assert A.cov == A.rotation.T*A.scale.T*A.scale*A.rotation 
-        >>>assert A.cov == A.rotation.T*A.scale**2*A.rotation
+        >>>assert A.cov == dot(A.vectors.T,A.vectors) 
+        >>>assert A.cov == dot(A.rotation.T,A.scale,A.scale,A.rotation)
         """
         vectors=self.vectors
-        return vectors.T*vectors
+        return dot(vectors.T,vectors)
     
     def get_vectors(self):
         """
         get the matrix of scaled eigenvectors (as rows)
 
-        >>>assert A.vectors = numpy.diagflat(A.scale)*A.rotation 
+        >>>assert A.vectors = dot(A.scale,A.rotation) 
         """
-        return numpy.diagflat(self.scale)*self.rotation 
+        return dot(self.scale,self.rotation)
+    
+    def get_affine(self):
+        return  autostack([
+            [self.vectors,numpy.zeros],
+            [self.mean   ,          1],
+        ])
 
     ############ Properties
     #maybe later I'll add in some of those from functions
     cov   = property(fget=get_cov)
     vectors   = property(fget=get_vectors)
+    affine = property(fget=get_affine)
     
     ############ Math
 
@@ -421,9 +450,11 @@ class Mvar(object):
             unchanged, but the mean is wherever it gets stretched to while we 
             transform the ellipse to a sphere
               
-            >>>assert (A**0).scale== eye
+            >>>assert (A**0).scale == eye(A.mean.shape[1])
             >>>assert (A**0).rotation== A.rotation
-            >>>assert (A**0).mean == A.mean*A.rotation.T*A.scale**-1*A.rotation
+            >>>assert (A**0).mean == dot(
+                A.mean,A.rotation.T,A.scale**-1,A.rotation
+            )
             
         derivation of multiplication:
         
@@ -439,12 +470,12 @@ class Mvar(object):
             
             >>>assert A*B==A*(B.rotation.T*B.scale*B.rotation)
         """
-        rotation = self.rotation
-        scale = self.scale
+        rotation = numpy.matrix(self.rotation)
+        scale = numpy.matrix(self.scale)
         
         transform = (
             rotation.T*
-            numpy.matrix(numpy.diag(scale**(power-1)))*
+            numpy.matrix(scale**(power-1))*
             rotation
         )
         
@@ -719,10 +750,13 @@ class Mvar(object):
                 mean= (self.mean-other.mean),
                 cov = (self.cov - other.cov),
             )
-        except AttributError:
+        except AttributeError:
             return NotImplemented
 
     def __rsub__(self,other):
+        """
+        -A
+        """
         return self+other
     
     def __isub__(self, other):
@@ -733,7 +767,7 @@ class Mvar(object):
 
     def __neg__(self):
         """
-        -A
+        (-A)
         
         it would be silly to overload __sub__ without overloading __neg__
         
@@ -761,7 +795,7 @@ class Mvar(object):
         ])
 
     ################ Art
-    def get_patch(self,nstd=4,**kwargs):
+    def get_patch(self,nstd=3,**kwargs):
         """
         get a matplotlib Ellipse patch representing the Mvar, 
         all **kwargs are passed on to the call to 
@@ -807,15 +841,15 @@ def wiki(P,M):
     
     The quickest way to prove it's equivalent is by:
         >>>ab=numpy.array([A,B],ndmin=2,dytpe=object)
-        >>>assert A & B == numpy.dot(ab,(ab.T)**(-2))**(-1)
+        >>>assert A & B == dot(ab,(ab.T)**(-2))**(-1)
     """
     yk=M.mean.T-P.mean.T
     Sk=P.cov+M.cov
-    Kk=P.cov*(Sk**-1)
+    Kk=dot(P.cov,(Sk**-1))
     
     return Mvar.from_mean_cov(
-        (P.mean.T+Kk*yk).T,
-        (numpy.eye(P.mean.size)-Kk)*P.cov
+        (P.mean.T+dot(Kk*yk)).T,
+        dot((numpy.eye(P.mean.size)-Kk),P.cov)
     )
 
 def isplit(sequence,fkey=bool): 
@@ -855,15 +889,23 @@ def isplit(sequence,fkey=bool):
     []
     """
     
-    return collections.defaultdict(
-        list,
-        itertools.groupby(sequence,fkey),
-    )
+    result = collections.defaultdict(list,())
+    print result
+    for key,iterator in itertools.groupby(sequence,fkey):
+        result[key]=list(itertools.chain(result[key],iterator))
+        
+    return result
+
+def dot(*args):
+    """
+    like numpy.dot but takes any number or arguments
+    """
+    return reduce(numpy.dot,args)
     
 def product(*args):
     """
     like sum, but with multiply
-    not like numpy product which works element-wise.
+    not like numpy.product which works element-wise.
     """
     return reduce(
         function=operator.mul,
@@ -881,7 +923,7 @@ def multiply(
     other,
     rconvert=lambda(item): (
         Mvar if isinstance(item,Mvar) else 
-        numpy.matix(item) if numpy.array(item).ndim else
+        numpy.matrix(item) if numpy.array(item).ndim else
         numpy.ndarray(item)
     ),
     multipliers=(
@@ -898,10 +940,10 @@ def multiply(
             cov = first.cov*constant,
         ),
         rmul=lambda other,self:(
-            other*self.rotation.T*self.vectors
+            other*dot(self.rotation.T,self.vectors)
         ),
         lmul=lambda self,matrix: Mvar(
-            self.affine*diagstack([mat, 1])
+            dot(self.affine*diagstack([matrix, 1]))
         ).refresh(),
     ),
 ):

@@ -2,7 +2,7 @@ import numpy
 
 from helpers import autostack
 
-class Plane(object):
+class lane(object):
     def __init__(self,
         mean=numpy.zeros,
         vectors=numpy.zeros,

@@ -23,8 +23,8 @@ def diagstack(arrays):
     """
     #make a nested matrix, with the inputs on the diagonal, and the numpy.zeros
     #function everywhere else
-    arrays=numpy.where(
-        eye,
+    result=numpy.where(
+        numpy.eye(len(arrays)),
         numpy.diag(numpy.array(arrays,dtype=object)),
         numpy.zeros,
     )
