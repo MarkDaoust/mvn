@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 ##imports
 #internals
 from __future__ import division
@@ -113,37 +115,24 @@ class Mvar(object):
     
     ############## Creation
     def __init__(self,
-        mean = numpy.zeros,
-        vectors = numpy.zeros, 
-        scale = numpy.ones,
+        stack,
         do_square=True,
         do_compress=True,
+        **kwargs
     ):
         """
-        create the Mvar directly from available attributes.
+        create the Mvar from the stack of attributes
         
-        rotation (like rotation matrix) isn't listed because vectors can do 
-        anything it would, the scales are automatically pulled off the vectors 
-        and if 'do_square' is on the results will be orthogonalized.
-        
-        this function uses autostack to automatically size any callables passed 
-        to the attributes, it's rarely useful, it's just convienient.
-        
-            autostack([
-                [scale,vectors],
-                [    1,   mean],
+        stack= autostack([
+                [numpy.ones,vectors],
+                [         1,   mean],
             ])
         
-        mean
-            defaults to numpy.zeros, sounld be a row vector
-            
-        vectors
-            defaults to numpy.zeros. again row vectors. They do not need to be 
-            orthogonal, or unit length.
-            
-        scale
-            defaults to numpy.ones
-            
+        stack= autostack([
+                [scale,rotation],
+                [    1,    mean],
+            ])
+        
         do_square 
             calls self.do_square() on the result if true. To set the rotation 
             to orthogonal and unit length, do_square automatically calls 
@@ -153,18 +142,7 @@ class Mvar(object):
             calls self.do_compress() on the result if true. To clear out any 
             low valued vectors uses the same defaults as numpy.allclose()
         """
-        scale=(
-            scale if callable(scale) else 
-            numpy.matrix(numpy.array(scale).flatten()).T
-        )
-        
-        #use autostack to determine unknown sizes, and matrix everything
-        stack=autostack([
-            [scale,vectors],
-            [  1.0,   mean],
-        ]))
-        
-        #and unpack the stack into the object's parameters 
+        #unpack the stack into the object's parameters 
         self.mean = stack[-1,1:]
         self.scale = numpy.diagflat(stack[:-1,0])
         self.rotation = stack[:-1,1:]
@@ -216,6 +194,47 @@ class Mvar(object):
         self.rotation=stack[:,1:] 
         
     ############## alternate creation methods
+    @statismethod
+    def from_attr(
+        mean = numpy.zeros,
+        vectors = numpy.zeros, 
+        scale = numpy.ones,
+        **kwargs
+    ):
+        """
+        create the Mvar from available arrtibutes, rotation isn't listed 
+        becaues 'vectors' does everything rotation would 
+        
+        mean
+            defaults to numpy.zeros
+            
+        vectors
+            defaults to numpy.zeros. again row vectors. They do not need to be 
+            orthogonal, or unit length.
+            
+        scale
+            defaults to numpy.ones
+            
+        """
+        if not callable(scale):
+            scale=numpy.array(scale)
+            if isdiag(scale):
+                scale=scale.diagonal()
+            scale=scale.squeeze()
+            assert scale.ndim==1,"scales must be flat or diagonal"
+            scale=scale[:,numpy.newaxis]
+        
+        if not callable(mean):
+            mean=numpy.array(mean).squeeze()[numpy.newaxis,:]
+            
+        #use autostack to determine unknown sizes
+        return Mvar(
+            autostack([
+                [scale,vectors],
+                [  1.0,   mean],
+            ])
+        )
+    
     @staticmethod
     def from_cov(cov,**kwargs):
         """
@@ -226,7 +245,7 @@ class Mvar(object):
         #get the scale and rotation matracies
         scale,rotation = numpy.linalg.eigh(cov)
         
-        return Mvar(
+        return Mvar.from_attr(
             vectors=rotation,
             #square root the scales
             scale=scale**0.5,
@@ -238,7 +257,7 @@ class Mvar(object):
         """
         iterating on the data should produce vectors.
         the date can be an Mvar.
-        assertMvar.from_data(A)==A
+        assert Mvar.from_data(A)==A
         
         bias and row var are passed to numpy's cov function.
         
@@ -276,19 +295,75 @@ class Mvar(object):
         ])
         """
         return Mvar(
-            mean = stack[-1,:-1],
-            vectors = stack[:-1,:-1],
+            autostack([[numpy.ones,affine[:,:-1]]])
             **kwargs
         )
 
+     ############ get methods/properties
+
+    def get_cov(self):
+        """
+        get the covariance matrix used by the object
+        
+        >>>assert A.cov == dot(A.vectors.T,A.vectors) 
+        >>>assert A.cov == dot(A.rotation.T,A.scale,A.scale,A.rotation)
+        """
+        vectors=self.vectors
+        return dot(vectors.T,vectors)
     
+    def get_vectors(self):
+        """
+        get the matrix of scaled eigenvectors (as rows)
+
+        >>>assert A.vectors = dot(A.scale,A.rotation) 
+        """
+        return dot(self.scale,self.rotation)
+    
+    def get_affine(self):
+        return  autostack([
+            [self.vectors,numpy.zeros],
+            [self.mean   ,          1],
+        ])
+
+    cov = property(
+        fget=get_cov, 
+        fset=lambda self,cov:self.copy(
+            Mvar.from_cov(
+                mean=self.mean,
+                cov=cov,
+    )))
+    
+    vectors = property(
+        fget=get_vectors, 
+        fset=lambda self,vectors:self.copy(
+            Mvar.from_attr(
+                mean=self.mean,
+                vectors=vectors,
+    )))
+    
+    affine = property(
+        fget=get_affine,
+        fset=lambda self,affine:self.copy(
+            Mvar.from_affine(
+                affine,
+    )))
+    
+    ########## Utilities
     def copy(self,other=None):
+        """
+        either return a copy of an Mvar, or copy another into the self
+        B=A.copy()
+        A.copy(B)
+        """ 
         if other is None:
-            return Mvar(mean=self.mean,rotation=self.rotation,scale=self.scale)
+            return Mvar.from_attr(
+                mean=self.mean,
+                rotation=self.rotation,
+                scale=self.scale
+            )
         else:
             self.__dict__=other.__dict__.copy()
         
-    ########## Utilities
     @staticmethod
     def stack(*mvars,**kwargs):
         """
@@ -301,9 +376,9 @@ class Mvar(object):
         calculated from, you'll loose all the cross corelations. 
         If you're trying to do that use a better matrix multiply. 
         """
-        #no 'refresh' is necessary here because the rotation are in entierly 
-        #different dimensions
-        return Mvar(
+        #no 'refresh' is necessary here because the rotation matrixes are in 
+        #entierly different dimensions
+        return Mvar.from_attr(
             #stack the means horizontally
             mean=numpy.hstack([mvar.mean for mvar in mvars]),
             #stack the vector packets diagonally
@@ -333,51 +408,19 @@ class Mvar(object):
 
         return dot(data,transform)
     
-    ############ get methods for all the properties
-
-    def get_cov(self):
-        """
-        get the covariance matrix used by the object
-        
-        >>>assert A.cov == dot(A.vectors.T,A.vectors) 
-        >>>assert A.cov == dot(A.rotation.T,A.scale,A.scale,A.rotation)
-        """
-        vectors=self.vectors
-        return dot(vectors.T,vectors)
-    
-    def get_vectors(self):
-        """
-        get the matrix of scaled eigenvectors (as rows)
-
-        >>>assert A.vectors = dot(A.scale,A.rotation) 
-        """
-        return dot(self.scale,self.rotation)
-    
-    def get_affine(self):
-        return  autostack([
-            [self.vectors,numpy.zeros],
-            [self.mean   ,          1],
-        ])
-
-    ############ Properties
-    #maybe later I'll add in some of those from functions
-    cov   = property(fget=get_cov)
-    vectors   = property(fget=get_vectors)
-    affine = property(fget=get_affine)
-    
     ############ Math
 
     #### logical operations
     def __eq__(self,other):
         """
-        A==
+        A==?
         compares the means and covariances or the distributions
         """
         return (self.mean==other.mean).all() and (self.cov == other.cov).all()
         
-    def __and__(*mvars):
+    def blend(*mvars):
         """
-        A & 
+        A & ?
         
         This is awsome.
         
@@ -400,28 +443,28 @@ class Mvar(object):
         >>>assert A & B == B & A 
         >>>assert A & B == 1/(1/A+1/B)
         >>>assert A & B & C == Paralell(B,C,A)
-        >>>assert A & B & C == Mvar.__and__(B,A,C)
+        >>>assert A & B & C == Mvar.blend(B,A,C)== Mvar.__and__(C,B,A)
         
         the proof that this is identical to the wikipedia definition of blend 
-        is a little too involved to write here. Just try it (see the wiki 
-        function below)
+        is a little too involved to write here. Just try it (see the "wiki 
+"        function)
         
         >>>assert A & B == wiki(A,B)
         """
         return paralell(mvars)
-
-    def __iand__(*mvars):
-        """
-        A&=
         
-        see documentation of __and__
+    __and__ = blend
+    
+    def __iand__(self,other):
         """
-        self.copy(paralell(mvars))
+        A&=?
+        """
+        self.copy(paralell([self,other]))
 
     ## operators
     def __pow__(self,power):
         """
-        A**
+        A**?
         
         This definition was developed to turn kalman blending into a standard 
         resistor-style 'paralell' operation
@@ -483,13 +526,48 @@ class Mvar(object):
     
     def __ipow__(self,power):
         """
-        A**=
+        A**=?
         """
         self.copy(self**power)
         
-    def __mul__(self,other):
+    def __mul__(
+        self,
+        other,
+        #this function is applied to the right operand, to simplify the types 
+        #of the objects we have to deal with, and to convert any Mvars on 
+        #the left into a rotate.T*scale*rotate matrix.
+        rconvert=lambda 
+            item,
+            helper=lambda item:(
+                numpy.matrix(item) 
+                if item.ndim else
+                item
+            )
+        :(  
+            numpy.matrix(item.rotation.T*item.vectors) if 
+            isinstance(item,Mvar) else 
+            helper(numpy.array(item))
+        ),
+        #this dict is used to dispatch multiplications based on the type of 
+        #the right operand, after it has been passed through rconvert
+        multipliers={
+            (numpy.matrix):(
+                lambda self,matrix:Mvar.from_attr(
+                    mean=dot(self.mean,matrix),
+                    vectors=dot(self.rotate,matrix),
+                    scale=self.scale,
+                )
+            ),
+            (numpy.ndarray):(
+                lambda self,constant:Mvar.from_cov(
+                    mean= self.mean*constant,
+                    cov = self.cov*constant,
+                )
+            )
+        }    
+    ):
         """
-        A*
+        A*?
         
         coercion notes:
             All non Mvar imputs will be converted to numpy arrays, then 
@@ -530,6 +608,7 @@ class Mvar(object):
             >>>assert (A*B).affine=A.affine*B.rotation.T*B.vectors
             >>>assert (A*B).vectors == A.vectors*B.rotation.T*B.scale*B.rotation
             >>>assert (A*B).mean == A.mean*B.rotation.T*B.scale*B.rotation
+            >>>assert A*B == A*numpy.linalg.matrix_power(B.cov,0.5)
             
             Note that the result does not depend on the mean of the 
             second mvar(!) (really any mvar after the leftmost mvar or matrix)
@@ -580,34 +659,75 @@ class Mvar(object):
             
             matrix multiplication is implemented as follows
             
-            assert A*M == Mvar(A.affine*diagstack([M,1])).refresh()
+            assert A*M == Mvar.from_affine(A.affine*diagstack([M,1]))
             
             the refresh() here is necessary to ensure that the rotation matrix
             stored in the object stays well behaved. 
         """
-        return multiply(self,other)
+        other=rconvert(other)
+        return multipliers[type(other)](self,other) 
     
-    def __rmul__(self,other):
+    def __rmul__(
+        self,
+        other,
+        #here we convert the left operand to a numpy.ndarray if it is a scalar,
+        #otherwise we convert it to a numpy.matrix.
+        #the self (right operand) will stay an Mvar for scalar multiplication
+        #or be converted to a rotate.T*scale*rotate matrix for matrix 
+        #multiplication
+        convert=lambda
+            other,
+            self,
+            helper=(lambda other,self: 
+                numpy.matrix(other) if 
+                other.ndim else
+                other
+                ,
+                numpy.matrix(dot(item.rotation.T,item.scale,item.rotate)) if 
+                other.ndim else
+                self
+            )
+        :helper(numpy.array(other),self)
+        ,
+        #dispatch the multiplication based on the type of the left operand
+        multipliers={
+            #if the left operand is a matrix, the mvar has been converted to
+            #to a matrix -> use matrix multiply
+            (numpy.matrix):dot,
+            #if the left operand is a constant use scalar multiply
+            (numpy.ndarray):(
+                lambda constant,self:Mvar.from_cov(
+                    mean= self.mean*constant,
+                    cov = self.cov*constant,
+                )
+            )
+        }
+    ):
         """
-        *A
+        ?*A
         
-        multiplication order for constants doesn't matter
+        multiplication order:
+            doesn't matter for constants
         
-        >>>assert k*A == A*k
+            >>>assert k*A == A*k
         
-        but it matters a lot for Matrix/Mvar multiplication
+            but it matters a lot for Matrix/Mvar multiplication
         
-        >>>assert isinstance(A*T,Mvar)
-        >>>assert isinstance(T*A,numpy.matrix)
+            >>>assert isinstance(A*M,Mvar)
+            >>>assert isinstance(M*A,numpy.matrix)
         
         be careful with right multiplying:
-        Because power must fit with multiplication
+            Because power must fit with multiplication
         
-        assert A*A==A**2
+            it was designed to satisfy
+            assert A*A==A**2
         
-        The most obvious way to treat right multiplication by a matrix is to 
-        do exactly the same thing. So because of the definition of Mvar*Mvar
-        (below)
+            The most obvious way to treat right multiplication by a matrix is 
+            to do exactly the same thing we're dong in Mvar*Mvar, which is 
+            convert the right Mvar to the square root of its covariance matrix
+            and continue normally,this yields a matrix, not an Mvar.
+            
+            this conversion is not applied when multiplied by a constant.
         
         Mvar*Mvar
             multiplying two Mvars together fits with the definition of power
@@ -620,26 +740,19 @@ class Mvar(object):
             
             again note that the result does not depend on the mean of the 
             second mvar(!)
-
-        for consistancy when right multiplied, an Mvar is always converted to 
-        the A.rotation.T*A.vectors matrix, and Matrix multiplication follows 
-        automatically, and yields a matrix, not an Mvar.
-        
-        the one place this automatic conversion is not applied is when 
-        right multiplying by a constant so: 
         
         martix*Mvar
             assert T*A == T*(A.rotation.T*A.scale*A.rotation)
 
-        scalar multiplication however is not changed.
-        
-        assert Mvar*constant == constant*Mvar
+        Mvar*constant==constant*Mvar
+            assert A*k == k*A
         """
-        return multiply(other,self)
+        (other,self)= convert(other,self)
+        return multipliers[type(other)](other,self)
     
     def __imul__(self,other):
         """
-        A*=
+        A*=?
         
         This is why I have things set up for left multply, it's 
         so that __imul__ works.
@@ -648,7 +761,7 @@ class Mvar(object):
     
     def __div__(self,other):
         """
-        A/
+        A/?
         
         see __mul__ and __pow__
         it would be immoral to overload power and multiply but not divide 
@@ -660,7 +773,7 @@ class Mvar(object):
         
     def __rdiv__(self,other):
         """
-        /A
+        ?/A
         
         see __rmul__ and __pow__
         >>>assert K/A == K*(A**(-1))
@@ -670,7 +783,7 @@ class Mvar(object):
         
     def __idiv__(self,other):
         """
-        A/=
+        A/=?
         
         see __mul__ and __pow__
         >>self.affine=(self*other**(-1)).affine
@@ -679,7 +792,7 @@ class Mvar(object):
         
     def __add__(self,other):
         """
-        A+
+        A+?
         
         When using addition keep in mind that rand()+rand() is not like scaling 
         one random number by 2, it adds together two random numbers.
@@ -706,29 +819,26 @@ class Mvar(object):
         but watchout you'll end up with complex eigenvalues in your vectors 
         matrix's
         """
-        try:
-            return Mvar.from_cov(
-                mean= (self.mean+other.mean),
-                cov = (self.cov + other.cov),
-            )
-        except AttributeError:
-            return NotImplemented
+        return Mvar.from_cov(
+            mean= (self.mean+other.mean),
+            cov = (self.cov + other.cov),
+        )
 
     def __radd__(self,other):
         """
-        +A
+        ?+A
         """
         self.copy(self+other)
 
     def __iadd__(self,other):
         """
-        A+=
+        A+=?
         """
         self.affine = (self+other).affine
 
     def __sub__(self,other):
         """
-        A-
+        A-?
         
         watch out subtraction is the inverse of addition 
          
@@ -746,7 +856,7 @@ class Mvar(object):
         assert B+(-A) == B+(-1)*A == B-A and (B-A)+A==B
         """
         try:
-            return Mvar.from_mean_cov(
+            return Mvar.from_cov(
                 mean= (self.mean-other.mean),
                 cov = (self.cov - other.cov),
             )
@@ -755,13 +865,13 @@ class Mvar(object):
 
     def __rsub__(self,other):
         """
-        -A
+        ?-A
         """
         return self+other
     
     def __isub__(self, other):
         """
-        A-=
+        A-=?
         """
         self.copy(self-other)
 
@@ -778,34 +888,34 @@ class Mvar(object):
     ################# Non-Math python internals
     def __str__(self):
         return '\n'.join([
-            'Mvar(',
+            'Mvar.from_attr(',
             '    mean=',8*' '+str(self.mean).replace('\n','\n'+8*' ')+',',
             '    scale=',8*' '+str(self.scale).replace('\n','\n'+8*' ')+',',
-            '    rotation=',8*' '+str(self.rotation).replace('\n','\n'+8*' ')+',',
+            '    vectors=',8*' '+str(self.rotation).replace('\n','\n'+8*' ')+',',
             ')',
         ])
     
     def __repr__(self):
         return '\n'.join([
-            'Mvar(',
+            'Mvar.from_attr(',
             '    mean=',8*' '+self.mean.__repr__().replace('\n','\n'+8*' ')+',',
             '    scale=',8*' '+self.scale.__repr__().replace('\n','\n'+8*' ')+',',
-            '    rotation=',8*' '+self.rotation.__repr__().replace('\n','\n'+8*' ')+',',
+            '    vectors=',8*' '+self.rotation.__repr__().replace('\n','\n'+8*' ')+',',
             ')',
         ])
 
     ################ Art
     def get_patch(self,nstd=3,**kwargs):
         """
-        get a matplotlib Ellipse patch representing the Mvar, 
-        all **kwargs are passed on to the call to 
-        matplotlib.patches.Ellipse
+            get a matplotlib Ellipse patch representing the Mvar, 
+            all **kwargs are passed on to the call to 
+            matplotlib.patches.Ellipse
 
-        not surprisingly Ellipse only works for 2d data.
+            not surprisingly Ellipse only works for 2d data.
 
-        the number of standard deviations, 'nstd', is just a multiplier for 
-        the eigen values. So the standard deviations are projected, if you 
-        want volumetric standard deviations I think you need to multiply by sqrt(ndim)
+            the number of standard deviations, 'nstd', is just a multiplier for 
+            the eigen values. So the standard deviations are projected, if you 
+            want volumetric standard deviations I think you need to multiply by sqrt(ndim)
         """
         if self.mean.size != 2:
             raise ValueError(
@@ -839,7 +949,7 @@ def wiki(P,M):
     """
     Direct implementation of the wikipedia blending algorythm
     
-    The quickest way to prove it's equivalent is by:
+    The quickest way to prove it's equivalent is by examining this:
         >>>ab=numpy.array([A,B],ndmin=2,dytpe=object)
         >>>assert A & B == dot(ab,(ab.T)**(-2))**(-1)
     """
@@ -847,52 +957,51 @@ def wiki(P,M):
     Sk=P.cov+M.cov
     Kk=dot(P.cov,(Sk**-1))
     
-    return Mvar.from_mean_cov(
+    return Mvar.from_cov(
         (P.mean.T+dot(Kk*yk)).T,
         dot((numpy.eye(P.mean.size)-Kk),P.cov)
     )
 
 def isplit(sequence,fkey=bool): 
     """
-    return a defaultdict (where the default is an empty list), 
-    where every value is a sub iterator produced from the sequence
-    where items are sent to iterators based on the value of fkey(item).
-    
-    >>>isodd = isplit([xrange(1,7),lambda item:bool(item%2))
-    >>>
-    >>>list(isodd[True])
-    [1,3,5]
-    >>>list(isodd[False])
-    [2,4,6]
-    
-    which gives the same results as
-    
-    >>>X=xrange(1,7)
-    >>>[item for item in X if bool(item%2)]
-    [1,3,5]
-    >>>[item for item in X if not bool(item%2)]
-    [2,4,6]
-    
-    or you could make a mess of maps and filter
-    but this is so smooth,and really shortens things 
-    when dealing with a lot of keys 
-    
-    >>>bytype = isplit([1,'a',True,"abc",5,7,False],type)
-    >>>
-    >>>list(bytype[int])
-    [1,5,7]
-    >>>list(bytype[str])
-    ['a','abc']
-    >>>list(bytype[bool])
-    [True,False]
-    >>>list(bytype[dict])
-    []
+        return a defaultdict (where the default is an empty list), 
+        where every value is a sub iterator produced from the sequence
+        where items are sent to iterators based on the value of fkey(item).
+        
+        >>>isodd = isplit([xrange(1,7),lambda item:bool(item%2))
+        >>>
+        >>>list(isodd[True])
+        [1,3,5]
+        >>>list(isodd[False])
+        [2,4,6]
+        
+        which gives the same results as
+        
+        >>>X=xrange(1,7)
+        >>>[item for item in X if bool(item%2)]
+        [1,3,5]
+        >>>[item for item in X if not bool(item%2)]
+        [2,4,6]
+        
+        or you could make a mess of maps and filter
+        but this is so smooth,and really shortens things 
+        when dealing with a lot of keys 
+        
+        >>>bytype = isplit([1,'a',True,"abc",5,7,False],type)
+        >>>
+        >>>list(bytype[int])
+        [1,5,7]
+        >>>list(bytype[str])
+        ['a','abc']
+        >>>list(bytype[bool])
+        [True,False]
+        >>>list(bytype[dict])
+        []
     """
-    
     result = collections.defaultdict(list,())
     print result
     for key,iterator in itertools.groupby(sequence,fkey):
-        result[key]=list(itertools.chain(result[key],iterator))
+        result[key]=itertools.chain(result[key],iterator)
         
     return result
 
@@ -913,59 +1022,15 @@ def product(*args):
         initial=1
     )
     
-#remember when reading this that default values for function arguments are 
-#only evaluated once. 
-#I'm only defining this outside of the class because you can't point to the 
-#class until the class is done being defined...
-
-def multiply(
-    self,
-    other,
-    rconvert=lambda(item): (
-        Mvar if isinstance(item,Mvar) else 
-        numpy.matrix(item) if numpy.array(item).ndim else
-        numpy.ndarray(item)
-    ),
-    multipliers=(
-        lambda scalarmul,rmul,lmul:{
-            (Mvar,Mvar):rmul,
-            (numpy.matrix, Mvar): rmul,
-            (Mvar, numpy.matrix): lmul,
-            (Mvar, numpy.ndarray): scalarmul,
-            (numpy.ndarray, Mvar): scalarmul,
-        }
-    )(
-        scalarmul=lambda self,constant: Mvar.from_mean_cov(
-            mean= first.mean*constant,
-            cov = first.cov*constant,
-        ),
-        rmul=lambda other,self:(
-            other*dot(self.rotation.T,self.vectors)
-        ),
-        lmul=lambda self,matrix: Mvar(
-            dot(self.affine*diagstack([matrix, 1]))
-        ).refresh(),
-    ),
-):
-    other = rconvert(other)
-    return multipliers[
-        (type(self),type(other))
-    ](self,other)
     
-def issquare(matrix):
-    shape=numpy.matrix(matrix).shape
-    return shape[0] == shape[1]
+def issquare(A):
+    shape=A.shape
+    return A.ndim==2 and shape[0] == shape[1]
 
-def isflat(matrix):
-    shape=numpy.matrix(matrix).shape
-    return min(shape)==1
-
-def isrotate(matrix):
-    R=numpy.martix(matrix)
+def isrotate(A):
+    R=numpy.matrix(A)
     return (R*R.T == eye(R.shape[0])).all()
 
-
-"""
->>>assert A.rotation*A.rotation.T == eye
->>>assert A.cov = A.rotation*A.scale**2*A.rotation.T
-"""
+def isdiag(A):
+    shape=A.shape
+    return A.ndim==2 and ((A != 0) == numpy.eye(shape[0],shape[1])).all()
