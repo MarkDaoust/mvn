@@ -164,8 +164,15 @@ def close(a,other = None,atol=1e-5,rtol=1e-8):
     
     return ((delta<atol) | (delta/MAX<rtol))
 
+def dot(*args):
+    """
+    like numpy.dot but takes any number or arguments
+    """
+    return reduce(numpy.dot,args)
+
 def rotation2d(angle):
     return numpy.array([
         [ numpy.cos(angle),numpy.sin(angle)],
         [-numpy.sin(angle),numpy.cos(angle)],
     ])
+    

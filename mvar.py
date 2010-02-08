@@ -26,7 +26,7 @@ except ImportError:
         )
 
 #local
-from helpers import autostack,diagstack,astype,paralell,close,rotation2d
+from helpers import autostack,diagstack,astype,paralell,close,dot,rotation2d
 
 
 class Mvar(object):
@@ -143,6 +143,7 @@ class Mvar(object):
             low valued vectors uses the same defaults as numpy.allclose()
         """
         #unpack the stack into the object's parameters 
+        
         self.mean = stack[-1,1:]
         self.scale = numpy.diagflat(stack[:-1,0])
         self.rotation = stack[:-1,1:]
@@ -165,11 +166,13 @@ class Mvar(object):
         #Mvar's brane instead of the full-space, to do that you'll need
         #something like theplane class I've started developing in the adjacent file
         V=self.rotation
+        S=self.scale
         if not numpy.allclose(dot(V,V.T),numpy.eye(V.shape[0]),**kwargs):
-            (scale2,rotation) = numpy.linalg.eigh(dot(V.T,V))
-            sign=numpy.diag(numpy.sign(scale2))
+            (scale,rotation) = numpy.linalg.eigh(dot(V.T,S,S,V))
+            sign=numpy.diag(numpy.sign(scale))
             self.rotation=dot(sign,rotation)
-            self.scale=dot(self.scale,numpy.diagflat(numpy.abs(scale2)**(0.5)))
+            self.scale=numpy.diag(numpy.abs(scale)**(0.5))
+            
         self.do_compress(**kwargs)
         
     def do_compress(self,rtol=1e-5,atol=1e-8):
@@ -194,7 +197,7 @@ class Mvar(object):
         self.rotation=stack[:,1:] 
         
     ############## alternate creation methods
-    @statismethod
+    @staticmethod
     def from_attr(
         mean = numpy.zeros,
         vectors = numpy.zeros, 
@@ -513,14 +516,10 @@ class Mvar(object):
             
             >>>assert A*B==A*(B.rotation.T*B.scale*B.rotation)
         """
-        rotation = numpy.matrix(self.rotation)
-        scale = numpy.matrix(self.scale)
+        rotation = self.rotation
+        new_scale = numpy.diag(self.scale.diagonal()**(power-1))
         
-        transform = (
-            rotation.T*
-            numpy.matrix(scale**(power-1))*
-            rotation
-        )
+        transform = dot(rotation.T,new_scale,rotation)
         
         return self*transform
     
@@ -535,7 +534,7 @@ class Mvar(object):
         other,
         #this function is applied to the right operand, to simplify the types 
         #of the objects we have to deal with, and to convert any Mvars on 
-        #the left into a rotate.T*scale*rotate matrix.
+        #the left into a rotation.T*scale*rotation matrix.
         rconvert=lambda 
             item,
             helper=lambda item:(
@@ -544,7 +543,7 @@ class Mvar(object):
                 item
             )
         :(  
-            numpy.matrix(item.rotation.T*item.vectors) if 
+            numpy.matrix(dot(item.rotation.T,item.scale,item.rotation)) if 
             isinstance(item,Mvar) else 
             helper(numpy.array(item))
         ),
@@ -554,7 +553,7 @@ class Mvar(object):
             (numpy.matrix):(
                 lambda self,matrix:Mvar.from_attr(
                     mean=dot(self.mean,matrix),
-                    vectors=dot(self.rotate,matrix),
+                    vectors=dot(self.rotation,matrix),
                     scale=self.scale,
                 )
             ),
@@ -665,6 +664,7 @@ class Mvar(object):
             stored in the object stays well behaved. 
         """
         other=rconvert(other)
+        print other
         return multipliers[type(other)](self,other) 
     
     def __rmul__(
@@ -673,17 +673,17 @@ class Mvar(object):
         #here we convert the left operand to a numpy.ndarray if it is a scalar,
         #otherwise we convert it to a numpy.matrix.
         #the self (right operand) will stay an Mvar for scalar multiplication
-        #or be converted to a rotate.T*scale*rotate matrix for matrix 
+        #or be converted to a rotation.T*scale*rotation matrix for matrix 
         #multiplication
         convert=lambda
             other,
             self,
-            helper=(lambda other,self: 
+            helper=lambda other,self: (
                 numpy.matrix(other) if 
                 other.ndim else
                 other
                 ,
-                numpy.matrix(dot(item.rotation.T,item.scale,item.rotate)) if 
+                numpy.matrix(dot(item.rotation.T,item.scale,item.rotation)) if 
                 other.ndim else
                 self
             )
@@ -886,15 +886,6 @@ class Mvar(object):
         return (-1)*self
     
     ################# Non-Math python internals
-    def __str__(self):
-        return '\n'.join([
-            'Mvar.from_attr(',
-            '    mean=',8*' '+str(self.mean).replace('\n','\n'+8*' ')+',',
-            '    scale=',8*' '+str(self.scale).replace('\n','\n'+8*' ')+',',
-            '    vectors=',8*' '+str(self.rotation).replace('\n','\n'+8*' ')+',',
-            ')',
-        ])
-    
     def __repr__(self):
         return '\n'.join([
             'Mvar.from_attr(',
@@ -903,6 +894,8 @@ class Mvar(object):
             '    vectors=',8*' '+self.rotation.__repr__().replace('\n','\n'+8*' ')+',',
             ')',
         ])
+    
+    __str__=__repr__
 
     ################ Art
     def get_patch(self,nstd=3,**kwargs):
@@ -1005,29 +998,12 @@ def isplit(sequence,fkey=bool):
         
     return result
 
-def dot(*args):
-    """
-    like numpy.dot but takes any number or arguments
-    """
-    return reduce(numpy.dot,args)
-    
-def product(*args):
-    """
-    like sum, but with multiply
-    not like numpy.product which works element-wise.
-    """
-    return reduce(
-        function=operator.mul,
-        sequence=args,
-        initial=1
-    )
-    
     
 def issquare(A):
     shape=A.shape
     return A.ndim==2 and shape[0] == shape[1]
 
-def isrotate(A):
+def isrotation(A):
     R=numpy.matrix(A)
     return (R*R.T == eye(R.shape[0])).all()
 
