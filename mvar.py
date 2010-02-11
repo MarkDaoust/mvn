@@ -28,7 +28,6 @@ except ImportError:
 #local
 from helpers import autostack,diagstack,astype,paralell,close,dot,rotation2d
 
-
 class Mvar(object):
     """
     Multivariate normal distributions packaged to act like a vector.
@@ -169,8 +168,7 @@ class Mvar(object):
         S=self.scale
         if not numpy.allclose(dot(V,V.T),numpy.eye(V.shape[0]),**kwargs):
             (scale,rotation) = numpy.linalg.eigh(dot(V.T,S,S,V))
-            sign=numpy.diag(numpy.sign(scale))
-            self.rotation=dot(sign,rotation)
+            self.rotation=rotation
             self.scale=numpy.diag(numpy.abs(scale)**(0.5))
             
         self.do_compress(**kwargs)
@@ -251,7 +249,7 @@ class Mvar(object):
         return Mvar.from_attr(
             vectors=rotation,
             #square root the scales
-            scale=scale**0.5,
+            scale=numpy.abs(scale)**0.5,
             **kwargs
         )
     
@@ -419,7 +417,7 @@ class Mvar(object):
         A==?
         compares the means and covariances or the distributions
         """
-        return (self.mean==other.mean).all() and (self.cov == other.cov).all()
+        return numpy.allclose(self.mean,other.mean) and numpy.allclose(self.cov,other.cov)
         
     def blend(*mvars):
         """
@@ -454,7 +452,7 @@ class Mvar(object):
         
         >>> assert A & B == wiki(A,B)
         """
-        return paralell(mvars)
+        return paralell(*mvars)
         
     __and__ = blend
     
@@ -462,7 +460,7 @@ class Mvar(object):
         """
         A&=?
         """
-        self.copy(paralell([self,other]))
+        self.copy(paralell(self,other))
 
     ## operators
     def __pow__(self,power):
@@ -620,23 +618,24 @@ class Mvar(object):
             multiplication must fit with addition, and addition here is 
             defined so it can be used in the kalman noise addition step so: 
             
-            >>> assert ((A+A).vectors == (2*A).vectors).all()
-            >>> assert ((A+A) == sqrt(2)*A.vectors).all()
-            >>> assert ((A+A).mean == (2*A).mean).all()
-            >>> assert ((A+A).mean == 2*A.mean).all()
+            >>> assert numpy.allclose((A+A).vectors,(2*A).vectors)
+            >>> assert numpy.allclose((A+A),(2**0.5)*A.vectors)
             
-            >>> assert ((A*K).vectors == sqrt(K)*A.vectors).all()
-            >>> assert ((A*K).mean == K*A.mean).all()
+            >>> assert numpy.allclose((A+A).mean,(2*A).mean)
+            >>> assert numpy.allclose((A+A).mean, 2*A.mean)
             
-            >>> assert sum(itertools.repeat(A,K-1),A) == A*(K) == (K)*A 
+            >>> assert numpy.allclose((A*K).vectors,(K**0.5)*A.vectors)
+            >>> assert numpy.allclose((A*K).mean,K*A.mean)
             
-            >>> assert ((A*K).cov == A.cov*K).all()
+            >>> assert sum(itertools.repeat(A,K-1),A) == A*(K)
+            
+            >>> assert numpy.allclose((A*K).cov,A.cov*K)
             
             be careful with negative constants because you will end up with 
             imaginary numbers in you vectors matrix, (and lime in your coconut) as 
             a direct result of:            
             
-            assert ((A*K).vectors == sqrt(K)*A.vectors).all()
+            assert numpy.allclose((A*K).vectors,(K**0.5)*A.vectors)
             assert B+(-A) == B+(-1)*A == B-A and (B-A)+A==B
             
             if you want to scale the distribution linearily with the mean
@@ -649,12 +648,12 @@ class Mvar(object):
             update step.
             
             simple scale is like this
-            >>> assert ((A(*eye*K)).vectors == A.vectors*K).all()
-            >>> assert ((A(*eye*K)).mean == A.mean*K).all()
+            >>> assert numpy.allclose((A*eye*K).vectors,A.vectors*K)
+            >>> assert numpy.allclose((A*eye*K).mean,A.mean*K)
             
             or more generally
-            >>> assert (A*M).cov == M.T*A.cov*M
-            >>> assert (A*M).mean == A.mean*M
+            >>> assert numpy.allclose((A*M).cov,M.T*A.cov*M)
+            >>> assert numpy.allclose((A*M).mean,A.mean*M)
             
             matrix multiplication is implemented as follows
             
@@ -664,7 +663,6 @@ class Mvar(object):
             stored in the object stays well behaved. 
         """
         other=rconvert(other)
-        print other
         return multipliers[type(other)](self,other) 
     
     def __rmul__(
@@ -806,11 +804,14 @@ class Mvar(object):
         
         scalar multiplication however fits with addition:
         
-        >>> assert (A+A).vectors == (2*A).vectors == sqrt(2)*A.vectors
-        >>> assert (A+A).mean == (2*A).mean == 2*A.mean
-
-        >>> assert (A+B).mean== A.mean+B.mean
-        >>> assert (A+B).cov == A.cov+B.cov
+        >>> assert numpy.allclose((A+A).vectors,(2*A).vectors)
+        >>> assert numpy.allclose((A+A).vectors,(2**0.5)*A.vectors)
+        
+        >>> assert numpy.allclose((A+A).mean,(2*A).mean)
+        >>> assert numpy.allclose((A+A).mean,2*A.mean)
+        
+        >>> assert numpy.allclose((A+B).mean,A.mean+B.mean)
+        >>> assert numpy.allclose((A+B).cov,A.cov+B.cov)
 
         it also works with __neg__, __sub__, and scalar multiplication.
         
@@ -990,7 +991,6 @@ def isplit(sequence,fkey=bool):
         []
     """
     result = collections.defaultdict(list,())
-    print result
     for key,iterator in itertools.groupby(sequence,fkey):
         result[key]=itertools.chain(result[key],iterator)
         

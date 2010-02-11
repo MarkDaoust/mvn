@@ -1,64 +1,5 @@
 **********************************************************************
-File "mvar.py", line 809, in __main__.Mvar.__add__
-Failed example:
-    assert (A+A).vectors == (2*A).vectors == sqrt(2)*A.vectors
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.5/doctest.py", line 1228, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __main__.Mvar.__add__[0]>", line 1, in <module>
-        assert (A+A).vectors == (2*A).vectors == sqrt(2)*A.vectors
-    ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
-**********************************************************************
-File "mvar.py", line 810, in __main__.Mvar.__add__
-Failed example:
-    assert (A+A).mean == (2*A).mean == 2*A.mean
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.5/doctest.py", line 1228, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __main__.Mvar.__add__[1]>", line 1, in <module>
-        assert (A+A).mean == (2*A).mean == 2*A.mean
-    ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
-**********************************************************************
-File "mvar.py", line 812, in __main__.Mvar.__add__
-Failed example:
-    assert (A+B).mean== A.mean+B.mean
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.5/doctest.py", line 1228, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __main__.Mvar.__add__[2]>", line 1, in <module>
-        assert (A+B).mean== A.mean+B.mean
-    ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
-**********************************************************************
-File "mvar.py", line 813, in __main__.Mvar.__add__
-Failed example:
-    assert (A+B).cov == A.cov+B.cov
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.5/doctest.py", line 1228, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __main__.Mvar.__add__[3]>", line 1, in <module>
-        assert (A+B).cov == A.cov+B.cov
-    ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
-**********************************************************************
-File "mvar.py", line 446, in __main__.Mvar.__and__
-Failed example:
-    assert A & B == B & A 
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.5/doctest.py", line 1228, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __main__.Mvar.__and__[0]>", line 1, in <module>
-        assert A & B == B & A
-      File "mvar.py", line 457, in blend
-        return paralell(mvars)
-      File "/home/olpc/personal-projects/kalman/helpers.py", line 138, in paralell
-        inverted=[item**(-1) for item in items]
-    TypeError: unsupported operand type(s) for ** or pow(): 'tuple' and 'int'
-**********************************************************************
-File "mvar.py", line 447, in __main__.Mvar.__and__
+File "mvar.py", line 445, in __main__.Mvar.__and__
 Failed example:
     assert A & B == 1/(1/A+1/B)
 Exception raised:
@@ -67,13 +8,9 @@ Exception raised:
         compileflags, 1) in test.globs
       File "<doctest __main__.Mvar.__and__[1]>", line 1, in <module>
         assert A & B == 1/(1/A+1/B)
-      File "mvar.py", line 457, in blend
-        return paralell(mvars)
-      File "/home/olpc/personal-projects/kalman/helpers.py", line 138, in paralell
-        inverted=[item**(-1) for item in items]
-    TypeError: unsupported operand type(s) for ** or pow(): 'tuple' and 'int'
+    TypeError: unsupported operand type(s) for /: 'int' and 'Mvar'
 **********************************************************************
-File "mvar.py", line 448, in __main__.Mvar.__and__
+File "mvar.py", line 446, in __main__.Mvar.__and__
 Failed example:
     assert A & B & C == Paralell(B,C,A)
 Exception raised:
@@ -82,13 +19,9 @@ Exception raised:
         compileflags, 1) in test.globs
       File "<doctest __main__.Mvar.__and__[2]>", line 1, in <module>
         assert A & B & C == Paralell(B,C,A)
-      File "mvar.py", line 457, in blend
-        return paralell(mvars)
-      File "/home/olpc/personal-projects/kalman/helpers.py", line 138, in paralell
-        inverted=[item**(-1) for item in items]
-    TypeError: unsupported operand type(s) for ** or pow(): 'tuple' and 'int'
+    NameError: name 'C' is not defined
 **********************************************************************
-File "mvar.py", line 449, in __main__.Mvar.__and__
+File "mvar.py", line 447, in __main__.Mvar.__and__
 Failed example:
     assert A & B & C == Mvar.blend(B,A,C)== Mvar.__and__(C,B,A)
 Exception raised:
@@ -97,13 +30,9 @@ Exception raised:
         compileflags, 1) in test.globs
       File "<doctest __main__.Mvar.__and__[3]>", line 1, in <module>
         assert A & B & C == Mvar.blend(B,A,C)== Mvar.__and__(C,B,A)
-      File "mvar.py", line 457, in blend
-        return paralell(mvars)
-      File "/home/olpc/personal-projects/kalman/helpers.py", line 138, in paralell
-        inverted=[item**(-1) for item in items]
-    TypeError: unsupported operand type(s) for ** or pow(): 'tuple' and 'int'
+    NameError: name 'C' is not defined
 **********************************************************************
-File "mvar.py", line 455, in __main__.Mvar.__and__
+File "mvar.py", line 453, in __main__.Mvar.__and__
 Failed example:
     assert A & B == wiki(A,B)
 Exception raised:
@@ -112,13 +41,11 @@ Exception raised:
         compileflags, 1) in test.globs
       File "<doctest __main__.Mvar.__and__[4]>", line 1, in <module>
         assert A & B == wiki(A,B)
-      File "mvar.py", line 457, in blend
-        return paralell(mvars)
-      File "/home/olpc/personal-projects/kalman/helpers.py", line 138, in paralell
-        inverted=[item**(-1) for item in items]
-    TypeError: unsupported operand type(s) for ** or pow(): 'tuple' and 'int'
+      File "mvar.py", line 956, in wiki
+        dot((numpy.eye(P.mean.size)-Kk),P.cov)
+    TypeError: from_cov() takes exactly 1 argument (2 given)
 **********************************************************************
-File "mvar.py", line 768, in __main__.Mvar.__div__
+File "mvar.py", line 766, in __main__.Mvar.__div__
 Failed example:
     assert A/B == A*(B**(-1))
 Exception raised:
@@ -129,7 +56,7 @@ Exception raised:
         assert A/B == A*(B**(-1))
     TypeError: unsupported operand type(s) for /: 'Mvar' and 'Mvar'
 **********************************************************************
-File "mvar.py", line 769, in __main__.Mvar.__div__
+File "mvar.py", line 767, in __main__.Mvar.__div__
 Failed example:
     assert A/M == A*(M**(-1))
 Exception raised:
@@ -140,7 +67,7 @@ Exception raised:
         assert A/M == A*(M**(-1))
     TypeError: unsupported operand type(s) for /: 'Mvar' and 'matrix'
 **********************************************************************
-File "mvar.py", line 770, in __main__.Mvar.__div__
+File "mvar.py", line 768, in __main__.Mvar.__div__
 Failed example:
     assert A/K == A*(K**(-1))
 Exception raised:
@@ -153,22 +80,6 @@ Exception raised:
 **********************************************************************
 File "mvar.py", line 578, in __main__.Mvar.__mul__
 Failed example:
-    assert isinstance(A*B,Mvar)
-Expected nothing
-Got:
-    [[ NaN  NaN]
-     [ NaN  NaN]]
-**********************************************************************
-File "mvar.py", line 579, in __main__.Mvar.__mul__
-Failed example:
-    assert isinstance(A*M,Mvar)
-Expected nothing
-Got:
-    [[ 1.  2.]
-     [ 3.  4.]]
-**********************************************************************
-File "mvar.py", line 580, in __main__.Mvar.__mul__
-Failed example:
     assert isinstance(M*A,numpy.Matrix) 
 Exception raised:
     Traceback (most recent call last):
@@ -176,33 +87,15 @@ Exception raised:
         compileflags, 1) in test.globs
       File "<doctest __main__.Mvar.__mul__[2]>", line 1, in <module>
         assert isinstance(M*A,numpy.Matrix)
-      File "mvar.py", line 750, in __rmul__
+      File "mvar.py", line 748, in __rmul__
         (other,self)= convert(other,self)
-      File "mvar.py", line 690, in <lambda>
+      File "mvar.py", line 688, in <lambda>
         :helper(numpy.array(other),self)
-      File "mvar.py", line 687, in <lambda>
+      File "mvar.py", line 685, in <lambda>
         other.ndim else
     NameError: global name 'item' is not defined
 **********************************************************************
-File "mvar.py", line 581, in __main__.Mvar.__mul__
-Failed example:
-    assert isinstance(A*K,Mvar)
-Expected nothing
-Got:
-    7.0
-**********************************************************************
-File "mvar.py", line 591, in __main__.Mvar.__mul__
-Failed example:
-    assert K*A*M == A*K*M == A*M*K
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.5/doctest.py", line 1228, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __main__.Mvar.__mul__[5]>", line 1, in <module>
-        assert K*A*M == A*K*M == A*M*K
-    AssertionError
-**********************************************************************
-File "mvar.py", line 596, in __main__.Mvar.__mul__
+File "mvar.py", line 594, in __main__.Mvar.__mul__
 Failed example:
     assert (A*2)*M == A*(4*M)
 Exception raised:
@@ -213,17 +106,7 @@ Exception raised:
         assert (A*2)*M == A*(4*M)
     AssertionError
 **********************************************************************
-File "mvar.py", line 606, in __main__.Mvar.__mul__
-Failed example:
-    assert A*A==A**2
-Expected nothing
-Got:
-    [[ 3.14490238  0.33104236]
-     [ 0.33104236  8.9381436 ]]
-    [[ 3.14490238  0.33104236]
-     [ 0.33104236  8.9381436 ]]
-**********************************************************************
-File "mvar.py", line 607, in __main__.Mvar.__mul__
+File "mvar.py", line 605, in __main__.Mvar.__mul__
 Failed example:
     assert (A*B).affine=A.affine*B.rotation.T*B.vectors
 Exception raised:
@@ -235,7 +118,7 @@ Exception raised:
                             ^
      SyntaxError: invalid syntax
 **********************************************************************
-File "mvar.py", line 608, in __main__.Mvar.__mul__
+File "mvar.py", line 606, in __main__.Mvar.__mul__
 Failed example:
     assert (A*B).vectors == A.vectors*B.rotation.T*B.scale*B.rotation
 Exception raised:
@@ -246,7 +129,7 @@ Exception raised:
         assert (A*B).vectors == A.vectors*B.rotation.T*B.scale*B.rotation
     ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
 **********************************************************************
-File "mvar.py", line 609, in __main__.Mvar.__mul__
+File "mvar.py", line 607, in __main__.Mvar.__mul__
 Failed example:
     assert (A*B).mean == A.mean*B.rotation.T*B.scale*B.rotation
 Exception raised:
@@ -257,7 +140,7 @@ Exception raised:
         assert (A*B).mean == A.mean*B.rotation.T*B.scale*B.rotation
     ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
 **********************************************************************
-File "mvar.py", line 610, in __main__.Mvar.__mul__
+File "mvar.py", line 608, in __main__.Mvar.__mul__
 Failed example:
     assert A*B == A*numpy.linalg.matrix_power(B.cov,0.5)
 Exception raised:
@@ -270,102 +153,42 @@ Exception raised:
         raise TypeError("exponent must be an integer")
     TypeError: exponent must be an integer
 **********************************************************************
-File "mvar.py", line 624, in __main__.Mvar.__mul__
+File "mvar.py", line 622, in __main__.Mvar.__mul__
 Failed example:
-    assert ((A+A) == sqrt(2)*A.vectors).all()
+    assert numpy.allclose((A+A),(2**0.5)*A.vectors)
 Exception raised:
     Traceback (most recent call last):
       File "/usr/lib/python2.5/doctest.py", line 1228, in __run
         compileflags, 1) in test.globs
       File "<doctest __main__.Mvar.__mul__[13]>", line 1, in <module>
-        assert ((A+A) == sqrt(2)*A.vectors).all()
-    NameError: name 'sqrt' is not defined
+        assert numpy.allclose((A+A),(2**0.5)*A.vectors)
+      File "/usr/lib/python2.5/site-packages/numpy/core/numeric.py", line 717, in allclose
+        xinf = isinf(x)
+    TypeError: function not supported for these types, and can't coerce safely to supported types
 **********************************************************************
-File "mvar.py", line 628, in __main__.Mvar.__mul__
+File "mvar.py", line 651, in __main__.Mvar.__mul__
 Failed example:
-    assert ((A*K).vectors == sqrt(K)*A.vectors).all()
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.5/doctest.py", line 1228, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __main__.Mvar.__mul__[16]>", line 1, in <module>
-        assert ((A*K).vectors == sqrt(K)*A.vectors).all()
-    NameError: name 'sqrt' is not defined
-**********************************************************************
-File "mvar.py", line 629, in __main__.Mvar.__mul__
-Failed example:
-    assert ((A*K).mean == K*A.mean).all()
-Expected nothing
-Got:
-    7.0
-**********************************************************************
-File "mvar.py", line 631, in __main__.Mvar.__mul__
-Failed example:
-    assert sum(itertools.repeat(A,K-1),A) == A*(K) == (K)*A 
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.5/doctest.py", line 1228, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __main__.Mvar.__mul__[18]>", line 1, in <module>
-        assert sum(itertools.repeat(A,K-1),A) == A*(K) == (K)*A
-    AssertionError
-**********************************************************************
-File "mvar.py", line 633, in __main__.Mvar.__mul__
-Failed example:
-    assert ((A*K).cov == A.cov*K).all()
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.5/doctest.py", line 1228, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __main__.Mvar.__mul__[19]>", line 1, in <module>
-        assert ((A*K).cov == A.cov*K).all()
-    AssertionError
-**********************************************************************
-File "mvar.py", line 652, in __main__.Mvar.__mul__
-Failed example:
-    assert ((A(*eye*K)).vectors == A.vectors*K).all()
+    assert numpy.allclose((A*eye*K).vectors,A.vectors*K)
 Exception raised:
     Traceback (most recent call last):
       File "/usr/lib/python2.5/doctest.py", line 1228, in __run
         compileflags, 1) in test.globs
       File "<doctest __main__.Mvar.__mul__[20]>", line 1, in <module>
-        assert ((A(*eye*K)).vectors == A.vectors*K).all()
+        assert numpy.allclose((A*eye*K).vectors,A.vectors*K)
     NameError: name 'eye' is not defined
 **********************************************************************
-File "mvar.py", line 653, in __main__.Mvar.__mul__
+File "mvar.py", line 652, in __main__.Mvar.__mul__
 Failed example:
-    assert ((A(*eye*K)).mean == A.mean*K).all()
+    assert numpy.allclose((A*eye*K).mean,A.mean*K)
 Exception raised:
     Traceback (most recent call last):
       File "/usr/lib/python2.5/doctest.py", line 1228, in __run
         compileflags, 1) in test.globs
       File "<doctest __main__.Mvar.__mul__[21]>", line 1, in <module>
-        assert ((A(*eye*K)).mean == A.mean*K).all()
+        assert numpy.allclose((A*eye*K).mean,A.mean*K)
     NameError: name 'eye' is not defined
 **********************************************************************
-File "mvar.py", line 656, in __main__.Mvar.__mul__
-Failed example:
-    assert (A*M).cov == M.T*A.cov*M
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.5/doctest.py", line 1228, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __main__.Mvar.__mul__[22]>", line 1, in <module>
-        assert (A*M).cov == M.T*A.cov*M
-    ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
-**********************************************************************
-File "mvar.py", line 657, in __main__.Mvar.__mul__
-Failed example:
-    assert (A*M).mean == A.mean*M
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.5/doctest.py", line 1228, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __main__.Mvar.__mul__[23]>", line 1, in <module>
-        assert (A*M).mean == A.mean*M
-    ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
-**********************************************************************
-File "mvar.py", line 489, in __main__.Mvar.__pow__
+File "mvar.py", line 487, in __main__.Mvar.__pow__
 Failed example:
     assert A**0== A**(-1)*A== A*A**(-1)== A/A        
 Exception raised:
@@ -374,9 +197,9 @@ Exception raised:
         compileflags, 1) in test.globs
       File "<doctest __main__.Mvar.__pow__[0]>", line 1, in <module>
         assert A**0== A**(-1)*A== A*A**(-1)== A/A
-    AssertionError
+    TypeError: unsupported operand type(s) for /: 'Mvar' and 'Mvar'
 **********************************************************************
-File "mvar.py", line 490, in __main__.Mvar.__pow__
+File "mvar.py", line 488, in __main__.Mvar.__pow__
 Failed example:
     assert (A**K1)*(A**K2)=A**(K1+K2)
 Exception raised:
@@ -388,7 +211,7 @@ Exception raised:
                                ^
      SyntaxError: invalid syntax
 **********************************************************************
-File "mvar.py", line 491, in __main__.Mvar.__pow__
+File "mvar.py", line 489, in __main__.Mvar.__pow__
 Failed example:
     assert A**K1/A**K2=A**(K1-K2)
 Exception raised:
@@ -400,7 +223,7 @@ Exception raised:
                            ^
      SyntaxError: invalid syntax
 **********************************************************************
-File "mvar.py", line 499, in __main__.Mvar.__pow__
+File "mvar.py", line 497, in __main__.Mvar.__pow__
 Failed example:
     assert (A**0).scale == eye(A.mean.shape[1])
 Exception raised:
@@ -411,7 +234,7 @@ Exception raised:
         assert (A**0).scale == eye(A.mean.shape[1])
     NameError: name 'eye' is not defined
 **********************************************************************
-File "mvar.py", line 500, in __main__.Mvar.__pow__
+File "mvar.py", line 498, in __main__.Mvar.__pow__
 Failed example:
     assert (A**0).rotation== A.rotation
 Exception raised:
@@ -422,7 +245,7 @@ Exception raised:
         assert (A**0).rotation== A.rotation
     ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
 **********************************************************************
-File "mvar.py", line 501, in __main__.Mvar.__pow__
+File "mvar.py", line 499, in __main__.Mvar.__pow__
 Failed example:
     assert (A**0).mean == dot(
 Exception raised:
@@ -435,7 +258,7 @@ Exception raised:
     ^
      SyntaxError: unexpected EOF while parsing
 **********************************************************************
-File "mvar.py", line 507, in __main__.Mvar.__pow__
+File "mvar.py", line 505, in __main__.Mvar.__pow__
 Failed example:
     assert A.vectors== A.scale*A.rotation
 Exception raised:
@@ -446,7 +269,7 @@ Exception raised:
         assert A.vectors== A.scale*A.rotation
     ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
 **********************************************************************
-File "mvar.py", line 508, in __main__.Mvar.__pow__
+File "mvar.py", line 506, in __main__.Mvar.__pow__
 Failed example:
     assert (A**K).vectors== (A.scale**K)*A.rotation
 Exception raised:
@@ -457,7 +280,7 @@ Exception raised:
         assert (A**K).vectors== (A.scale**K)*A.rotation
     ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
 **********************************************************************
-File "mvar.py", line 509, in __main__.Mvar.__pow__
+File "mvar.py", line 507, in __main__.Mvar.__pow__
 Failed example:
     assert (A**K).vectors== A.vectors* A.rotation.T*A.scale**(K-1)*A.rotation
 Exception raised:
@@ -468,7 +291,7 @@ Exception raised:
         assert (A**K).vectors== A.vectors* A.rotation.T*A.scale**(K-1)*A.rotation
     ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
 **********************************************************************
-File "mvar.py", line 510, in __main__.Mvar.__pow__
+File "mvar.py", line 508, in __main__.Mvar.__pow__
 Failed example:
     assert (A**K).mean== A.mean* A.rotation.T*A.scale**(K-1)*A.rotation
 Exception raised:
@@ -479,7 +302,7 @@ Exception raised:
         assert (A**K).mean== A.mean* A.rotation.T*A.scale**(K-1)*A.rotation
     ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
 **********************************************************************
-File "mvar.py", line 517, in __main__.Mvar.__pow__
+File "mvar.py", line 515, in __main__.Mvar.__pow__
 Failed example:
     assert A*B==A*(B.rotation.T*B.scale*B.rotation)
 Exception raised:
@@ -490,7 +313,7 @@ Exception raised:
         assert A*B==A*(B.rotation.T*B.scale*B.rotation)
     AssertionError
 **********************************************************************
-File "mvar.py", line 779, in __main__.Mvar.__rdiv__
+File "mvar.py", line 777, in __main__.Mvar.__rdiv__
 Failed example:
     assert K/A == K*(A**(-1))
 Exception raised:
@@ -501,7 +324,7 @@ Exception raised:
         assert K/A == K*(A**(-1))
     TypeError: unsupported operand type(s) for /: 'float' and 'Mvar'
 **********************************************************************
-File "mvar.py", line 780, in __main__.Mvar.__rdiv__
+File "mvar.py", line 778, in __main__.Mvar.__rdiv__
 Failed example:
     assert M/A == M*(A**(-1))
 Exception raised:
@@ -512,7 +335,7 @@ Exception raised:
         assert M/A == M*(A**(-1))
     TypeError: unsupported operand type(s) for /: 'float' and 'Mvar'
 **********************************************************************
-File "mvar.py", line 712, in __main__.Mvar.__rmul__
+File "mvar.py", line 710, in __main__.Mvar.__rmul__
 Failed example:
     assert k*A == A*k
 Exception raised:
@@ -523,15 +346,7 @@ Exception raised:
         assert k*A == A*k
     NameError: name 'k' is not defined
 **********************************************************************
-File "mvar.py", line 716, in __main__.Mvar.__rmul__
-Failed example:
-    assert isinstance(A*M,Mvar)
-Expected nothing
-Got:
-    [[ 1.  2.]
-     [ 3.  4.]]
-**********************************************************************
-File "mvar.py", line 717, in __main__.Mvar.__rmul__
+File "mvar.py", line 715, in __main__.Mvar.__rmul__
 Failed example:
     assert isinstance(M*A,numpy.matrix)
 Exception raised:
@@ -540,11 +355,11 @@ Exception raised:
         compileflags, 1) in test.globs
       File "<doctest __main__.Mvar.__rmul__[2]>", line 1, in <module>
         assert isinstance(M*A,numpy.matrix)
-      File "mvar.py", line 750, in __rmul__
+      File "mvar.py", line 748, in __rmul__
         (other,self)= convert(other,self)
-      File "mvar.py", line 690, in <lambda>
+      File "mvar.py", line 688, in <lambda>
         :helper(numpy.array(other),self)
-      File "mvar.py", line 687, in <lambda>
+      File "mvar.py", line 685, in <lambda>
         other.ndim else
     NameError: global name 'item' is not defined
 **********************************************************************
@@ -570,7 +385,7 @@ Exception raised:
         assert A.cov == dot(A.rotation.T,A.scale,A.scale,A.rotation)
     ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
 **********************************************************************
-File "mvar.py", line 311, in __main__.Mvar.get_cov
+File "mvar.py", line 309, in __main__.Mvar.get_cov
 Failed example:
     assert A.cov == dot(A.vectors.T,A.vectors) 
 Exception raised:
@@ -581,7 +396,7 @@ Exception raised:
         assert A.cov == dot(A.vectors.T,A.vectors)
     ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
 **********************************************************************
-File "mvar.py", line 312, in __main__.Mvar.get_cov
+File "mvar.py", line 310, in __main__.Mvar.get_cov
 Failed example:
     assert A.cov == dot(A.rotation.T,A.scale,A.scale,A.rotation)
 Exception raised:
@@ -592,7 +407,7 @@ Exception raised:
         assert A.cov == dot(A.rotation.T,A.scale,A.scale,A.rotation)
     ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
 **********************************************************************
-File "mvar.py", line 321, in __main__.Mvar.get_vectors
+File "mvar.py", line 319, in __main__.Mvar.get_vectors
 Failed example:
     assert A.vectors = dot(A.scale,A.rotation) 
 Exception raised:
@@ -616,7 +431,7 @@ Exception raised:
                           ^
      SyntaxError: invalid syntax
 **********************************************************************
-File "mvar.py", line 964, in __main__.isplit
+File "mvar.py", line 965, in __main__.isplit
 Failed example:
     isodd = isplit([xrange(1,7),lambda item:bool(item%2))
 Exception raised:
@@ -628,7 +443,7 @@ Exception raised:
                                                              ^
      SyntaxError: invalid syntax
 **********************************************************************
-File "mvar.py", line 965, in __main__.isplit
+File "mvar.py", line 966, in __main__.isplit
 Failed example:
     list(isodd[True])
 Exception raised:
@@ -639,7 +454,7 @@ Exception raised:
         list(isodd[True])
     NameError: name 'isodd' is not defined
 **********************************************************************
-File "mvar.py", line 967, in __main__.isplit
+File "mvar.py", line 968, in __main__.isplit
 Failed example:
     list(isodd[False])
 Exception raised:
@@ -650,7 +465,7 @@ Exception raised:
         list(isodd[False])
     NameError: name 'isodd' is not defined
 **********************************************************************
-File "mvar.py", line 973, in __main__.isplit
+File "mvar.py", line 974, in __main__.isplit
 Failed example:
     [item for item in X if bool(item%2)]
 Expected:
@@ -658,7 +473,7 @@ Expected:
 Got:
     [1, 3, 5]
 **********************************************************************
-File "mvar.py", line 975, in __main__.isplit
+File "mvar.py", line 976, in __main__.isplit
 Failed example:
     [item for item in X if not bool(item%2)]
 Expected:
@@ -666,14 +481,7 @@ Expected:
 Got:
     [2, 4, 6]
 **********************************************************************
-File "mvar.py", line 982, in __main__.isplit
-Failed example:
-    bytype = isplit([1,'a',True,"abc",5,7,False],type)
-Expected nothing
-Got:
-    defaultdict(<type 'list'>, {})
-**********************************************************************
-File "mvar.py", line 983, in __main__.isplit
+File "mvar.py", line 984, in __main__.isplit
 Failed example:
     list(bytype[int])
 Expected:
@@ -681,7 +489,7 @@ Expected:
 Got:
     []
 **********************************************************************
-File "mvar.py", line 985, in __main__.isplit
+File "mvar.py", line 986, in __main__.isplit
 Failed example:
     list(bytype[str])
 Expected:
@@ -689,7 +497,7 @@ Expected:
 Got:
     []
 **********************************************************************
-File "mvar.py", line 987, in __main__.isplit
+File "mvar.py", line 988, in __main__.isplit
 Failed example:
     list(bytype[bool])
 Expected:
@@ -697,7 +505,7 @@ Expected:
 Got:
     [False]
 **********************************************************************
-File "mvar.py", line 946, in __main__.wiki
+File "mvar.py", line 947, in __main__.wiki
 Failed example:
     ab=numpy.array([A,B],ndmin=2,dytpe=object)
 Exception raised:
@@ -708,7 +516,7 @@ Exception raised:
         ab=numpy.array([A,B],ndmin=2,dytpe=object)
     TypeError: 'dytpe' is an invalid keyword argument for this function
 **********************************************************************
-File "mvar.py", line 947, in __main__.wiki
+File "mvar.py", line 948, in __main__.wiki
 Failed example:
     assert A & B == dot(ab,(ab.T)**(-2))**(-1)
 Exception raised:
@@ -717,24 +525,19 @@ Exception raised:
         compileflags, 1) in test.globs
       File "<doctest __main__.wiki[1]>", line 1, in <module>
         assert A & B == dot(ab,(ab.T)**(-2))**(-1)
-      File "mvar.py", line 457, in blend
-        return paralell(mvars)
-      File "/home/olpc/personal-projects/kalman/helpers.py", line 138, in paralell
-        inverted=[item**(-1) for item in items]
-    TypeError: unsupported operand type(s) for ** or pow(): 'tuple' and 'int'
+    NameError: name 'ab' is not defined
 **********************************************************************
-13 items had failures:
-   4 of   4 in __main__.Mvar.__add__
-   5 of   5 in __main__.Mvar.__and__
+12 items had failures:
+   4 of   5 in __main__.Mvar.__and__
    3 of   3 in __main__.Mvar.__div__
-  20 of  24 in __main__.Mvar.__mul__
+   9 of  24 in __main__.Mvar.__mul__
   11 of  11 in __main__.Mvar.__pow__
    2 of   2 in __main__.Mvar.__rdiv__
-   3 of   3 in __main__.Mvar.__rmul__
+   2 of   3 in __main__.Mvar.__rmul__
    2 of   2 in __main__.Mvar.cov
    2 of   2 in __main__.Mvar.get_cov
    1 of   1 in __main__.Mvar.get_vectors
    1 of   1 in __main__.Mvar.vectors
-   9 of  11 in __main__.isplit
+   8 of  11 in __main__.isplit
    2 of   2 in __main__.wiki
-***Test Failed*** 65 failures.
+***Test Failed*** 47 failures.
