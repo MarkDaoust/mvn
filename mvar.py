@@ -2,7 +2,7 @@
 
 ##imports
 #internals
-from __future__ import division
+#from __future__ import division
 
 #builtins
 import itertools
@@ -258,7 +258,8 @@ class Mvar(object):
         """
         iterating on the data should produce vectors.
         the date can be an Mvar.
-        assert Mvar.from_data(A)==A
+        
+        >>> #assert Mvar.from_data(A)==A 
         
         bias and row var are passed to numpy's cov function.
         
@@ -306,8 +307,8 @@ class Mvar(object):
         """
         get the covariance matrix used by the object
         
-        >>> assert A.cov == dot(A.vectors.T,A.vectors) 
-        >>> assert A.cov == dot(A.rotation.T,A.scale,A.scale,A.rotation)
+        >>> assert numpy.allclose(A.cov, dot(A.vectors.T,A.vectors))
+        >>> assert numpy.allclose(A.cov, dot(A.rotation.T,A.scale,A.scale,A.rotation))
         """
         vectors=self.vectors
         return dot(vectors.T,vectors)
@@ -316,7 +317,7 @@ class Mvar(object):
         """
         get the matrix of scaled eigenvectors (as rows)
 
-        >>> assert A.vectors = dot(A.scale,A.rotation) 
+        >>> assert numpy.allclose(A.vectors, dot(A.scale,A.rotation)) 
         """
         return dot(self.scale,self.rotation)
     
@@ -443,8 +444,11 @@ class Mvar(object):
         
         >>> assert A & B == B & A 
         >>> assert A & B == 1/(1/A+1/B)
-        >>> assert A & B & C == Paralell(B,C,A)
-        >>> assert A & B & C == Mvar.blend(B,A,C)== Mvar.__and__(C,B,A)
+        
+        >>> abc=[A,B,C]
+        >>> numpy.random.shuffle(abc)
+        >>> assert A & B & C == paralell(*abc)
+        >>> assert A & B & C == Mvar.blend(*abc)== Mvar.__and__(*abc)
         
         the proof that this is identical to the wikipedia definition of blend 
         is a little too involved to write here. Just try it (see the "wiki 
@@ -485,8 +489,8 @@ class Mvar(object):
         Most things you expect to work just work.
         
             >>> assert A**0== A**(-1)*A== A*A**(-1)== A/A        
-            >>> assert (A**K1)*(A**K2)=A**(K1+K2)
-            >>> assert A**K1/A**K2=A**(K1-K2)
+            >>> assert (A**K1)*(A**K2)==A**(K1+K2)
+            >>> assert A**K1/A**K2==A**(K1-K2)
         
         Zero power has some interesting properties: 
             
@@ -494,25 +498,25 @@ class Mvar(object):
             unchanged, but the mean is wherever it gets stretched to while we 
             transform the ellipse to a sphere
               
-            >>> assert (A**0).scale == eye(A.mean.shape[1])
-            >>> assert (A**0).rotation== A.rotation
-            >>> assert (A**0).mean == dot(
+            >>> assert numpy.allclose((A**0).scale,eye(A.mean.shape[1]))
+            >>> assert numpy.allclose((A**0).rotation, A.rotation)
+            >>> assert numpy.allclose((A**0).mean == dot(
                 A.mean,A.rotation.T,A.scale**-1,A.rotation
-            )
+            ))
             
         derivation of multiplication:
         
-            >>> assert A.vectors== A.scale*A.rotation
-            >>> assert (A**K).vectors== (A.scale**K)*A.rotation
-            >>> assert (A**K).vectors== A.vectors* A.rotation.T*A.scale**(K-1)*A.rotation
-            >>> assert (A**K).mean== A.mean* A.rotation.T*A.scale**(K-1)*A.rotation
+            >>> assert numpy.allclose(A.vectors,dot(A.scale,A.rotation))
+            >>> assert numpy.allclose((A**K).vectors, dot((A.scale**K),A.rotation))
+            >>> assert numpy.allclose((A**K).vectors, dot(A.vectors,A.rotation.T,A.scale**(K-1),A.rotation))
+            >>> assert numpy.allclose((A**K).mean, A.mean* A.rotation.T*A.scale**(K-1)*A.rotation)
             
             that's a matrix multiply.
             
             So all Mvars on the right,in a multiply, can just be converted to 
             matrix:
             
-            >>> assert A*B==A*(B.rotation.T*B.scale*B.rotation)
+            >>> assert A*B==A*dot(B.rotation.T,B.scale,B.rotation)
         """
         rotation = self.rotation
         new_scale = numpy.diag(self.scale.diagonal()**(power-1))
@@ -551,8 +555,7 @@ class Mvar(object):
             (numpy.matrix):(
                 lambda self,matrix:Mvar.from_attr(
                     mean=dot(self.mean,matrix),
-                    vectors=dot(self.rotation,matrix),
-                    scale=self.scale,
+                    vectors=dot(self.scale,self.rotation,matrix),
                 )
             ),
             (numpy.ndarray):(
@@ -575,7 +578,7 @@ class Mvar(object):
             
             >>> assert isinstance(A*B,Mvar)
             >>> assert isinstance(A*M,Mvar)
-            >>> assert isinstance(M*A,numpy.Matrix) 
+            >>> assert isinstance(M*A,numpy.matrix) 
             >>> assert isinstance(A*K,Mvar)
             >>> assert isinstance(K*A,Mvar)
             
@@ -591,7 +594,7 @@ class Mvar(object):
             but the asociative property is lost if you mix constants and 
             matrixes (but I think it's ok if you only have 1 of the two types?)
             
-            >>> assert (A*2)*M == A*(4*M)
+            >>> assert (A*4)*numpy.eye(2) == A*(2*numpy.eye(2))
             
             ????
             asociative if only mvars and matrixes?
@@ -602,10 +605,14 @@ class Mvar(object):
             multiplying two Mvars together is defined to fit with power
             
             >>> assert A*A==A**2
-            >>> assert (A*B).affine=A.affine*B.rotation.T*B.vectors
-            >>> assert (A*B).vectors == A.vectors*B.rotation.T*B.scale*B.rotation
-            >>> assert (A*B).mean == A.mean*B.rotation.T*B.scale*B.rotation
-            >>> assert A*B == A*numpy.linalg.matrix_power(B.cov,0.5)
+            >>> assert (A*B).affine == A.affine*B.rotation.T*B.vectors
+            >>> assert numpy.allclose(
+            ...     (A*B).vectors,A.vectors*B.rotation.T*B.scale*B.rotation
+            ... )
+            >>> assert numpy.allclose(
+            ...     (A*B).mean,A.mean*B.rotation.T*B.scale*B.rotation
+            ... )
+            >>> assert A*(B**2) == A*(B.cov)
             
             Note that the result does not depend on the mean of the 
             second mvar(!) (really any mvar after the leftmost mvar or matrix)
@@ -648,7 +655,7 @@ class Mvar(object):
             update step.
             
             simple scale is like this
-            >>> assert numpy.allclose((A*eye*K).vectors,A.vectors*K)
+            >>> assert numpy.allclose((A*eye(A.mean.size)*K).vectors,A.vectors*K)
             >>> assert numpy.allclose((A*eye*K).mean,A.mean*K)
             
             or more generally
@@ -681,7 +688,7 @@ class Mvar(object):
                 other.ndim else
                 other
                 ,
-                numpy.matrix(dot(item.rotation.T,item.scale,item.rotation)) if 
+                numpy.matrix(dot(self.rotation.T,self.scale,self.rotation)) if 
                 other.ndim else
                 self
             )
@@ -707,7 +714,7 @@ class Mvar(object):
         multiplication order:
             doesn't matter for constants
         
-            >>> assert k*A == A*k
+            >>> assert K*A == A*K
         
             but it matters a lot for Matrix/Mvar multiplication
         
@@ -730,7 +737,7 @@ class Mvar(object):
         Mvar*Mvar
             multiplying two Mvars together fits with the definition of power
             
-            assert prod(itertools.repeat(A,N)) == A**N
+            assert B*B == A**2
             assert A*B == A*(B.rotation.T*B.vectors) 
             
             the second Mvar is automatically converted to a matrix, and the 
@@ -767,7 +774,7 @@ class Mvar(object):
         >>> assert A/M == A*(M**(-1))
         >>> assert A/K == A*(K**(-1))
         """
-        return multiply(self,other**(-1))
+        return self*other**(-1)
         
     def __rdiv__(self,other):
         """
@@ -777,7 +784,7 @@ class Mvar(object):
         >>> assert K/A == K*(A**(-1))
         >>> assert M/A == M*(A**(-1))
         """
-        return multiply(other,self**(-1))
+        return other*self**(-1)
         
     def __idiv__(self,other):
         """
@@ -944,7 +951,7 @@ def wiki(P,M):
     Direct implementation of the wikipedia blending algorythm
     
     The quickest way to prove it's equivalent is by examining this:
-        >>> ab=numpy.array([A,B],ndmin=2,dytpe=object)
+        >>> ab=numpy.array([A,B],ndmin=2,dtype=object)
         >>> assert A & B == dot(ab,(ab.T)**(-2))**(-1)
     """
     yk=M.mean.T-P.mean.T
@@ -952,8 +959,8 @@ def wiki(P,M):
     Kk=dot(P.cov,(Sk**-1))
     
     return Mvar.from_cov(
-        (P.mean.T+dot(Kk*yk)).T,
-        dot((numpy.eye(P.mean.size)-Kk),P.cov)
+        mean=(P.mean.T+dot(Kk,yk)).T,
+        cov=dot((numpy.eye(P.mean.size)-Kk),P.cov)
     )
 
 def isplit(sequence,fkey=bool): 
@@ -1015,7 +1022,17 @@ if __name__=="__main__":
 
     A=Mvar.from_attr(mean=[1,2],vectors=[[3,4],[-1,8]])
     B=Mvar.from_cov(mean=[3,3],cov=[[1,2],[2,1]])
-    M=numpy.matrix([[1.0,2],[3,4]])
-    K=7.0
-
+    C=Mvar.from_data(numpy.dot(
+        numpy.random.randn(50,2),
+        numpy.random.randn(2,2))
+    )
+    
+    M=numpy.matrix(numpy.random.randn(2,2))
+    
+    K=10*numpy.random.rand()
+    K1=10*numpy.random.rand()
+    K2=10*numpy.random.rand()
+        
+    N=numpy.random.randint(1,10)
+    
     doctest.testmod()

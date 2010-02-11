@@ -168,6 +168,7 @@ def dot(*args):
     """
     like numpy.dot but takes any number or arguments
     """
+    assert len(args)>1
     return reduce(numpy.dot,args)
 
 def rotation2d(angle):
