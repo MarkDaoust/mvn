@@ -282,7 +282,7 @@ class Mvar(object):
         data=numpy.matrix(data)
         #create the mvar from the mean and covariance of the data
         return Mvar.from_cov(
-            cov = numpy.cov(data.T, bias=bias,rowvar=0),
+            cov = numpy.cov(data,bias=bias,rowvar=0),
             mean= numpy.mean(data,axis=0),
             **kwargs
         )
@@ -308,8 +308,8 @@ class Mvar(object):
         """
         get the covariance matrix used by the object
         
-        >>>assert A.cov == dot(A.vectors.T,A.vectors) 
-        >>>assert A.cov == dot(A.rotation.T,A.scale,A.scale,A.rotation)
+        >>> assert A.cov == dot(A.vectors.T,A.vectors) 
+        >>> assert A.cov == dot(A.rotation.T,A.scale,A.scale,A.rotation)
         """
         vectors=self.vectors
         return dot(vectors.T,vectors)
@@ -318,7 +318,7 @@ class Mvar(object):
         """
         get the matrix of scaled eigenvectors (as rows)
 
-        >>>assert A.vectors = dot(A.scale,A.rotation) 
+        >>> assert A.vectors = dot(A.scale,A.rotation) 
         """
         return dot(self.scale,self.rotation)
     
@@ -443,16 +443,16 @@ class Mvar(object):
         
         and it brings the symetry to the front. 
         
-        >>>assert A & B == B & A 
-        >>>assert A & B == 1/(1/A+1/B)
-        >>>assert A & B & C == Paralell(B,C,A)
-        >>>assert A & B & C == Mvar.blend(B,A,C)== Mvar.__and__(C,B,A)
+        >>> assert A & B == B & A 
+        >>> assert A & B == 1/(1/A+1/B)
+        >>> assert A & B & C == Paralell(B,C,A)
+        >>> assert A & B & C == Mvar.blend(B,A,C)== Mvar.__and__(C,B,A)
         
         the proof that this is identical to the wikipedia definition of blend 
         is a little too involved to write here. Just try it (see the "wiki 
 "        function)
         
-        >>>assert A & B == wiki(A,B)
+        >>> assert A & B == wiki(A,B)
         """
         return paralell(mvars)
         
@@ -486,9 +486,9 @@ class Mvar(object):
         
         Most things you expect to work just work.
         
-            >>>assert A**0== A**(-1)*A== A*A**(-1)== A/A        
-            >>>assert (A**K1)*(A**K2)=A**(K1+K2)
-            >>>assert A**K1/A**K2=A**(K1-K2)
+            >>> assert A**0== A**(-1)*A== A*A**(-1)== A/A        
+            >>> assert (A**K1)*(A**K2)=A**(K1+K2)
+            >>> assert A**K1/A**K2=A**(K1-K2)
         
         Zero power has some interesting properties: 
             
@@ -496,25 +496,25 @@ class Mvar(object):
             unchanged, but the mean is wherever it gets stretched to while we 
             transform the ellipse to a sphere
               
-            >>>assert (A**0).scale == eye(A.mean.shape[1])
-            >>>assert (A**0).rotation== A.rotation
-            >>>assert (A**0).mean == dot(
+            >>> assert (A**0).scale == eye(A.mean.shape[1])
+            >>> assert (A**0).rotation== A.rotation
+            >>> assert (A**0).mean == dot(
                 A.mean,A.rotation.T,A.scale**-1,A.rotation
             )
             
         derivation of multiplication:
         
-            >>>assert A.vectors== A.scale*A.rotation
-            >>>assert (A**K).vectors== (A.scale**K)*A.rotation
-            >>>assert (A**K).vectors== A.vectors* A.rotation.T*A.scale**(K-1)*A.rotation
-            >>>assert (A**K).mean== A.mean* A.rotation.T*A.scale**(K-1)*A.rotation
+            >>> assert A.vectors== A.scale*A.rotation
+            >>> assert (A**K).vectors== (A.scale**K)*A.rotation
+            >>> assert (A**K).vectors== A.vectors* A.rotation.T*A.scale**(K-1)*A.rotation
+            >>> assert (A**K).mean== A.mean* A.rotation.T*A.scale**(K-1)*A.rotation
             
             that's a matrix multiply.
             
             So all Mvars on the right,in a multiply, can just be converted to 
             matrix:
             
-            >>>assert A*B==A*(B.rotation.T*B.scale*B.rotation)
+            >>> assert A*B==A*(B.rotation.T*B.scale*B.rotation)
         """
         rotation = self.rotation
         new_scale = numpy.diag(self.scale.diagonal()**(power-1))
@@ -575,11 +575,11 @@ class Mvar(object):
             Mvar always beats constant. Between Mvar and numpy.matrix the left 
             operand wins 
             
-            >>>assert isinstance(A*B,Mvar)
-            >>>assert isinstance(A*M,Mvar)
-            >>>assert isinstance(M*A,numpy.Matrix) 
-            >>>assert isinstance(A*K,Mvar)
-            >>>assert isinstance(K*A,Mvar)
+            >>> assert isinstance(A*B,Mvar)
+            >>> assert isinstance(A*M,Mvar)
+            >>> assert isinstance(M*A,numpy.Matrix) 
+            >>> assert isinstance(A*K,Mvar)
+            >>> assert isinstance(K*A,Mvar)
             
             whenever an mvar is found on the right it is converted to a 
             rotation.T*scale*rotation matrix and the multiplication is 
@@ -588,12 +588,12 @@ class Mvar(object):
         general properties:
             
             constants still commute            
-            >>>assert K*A*M == A*K*M == A*M*K
+            >>> assert K*A*M == A*K*M == A*M*K
             
             but the asociative property is lost if you mix constants and 
             matrixes (but I think it's ok if you only have 1 of the two types?)
             
-            >>>assert (A*2)*M == A*(4*M)
+            >>> assert (A*2)*M == A*(4*M)
             
             ????
             asociative if only mvars and matrixes?
@@ -603,11 +603,11 @@ class Mvar(object):
         Mvar*Mvar
             multiplying two Mvars together is defined to fit with power
             
-            >>>assert A*A==A**2
-            >>>assert (A*B).affine=A.affine*B.rotation.T*B.vectors
-            >>>assert (A*B).vectors == A.vectors*B.rotation.T*B.scale*B.rotation
-            >>>assert (A*B).mean == A.mean*B.rotation.T*B.scale*B.rotation
-            >>>assert A*B == A*numpy.linalg.matrix_power(B.cov,0.5)
+            >>> assert A*A==A**2
+            >>> assert (A*B).affine=A.affine*B.rotation.T*B.vectors
+            >>> assert (A*B).vectors == A.vectors*B.rotation.T*B.scale*B.rotation
+            >>> assert (A*B).mean == A.mean*B.rotation.T*B.scale*B.rotation
+            >>> assert A*B == A*numpy.linalg.matrix_power(B.cov,0.5)
             
             Note that the result does not depend on the mean of the 
             second mvar(!) (really any mvar after the leftmost mvar or matrix)
@@ -620,17 +620,17 @@ class Mvar(object):
             multiplication must fit with addition, and addition here is 
             defined so it can be used in the kalman noise addition step so: 
             
-            >>>assert ((A+A).vectors == (2*A).vectors).all()
-            >>>assert ((A+A) == sqrt(2)*A.vectors).all()
-            >>>assert ((A+A).mean == (2*A).mean).all()
-            >>>assert ((A+A).mean == 2*A.mean).all()
+            >>> assert ((A+A).vectors == (2*A).vectors).all()
+            >>> assert ((A+A) == sqrt(2)*A.vectors).all()
+            >>> assert ((A+A).mean == (2*A).mean).all()
+            >>> assert ((A+A).mean == 2*A.mean).all()
             
-            >>>assert ((A*K).vectors == sqrt(K)*A.vectors).all()
-            >>>assert ((A*K).mean == K*A.mean).all()
+            >>> assert ((A*K).vectors == sqrt(K)*A.vectors).all()
+            >>> assert ((A*K).mean == K*A.mean).all()
             
-            >>>assert sum(itertools.repeat(A,K-1),A) == A*(K) == (K)*A 
+            >>> assert sum(itertools.repeat(A,K-1),A) == A*(K) == (K)*A 
             
-            >>>assert ((A*K).cov == A.cov*K).all()
+            >>> assert ((A*K).cov == A.cov*K).all()
             
             be careful with negative constants because you will end up with 
             imaginary numbers in you vectors matrix, (and lime in your coconut) as 
@@ -649,12 +649,12 @@ class Mvar(object):
             update step.
             
             simple scale is like this
-            >>>assert ((A(*eye*K)).vectors == A.vectors*K).all()
-            >>>assert ((A(*eye*K)).mean == A.mean*K).all()
+            >>> assert ((A(*eye*K)).vectors == A.vectors*K).all()
+            >>> assert ((A(*eye*K)).mean == A.mean*K).all()
             
             or more generally
-            >>>assert (A*M).cov == M.T*A.cov*M
-            >>>assert (A*M).mean == A.mean*M
+            >>> assert (A*M).cov == M.T*A.cov*M
+            >>> assert (A*M).mean == A.mean*M
             
             matrix multiplication is implemented as follows
             
@@ -709,12 +709,12 @@ class Mvar(object):
         multiplication order:
             doesn't matter for constants
         
-            >>>assert k*A == A*k
+            >>> assert k*A == A*k
         
             but it matters a lot for Matrix/Mvar multiplication
         
-            >>>assert isinstance(A*M,Mvar)
-            >>>assert isinstance(M*A,numpy.matrix)
+            >>> assert isinstance(A*M,Mvar)
+            >>> assert isinstance(M*A,numpy.matrix)
         
         be careful with right multiplying:
             Because power must fit with multiplication
@@ -765,9 +765,9 @@ class Mvar(object):
         
         see __mul__ and __pow__
         it would be immoral to overload power and multiply but not divide 
-        >>>assert A/B == A*(B**(-1))
-        >>>assert A/M == A*(M**(-1))
-        >>>assert A/K == A*(K**(-1))
+        >>> assert A/B == A*(B**(-1))
+        >>> assert A/M == A*(M**(-1))
+        >>> assert A/K == A*(K**(-1))
         """
         return multiply(self,other**(-1))
         
@@ -776,8 +776,8 @@ class Mvar(object):
         ?/A
         
         see __rmul__ and __pow__
-        >>>assert K/A == K*(A**(-1))
-        >>>assert M/A == M*(A**(-1))
+        >>> assert K/A == K*(A**(-1))
+        >>> assert M/A == M*(A**(-1))
         """
         return multiply(other,self**(-1))
         
@@ -806,11 +806,11 @@ class Mvar(object):
         
         scalar multiplication however fits with addition:
         
-        >>>assert (A+A).vectors == (2*A).vectors == sqrt(2)*A.vectors
-        >>>assert (A+A).mean == (2*A).mean == 2*A.mean
+        >>> assert (A+A).vectors == (2*A).vectors == sqrt(2)*A.vectors
+        >>> assert (A+A).mean == (2*A).mean == 2*A.mean
 
-        >>>assert (A+B).mean== A.mean+B.mean
-        >>>assert (A+B).cov == A.cov+B.cov
+        >>> assert (A+B).mean== A.mean+B.mean
+        >>> assert (A+B).cov == A.cov+B.cov
 
         it also works with __neg__, __sub__, and scalar multiplication.
         
@@ -943,8 +943,8 @@ def wiki(P,M):
     Direct implementation of the wikipedia blending algorythm
     
     The quickest way to prove it's equivalent is by examining this:
-        >>>ab=numpy.array([A,B],ndmin=2,dytpe=object)
-        >>>assert A & B == dot(ab,(ab.T)**(-2))**(-1)
+        >>> ab=numpy.array([A,B],ndmin=2,dytpe=object)
+        >>> assert A & B == dot(ab,(ab.T)**(-2))**(-1)
     """
     yk=M.mean.T-P.mean.T
     Sk=P.cov+M.cov
@@ -961,34 +961,32 @@ def isplit(sequence,fkey=bool):
         where every value is a sub iterator produced from the sequence
         where items are sent to iterators based on the value of fkey(item).
         
-        >>>isodd = isplit([xrange(1,7),lambda item:bool(item%2))
-        >>>
-        >>>list(isodd[True])
+        >>> isodd = isplit([xrange(1,7),lambda item:bool(item%2))
+        >>> list(isodd[True])
         [1,3,5]
-        >>>list(isodd[False])
+        >>> list(isodd[False])
         [2,4,6]
         
         which gives the same results as
         
-        >>>X=xrange(1,7)
-        >>>[item for item in X if bool(item%2)]
+        >>> X=xrange(1,7)
+        >>> [item for item in X if bool(item%2)]
         [1,3,5]
-        >>>[item for item in X if not bool(item%2)]
+        >>> [item for item in X if not bool(item%2)]
         [2,4,6]
         
         or you could make a mess of maps and filter
         but this is so smooth,and really shortens things 
         when dealing with a lot of keys 
         
-        >>>bytype = isplit([1,'a',True,"abc",5,7,False],type)
-        >>>
-        >>>list(bytype[int])
+        >>> bytype = isplit([1,'a',True,"abc",5,7,False],type)
+        >>> list(bytype[int])
         [1,5,7]
-        >>>list(bytype[str])
+        >>> list(bytype[str])
         ['a','abc']
-        >>>list(bytype[bool])
+        >>> list(bytype[bool])
         [True,False]
-        >>>list(bytype[dict])
+        >>> list(bytype[dict])
         []
     """
     result = collections.defaultdict(list,())
@@ -1010,3 +1008,14 @@ def isrotation(A):
 def isdiag(A):
     shape=A.shape
     return A.ndim==2 and ((A != 0) == numpy.eye(shape[0],shape[1])).all()
+
+
+if __name__=="__main__":
+    import doctest
+
+    A=Mvar.from_attr(mean=[1,2],vectors=[[3,4],[-1,8]])
+    B=Mvar.from_cov(mean=[3,3],cov=[[1,2],[2,1]])
+    M=numpy.matrix([[1.0,2],[3,4]])
+    K=7.0
+
+    doctest.testmod()
