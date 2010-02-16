@@ -42,6 +42,5 @@ class Automath():
         return self*other**(-1)
         
     def __rdiv__(self,other):
-        print "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
         return other*self**(-1)
     

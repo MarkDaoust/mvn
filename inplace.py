@@ -3,7 +3,7 @@
 class Inplace():
     """
     given: self.copy(other)
-    produces: +=, -=, *=, /=, **=, &=, |=, ^=
+    produces: +=, -=, *=, /=, **=, &=, |=, ^=, <<=, >>=
     
     attempts creates inplace versions of operators
     """
@@ -17,14 +17,20 @@ class Inplace():
         self.copy(self*other)
 
     def __idiv__(self,other):
-        return (self/other)
+        self.copy(self/other)
         
     def __iand__(self,other):
-        return (self & other)
+        self.copy(self & other)
     
     def __ior__(self,other):
-        return (self | other)
+        self.copy(self | other)
 
     def __ixor__(self,other):
-        return (self ^ other)
+        self.copy(self ^ other)
+    
+    def __ilshift__(self,other):
+        self.copy(self << other)
+        
+    def __irshift__(self,other):
+        self.copy(self >> other)
 

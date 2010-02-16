@@ -2,9 +2,8 @@
 
 import os
 
-outfile=open('./test_results.py','w')
-outfile.write('from numpy import array,matrix\n')
-outfile.write('from mvar import Mvar\n')
+print 'from numpy import array,matrix'
+print 'from mvar import Mvar'
 
 header=True
 for line in os.popen("./mvar.py"):
@@ -12,8 +11,6 @@ for line in os.popen("./mvar.py"):
         header=False
 
     if header:
-        outfile.write(line)
+        print line
     else:
-        outfile.write('#'+line)
-
-os.system('git diff ./test_results.py > test_results.diff')
+        print '#'+line
