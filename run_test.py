@@ -11,6 +11,6 @@ for line in os.popen("./mvar.py"):
         header=False
 
     if header:
-        print line
+        print line,
     else:
-        print '#'+line
+        print '#'+line,

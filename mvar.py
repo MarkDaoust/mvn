@@ -40,6 +40,9 @@ class Matrix(numpy.matrix):
     def __div__(self,other):
         return self*other**(-1)
         
+    def __eq__(self,other):
+        return numpy.allclose(self,other)
+        
 
 class Mvar(object,Automath,Inplace):
     """
@@ -157,9 +160,9 @@ class Mvar(object,Automath,Inplace):
         stack=numpy.real_if_close(stack)
         
         #unpack the stack into the object's parameters
-        self.mean = stack[-1,1:]
-        self.scale = numpy.diagflat(stack[:-1,0])
-        self.rotation = stack[:-1,1:]
+        self.mean = Matrix(stack[-1,1:])
+        self.scale = Matrix(numpy.diagflat(stack[:-1,0]))
+        self.rotation = Matrix(stack[:-1,1:])
         
         assert not do_square or do_compress,"do_square calls do_compress"
         
@@ -167,7 +170,7 @@ class Mvar(object,Automath,Inplace):
             self.do_square()
         elif do_compress:
             self.do_compress()
-    
+        
     def do_square(self,**kwargs):
         """
         this is NOT x**2 it is to set the vectors to perpendicular and unit 
@@ -180,10 +183,11 @@ class Mvar(object,Automath,Inplace):
         #something like theplane class I've started developing in the adjacent file
         V=self.rotation
         S=self.scale
+        
         if not numpy.allclose(dot(V.H,V),numpy.eye(V.shape[0]),**kwargs):
             (scale,rotation) = numpy.linalg.eigh(dot(V.H,S,S,V))
-            self.rotation=rotation.H
-            self.scale=numpy.diag(scale**(0.5+0j))
+            self.rotation=Matrix(rotation).H
+            self.scale=Matrix(numpy.diagflat(scale**(0.5+0j)))
             
         self.do_compress(**kwargs)
         
@@ -193,21 +197,18 @@ class Mvar(object,Automath,Inplace):
         the defaults match numpy's for 'allclose'
         """
         #convert the scale to a column vector
-        diag=numpy.diag(self.scale)[:,numpy.newaxis]
+        diag=numpy.diagonal(self.scale)[:,numpy.newaxis]
         #get the rotation
-        rotation=numpy.array(self.rotation)
-        
+        rotation=self.rotation
         stack=numpy.hstack([diag,rotation])
-        
         stack=stack[numpy.argsort(diag.flatten()),:]
-        
         C=~numpy.array(close(stack[:,0],rtol=rtol,atol=atol)).squeeze()
         #drop the scale/rotation where the scale is close to zero
         stack=stack[C,:]
         #unstack them
-        self.scale = numpy.diag(stack[:,0])
-        self.rotation=stack[:,1:] 
-        
+        self.scale = Matrix(numpy.diagflat(stack[:,0]))
+        self.rotation = Matrix(stack[:,1:])
+    
     ############## alternate creation methods
     @staticmethod
     def from_attr(
@@ -261,7 +262,7 @@ class Mvar(object,Automath,Inplace):
         scale,rotation = numpy.linalg.eigh(cov)
         
         return Mvar.from_attr(
-            vectors=rotation.H,
+            vectors=Matrix(rotation).H,
             #square root the scales
             scale=numpy.real_if_close((scale)**(0.5+0j)),
             do_square=False,
@@ -526,7 +527,7 @@ class Mvar(object,Automath,Inplace):
             >>> assert A*B==A*dot(B.rotation.H,B.scale,B.rotation)
         """
         rotation = self.rotation
-        new_scale = numpy.diag(self.scale.diagonal()**(power-1))
+        new_scale = Matrix(numpy.array(self.scale)**(power-1))
         
         transform = dot(rotation.H,new_scale,rotation)
         
@@ -745,7 +746,7 @@ class Mvar(object,Automath,Inplace):
             again note that the result does not depend on the mean of the 
             second mvar(!)
         
-        martix*Mvar
+        matrix*Mvar
             >>> assert numpy.allclose(M*A, dot(M,A.rotation.H,A.scale,A.rotation))
 
         Mvar*constant==constant*Mvar
@@ -962,7 +963,7 @@ if __name__=="__main__":
     import doctest
     #create test objects
     A=Mvar.from_attr(mean=10*numpy.random.randn(1,2),vectors=10*numpy.random.randn(2,2))
-    B=Mvar.from_cov(mean=10*numpy.random.randn(1,2),cov=(lambda x:dot(x,x.H))(10*numpy.random.randn(2,2)))
+    B=Mvar.from_cov(mean=10*numpy.random.randn(1,2),cov=(lambda x:dot(x,x.H))(10*Matrix(numpy.random.randn(2,2))))
     C=Mvar.from_data(numpy.dot(numpy.random.randn(50,2),10*numpy.random.randn(2,2)))
     
     M=Matrix(numpy.random.randn(2,2))
