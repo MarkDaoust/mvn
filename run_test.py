@@ -2,9 +2,6 @@
 
 import os
 
-print 'from numpy import array,matrix'
-print 'from mvar import Mvar'
-
 header=True
 for line in os.popen("./mvar.py"):
     if header and line.startswith('*******'):
