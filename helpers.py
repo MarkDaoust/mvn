@@ -82,7 +82,6 @@ def autostack(rows,default=0):
 
     #and the type of the first numpy thing
     types=[type(item) for item in data.flatten() if isinstance(item,numpy.ndarray)]
-    atype=numpy.matrix if (types and types[0] is numpy.matrix) else numpy.array
     
     #make a matrix of the callable status of each item
     calls=numpy.array([callable(item) for item in data.flatten()]).reshape(shape)
@@ -107,7 +106,7 @@ def autostack(rows,default=0):
         widths=shapes[...,1]
         
         #the heights should be the same along each row
-        #except for the -inf's that  we have forthe callables
+        #except for the -inf's that  we have for the callables
         maxheight=heights.max(1)
         maxwidth=widths.max(0)
         
@@ -123,10 +122,10 @@ def autostack(rows,default=0):
             ))
         
     #do the stacking
-    return atype(numpy.vstack([
+    return numpy.vstack([
         numpy.hstack(row) 
         for row in data
-    ]))
+    ])
 
 
 def paralell(*items):

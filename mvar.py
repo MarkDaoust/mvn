@@ -28,7 +28,10 @@ except ImportError:
 from helpers import autostack,diagstack,astype,paralell,close,dot,rotation2d
 from automath import Automath
 from inplace import Inplace
+<<<<<<< HEAD:kalman/mvar.py
         
+=======
+>>>>>>> busted:kalman/mvar.py
 
 class Mvar(object,Automath,Inplace):
     """
@@ -146,9 +149,9 @@ class Mvar(object,Automath,Inplace):
         stack=numpy.real_if_close(stack)
         
         #unpack the stack into the object's parameters
-        self.mean = stack[-1,1:]
-        self.scale = numpy.diagflat(stack[:-1,0])
-        self.rotation = stack[:-1,1:]
+        self.mean = numpy.matrix(stack[-1,1:])
+        self.scale = numpy.matrix(numpy.diagflat(stack[:-1,0]))
+        self.rotation = numpy.matrix(stack[:-1,1:])
         
         assert not do_square or do_compress,"do_square calls do_compress"
         
@@ -156,7 +159,11 @@ class Mvar(object,Automath,Inplace):
             self.do_square()
         elif do_compress:
             self.do_compress()
-    
+        
+        self.rotation = numpy.matrix(self.rotation)
+        self.scale = numpy.matrix(self.scale)
+        self.mean=numpy.matrix(self.mean)
+        
     def do_square(self,**kwargs):
         """
         this is NOT x**2 it is to set the vectors to perpendicular and unit 
@@ -169,11 +176,20 @@ class Mvar(object,Automath,Inplace):
         #something like theplane class I've started developing in the adjacent file
         V=self.rotation
         S=self.scale
+<<<<<<< HEAD:kalman/mvar.py
         if not numpy.allclose(dot(V.T,V),numpy.eye(V.shape[0]),**kwargs):
             (scale,rotation) = numpy.linalg.eigh(dot(V.T,S,S,V))
             self.rotation=rotation.T
             self.scale=numpy.diag(scale**(0.5+0j))
             
+=======
+        
+        if not numpy.allclose(dot(V.H,V),numpy.eye(V.shape[0]),**kwargs):
+            (scale,rotation) = numpy.linalg.eigh(dot(V.H,S,S,V))
+            self.rotation=numpy.matrix(rotation).H
+            self.scale=numpy.matrix(numpy.diagflat(scale**(0.5+0j)))
+        
+>>>>>>> busted:kalman/mvar.py
         self.do_compress(**kwargs)
         
     def do_compress(self,rtol=1e-5,atol=1e-8):
@@ -182,21 +198,18 @@ class Mvar(object,Automath,Inplace):
         the defaults match numpy's for 'allclose'
         """
         #convert the scale to a column vector
-        diag=numpy.diag(self.scale)[:,numpy.newaxis]
+        diag=numpy.diagonal(self.scale)[:,numpy.newaxis]
         #get the rotation
-        rotation=numpy.array(self.rotation)
-        
+        rotation=self.rotation
         stack=numpy.hstack([diag,rotation])
-        
         stack=stack[numpy.argsort(diag.flatten()),:]
-        
         C=~numpy.array(close(stack[:,0],rtol=rtol,atol=atol)).squeeze()
         #drop the scale/rotation where the scale is close to zero
         stack=stack[C,:]
         #unstack them
-        self.scale = numpy.diag(stack[:,0])
-        self.rotation=stack[:,1:] 
-        
+        self.scale = numpy.matrix(numpy.diagflat(stack[:,0]))
+        self.rotation = numpy.matrix(stack[:,1:])
+    
     ############## alternate creation methods
     @staticmethod
     def from_attr(
@@ -250,7 +263,11 @@ class Mvar(object,Automath,Inplace):
         scale,rotation = numpy.linalg.eigh(cov)
         
         return Mvar.from_attr(
+<<<<<<< HEAD:kalman/mvar.py
             vectors=rotation.T,
+=======
+            vectors=numpy.matrix(rotation).H,
+>>>>>>> busted:kalman/mvar.py
             #square root the scales
             scale=numpy.real_if_close((scale)**(0.5+0j)),
             do_square=False,
@@ -277,6 +294,9 @@ class Mvar(object,Automath,Inplace):
         
         my default for rowvar is the opposite of numpy's
         """
+        if isinstance(data,Mvar):
+            return data.copy()
+        
         #convert the data to a matrix 
         data=numpy.matrix(data)
         #create the mvar from the mean and covariance of the data
@@ -515,7 +535,7 @@ class Mvar(object,Automath,Inplace):
             >>> assert A*B==A*dot(B.rotation.T,B.scale,B.rotation)
         """
         rotation = self.rotation
-        new_scale = numpy.diag(self.scale.diagonal()**(power-1))
+        new_scale = numpy.matrix(numpy.array(self.scale)**(power-1))
         
         transform = dot(rotation.T,new_scale,rotation)
         
@@ -535,7 +555,11 @@ class Mvar(object,Automath,Inplace):
                 item
             )
         :(  
+<<<<<<< HEAD:kalman/mvar.py
             numpy.matrix(dot(item.rotation.T,item.scale,item.rotation)) if 
+=======
+            numpy.matrix(dot(item.rotation.H,item.scale,item.rotation)) if 
+>>>>>>> busted:kalman/mvar.py
             isinstance(item,Mvar) else 
             helper(numpy.array(item))
         ),
@@ -563,7 +587,11 @@ class Mvar(object,Automath,Inplace):
             All non Mvar imputs will be converted to numpy arrays, then 
             treated as constants if zero dimensional, or matrixes otherwise 
             
+<<<<<<< HEAD:kalman/mvar.py
             Mvar always beats constant. Between Mvar and numpy.matrix the left 
+=======
+            Mvar always beats constant. Between Mvar and matrix the left 
+>>>>>>> busted:kalman/mvar.py
             operand wins 
             
             >>> assert isinstance(A*B,Mvar)
@@ -656,6 +684,19 @@ class Mvar(object,Automath,Inplace):
             matrix multiplication is implemented as follows
             
             assert A*M == Mvar.from_affine(A.affine*diagstack([M,1]))
+            
+        given __mul__ and __pow__ it would be immoral to not overload divide 
+        as well, automath takes care of these details
+            A/?
+            
+            >>> assert A/B == A*(B**(-1))
+            >>> assert A/M == A*(M**(-1))
+            >>> assert A/K1 == A*(K1**(-1))
+        
+            ?/A: see __rmul__ and __pow__
+            
+            >>> assert K1/A == K1*(A**(-1))
+            >>> assert numpy.allclose(M/A,M*(A**(-1)))
         """
         other=rconvert(other)
         return multipliers[type(other)](self,other) 
@@ -676,7 +717,11 @@ class Mvar(object,Automath,Inplace):
                 other.ndim else
                 other
                 ,
+<<<<<<< HEAD:kalman/mvar.py
                 numpy.matrix(dot(self.rotation.T,self.scale,self.rotation)) if 
+=======
+                numpy.matrix(dot(self.rotation.H,self.scale,self.rotation)) if 
+>>>>>>> busted:kalman/mvar.py
                 other.ndim else
                 self
             )
@@ -734,6 +779,7 @@ class Mvar(object,Automath,Inplace):
             again note that the result does not depend on the mean of the 
             second mvar(!)
         
+<<<<<<< HEAD:kalman/mvar.py
         martix*Mvar
             >>> assert numpy.allclose(M*A, dot(M,A.rotation.T,A.scale,A.rotation))
 
@@ -753,11 +799,21 @@ class Mvar(object,Automath,Inplace):
         see __rmul__ and __pow__
             >>> assert K1/A == K1*(A**(-1))
             >>> assert numpy.allclose(M/A,M*(A**(-1)))
+=======
+        matrix*Mvar
+            >>> assert numpy.allclose(M*A, dot(M,A.rotation.H,A.scale,A.rotation))
+
+        Mvar*constant==constant*Mvar
+            >>> assert A*K1 == K1*A
+>>>>>>> busted:kalman/mvar.py
         """
         (other,self)= convert(other,self)
         return multipliers[type(other)](other,self)
     
+<<<<<<< HEAD:kalman/mvar.py
         
+=======
+>>>>>>> busted:kalman/mvar.py
     def __add__(self,other):
         """
         A+?
@@ -932,7 +988,11 @@ def issquare(A):
 
 def isrotation(A):
     R=numpy.matrix(A)
+<<<<<<< HEAD:kalman/mvar.py
     return (R*R.T == eye(R.shape[0])).all()
+=======
+    return (R*R.H == eye(R.shape[0])).all()
+>>>>>>> busted:kalman/mvar.py
 
 def isdiag(A):
     shape=A.shape
@@ -943,7 +1003,11 @@ if __name__=="__main__":
     import doctest
     #create test objects
     A=Mvar.from_attr(mean=10*numpy.random.randn(1,2),vectors=10*numpy.random.randn(2,2))
+<<<<<<< HEAD:kalman/mvar.py
     B=Mvar.from_cov(mean=10*numpy.random.randn(1,2),cov=(lambda x:dot(x,x.T))(10*numpy.random.randn(2,2)))
+=======
+    B=Mvar.from_cov(mean=10*numpy.random.randn(1,2),cov=(lambda x:dot(x,x.H))(10*numpy.matrix(numpy.random.randn(2,2))))
+>>>>>>> busted:kalman/mvar.py
     C=Mvar.from_data(numpy.dot(numpy.random.randn(50,2),10*numpy.random.randn(2,2)))
     
     M=numpy.matrix(numpy.random.randn(2,2))
@@ -953,8 +1017,13 @@ if __name__=="__main__":
         
     N=numpy.random.randint(2,10)
     
+<<<<<<< HEAD:kalman/mvar.py
     print 'from numpy import array,matrix'
     print 'from mvar import mvar'
+=======
+    print 'from mvar import Mvar'
+    print 'from numpy import array,matrix'
+>>>>>>> busted:kalman/mvar.py
     print '#test objects used'
     print 'A=',A
     print 'B=',B
