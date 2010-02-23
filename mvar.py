@@ -32,13 +32,19 @@ from inplace import Inplace
 class Matrix(numpy.matrix):
     """
     Imporved version of the martix class.
-    the only modification is that division doesn't try to do elementwise division,
-    it tries to multiply by the inverse of the other
+    the only modifications are:
+        division doesn't try to do elementwise division, it tries to multiply 
+            by the inverse of the other
+        __eq__ runs numpy.allclose, so the matrix is treated as one thing, not 
+            a collection of things.
     """
     def __new__(cls,data,dtype=None,copy=True):
         self=numpy.matrix(data,dtype,copy)
         self.__class__=cls
         return self
+
+    def __eq__(self,other):
+        return numpy.allclose(self,other)
     
     def __div__(self,other):
         return self*other**(-1)
@@ -49,6 +55,9 @@ class Matrix(numpy.matrix):
     def __repr__(self):
         S=numpy.matrix.__repr__(self)
         return 'M'+S[1:]
+
+    def diagonal(self):
+        return numpy.squeeze(numpy.array(numpy.matrix.diagonal(self)))
     
     __str__ = __repr__
 
@@ -193,11 +202,14 @@ class Mvar(object,Automath,Inplace):
         """
         #to decouple compress from square you'll need do the square on the 
         #Mvar's brane instead of the full-space, to do that you'll need
-        #something like theplane class I've started developing in the adjacent file
+        #something like the plane class I've started developing in the adjacent file
         V=self.rotation
         S=self.scale
-
-        if not numpy.allclose(dot(V.H,V),numpy.eye(V.shape[0]),**kwargs):
+        
+        A=Matrix(dot(V.H,V))
+        B=Matrix(numpy.eye(V.shape[0]))
+    
+        if not Matrix(dot(V.H,V))==Matrix(numpy.eye(V.shape[0])):
             (scale,rotation) = numpy.linalg.eigh(dot(V.H,S,S,V))
             self.rotation=Matrix(rotation).H
             self.scale=Matrix(numpy.diagflat(scale**(0.5+0j)))
@@ -245,6 +257,13 @@ class Mvar(object,Automath,Inplace):
             defaults to numpy.ones
             
         """
+        if 'rotation' in kwargs:
+            if vectors is numpy.zeros:
+                vectors=kwargs['rotation']
+                kwargs['do_square']=True
+            else :
+                raise TypeError('Supply rotation, vectors, or neither one. Not both')
+        
         if not callable(scale):
             scale=numpy.array(scale)
             if isdiag(scale):
@@ -285,9 +304,6 @@ class Mvar(object,Automath,Inplace):
     @staticmethod
     def from_data(data, bias=0, **kwargs):
         """
-        iterating on the data should produce vectors.
-        iterating an Mvar produces vectors
-        
         >>> assert Mvar.from_data(A)==A 
         
         bias is passed to numpy's cov function.
@@ -300,7 +316,6 @@ class Mvar(object,Automath,Inplace):
         remember numpy's default covariance calculation divides by (n-1) not 
         (n) set bias = 1 to use N,
         
-        my default for rowvar is the opposite of numpy's
         """
         if isinstance(data,Mvar):
             return data.copy()
@@ -335,8 +350,8 @@ class Mvar(object,Automath,Inplace):
         """
         get the covariance matrix used by the object
         
-        >>> assert numpy.allclose(A.cov, dot(A.vectors.T,A.vectors))
-        >>> assert numpy.allclose(A.cov, dot(A.rotation.T,A.scale,A.scale,A.rotation))
+        >>> assert A.cov==dot(A.vectors.T,A.vectors)
+        >>> assert A.cov==dot(A.rotation.T,A.scale,A.scale,A.rotation)
         """
         vectors=self.vectors
         return dot(vectors.T,vectors)
@@ -345,7 +360,7 @@ class Mvar(object,Automath,Inplace):
         """
         get the matrix of scaled eigenvectors (as rows)
 
-        >>> assert numpy.allclose(A.vectors, dot(A.scale,A.rotation)) 
+        >>> assert A.vectors==dot(A.scale,A.rotation)
         """
         return dot(self.scale,self.rotation)
     
@@ -446,7 +461,7 @@ class Mvar(object,Automath,Inplace):
         A==?
         compares the means and covariances or the distributions
         """
-        return numpy.allclose(self.mean,other.mean) and numpy.allclose(self.cov,other.cov)
+        return self.mean==other.mean and self.cov==other.cov
         
     def blend(*mvars):
         """
@@ -520,20 +535,18 @@ class Mvar(object,Automath,Inplace):
             unchanged, but the mean is wherever it gets stretched to while we 
             transform the ellipse to a sphere
               
-            >>> assert numpy.allclose((A**0).scale,numpy.eye(A.mean.size))
-            >>> assert numpy.allclose((A**0).rotation, A.rotation)
-            >>> assert numpy.allclose(
-            ...     (A**0).mean,
-            ...     dot(
-            ...         A.mean,A.rotation.T,A.scale**-1,A.rotation
-            ... ))
+            >>> assert (A**0).scale==numpy.eye(A.mean.size)
+            >>> assert (A**0).rotation== A.rotation
+            >>> assert (A**0).mean==dot(
+            ...     A.mean,A.rotation.T,A.scale**-1,A.rotation
+            ... )
             
         derivation of multiplication:
         
-            >>> assert numpy.allclose(A.vectors,dot(A.scale,A.rotation))
-            >>> assert numpy.allclose((A**K1).vectors, dot((A.scale**K1),A.rotation))
-            >>> assert numpy.allclose((A**K1).vectors, dot(A.vectors,A.rotation.T,A.scale**(K1-1),A.rotation))
-            >>> assert numpy.allclose((A**K1).mean,dot(A.mean,A.rotation.T,A.scale**(K1-1),A.rotation))
+            >>> assert A.vectors == dot(A.scale,A.rotation)
+            >>> assert (A**K1).vectors == dot(numpy.diag(A.scale.diagonal()**K1),A.rotation)
+            >>> assert (A**K1).vectors == dot(A.vectors,A.rotation.T,numpy.diag(A.scale.diagonal()**(K1-1)),A.rotation)
+            >>> assert (A**K1).mean == dot(A.mean,A.rotation.T,numpy.diag(A.scale.diagonal()**(K1-1)),A.rotation)
             
             that's a matrix multiply.
             
@@ -614,7 +627,7 @@ class Mvar(object,Automath,Inplace):
             but the asociative property is lost if you mix constants and 
             matrixes (but I think it's ok if you only have 1 of the two types?)
             
-            >>> assert numpy.allclose((A*4).cov , (A*(2*numpy.eye(2))).cov)
+            >>> assert (A*4).cov == (A*(2*numpy.eye(2))).cov
             
             ????
             asociative if only mvars and matrixes?
@@ -625,13 +638,8 @@ class Mvar(object,Automath,Inplace):
             multiplying two Mvars together is defined to fit with power
             
             >>> assert A*A==A**2
-            >>> assert numpy.allclose(
-            ...    (A*B).affine,
-            ...    (A*dot(B.rotation.T,B.vectors)).affine
-            ... )
-            >>> assert numpy.allclose(
-            ...     (A*B).mean,dot(A.mean,B.rotation.T,B.scale,B.rotation)
-            ... )
+            >>> assert (A*B).affine==(A*dot(B.rotation.T,B.vectors)).affine
+            >>> assert (A*B).mean==dot(A.mean,B.rotation.T,B.scale,B.rotation)
             >>> assert A*(B**2) == A*(B.cov)
             
             Note that the result does not depend on the mean of the 
@@ -645,24 +653,24 @@ class Mvar(object,Automath,Inplace):
             multiplication must fit with addition, and addition here is 
             defined so it can be used in the kalman noise addition step so: 
             
-            >>> assert numpy.allclose((A+A).vectors,(2*A).vectors)
-            >>> assert numpy.allclose((A+A).vectors,(2**0.5)*A.vectors)
+            >>> assert (A+A).vectors==(2*A).vectors
+            >>> assert (A+A).vectors==(2**0.5)*A.vectors
             
-            >>> assert numpy.allclose((A+A).mean,(2*A).mean)
-            >>> assert numpy.allclose((A+A).mean, 2*A.mean)
+            >>> assert (A+A).mean==(2*A).mean
+            >>> assert (A+A).mean==2*A.mean
             
-            >>> assert numpy.allclose((A*K1).vectors,(K1**0.5)*A.vectors)
-            >>> assert numpy.allclose((A*K1).mean,K1*A.mean)
+            >>> assert (A*K1).vectors==(K1**0.5)*A.vectors
+            >>> assert (A*K1).mean==K1*A.mean
             
             >>> assert sum(itertools.repeat(A,N-1),A) == A*(N)
             
-            >>> assert numpy.allclose((A*K1).cov,A.cov*K1)
+            >>> assert (A*K1).cov==A.cov*K1
             
             be careful with negative constants because you will end up with 
             imaginary numbers in you vectors matrix, (and lime in your coconut) as 
             a direct result of:            
             
-            assert numpy.allclose((A*K1).vectors,(K1**0.5)*A.vectors)
+            assert (A*K1).vectors==(K1**0.5)*A.vectors
             assert B+(-A) == B+(-1)*A == B-A and (B-A)+A==B
             
             if you want to scale the distribution linearily with the mean
@@ -675,12 +683,12 @@ class Mvar(object,Automath,Inplace):
             update step.
             
             simple scale is like this
-            >>> assert numpy.allclose((A*(numpy.eye(A.mean.size)*K1)).vectors,A.vectors*K1)
-            >>> assert numpy.allclose((A*(numpy.eye(A.mean.size)*K1)).mean,A.mean*K1)
+            >>> assert (A*(numpy.eye(A.mean.size)*K1)).vectors==A.vectors*K1
+            >>> assert (A*(numpy.eye(A.mean.size)*K1)).mean==A.mean*K1
             
             or more generally
-            >>> assert numpy.allclose((A*M).cov,M.T*A.cov*M)
-            >>> assert numpy.allclose((A*M).mean,A.mean*M)
+            >>> assert (A*M).cov==M.T*A.cov*M
+            >>> assert (A*M).mean==A.mean*M
             
             matrix multiplication is implemented as follows
             
@@ -697,7 +705,7 @@ class Mvar(object,Automath,Inplace):
             ?/A: see __rmul__ and __pow__
             
             >>> assert K1/A == K1*(A**(-1))
-            >>> assert numpy.allclose(M/A,M*(A**(-1)))
+            >>> assert M/A==M*(A**(-1))
         """
         other=rconvert(other)
         return multipliers[type(other)](self,other) 
@@ -777,7 +785,7 @@ class Mvar(object,Automath,Inplace):
             second mvar(!)
         
         martix*Mvar
-            >>> assert numpy.allclose(M*A, dot(M,A.rotation.T,A.scale,A.rotation))
+            >>> assert M*A==dot(M,A.rotation.T,A.scale,A.rotation)
 
         Mvar*constant==constant*Mvar
             >>> assert A*K1 == K1*A
@@ -794,7 +802,7 @@ class Mvar(object,Automath,Inplace):
         
         see __rmul__ and __pow__
             >>> assert K1/A == K1*(A**(-1))
-            >>> assert numpy.allclose(M/A,M*(A**(-1)))
+            >>> assert M/A==M*(A**(-1))
         """
         (other,self)= convert(other,self)
         return multipliers[type(other)](other,self)
@@ -815,14 +823,14 @@ class Mvar(object,Automath,Inplace):
         
         scalar multiplication however fits with addition:
         
-        >>> assert numpy.allclose((A+A).vectors,(2*A).vectors)
-        >>> assert numpy.allclose((A+A).vectors,(2**0.5)*A.vectors)
+        >>> assert (A+A).vectors==(2*A).vectors
+        >>> assert (A+A).vectors==(2**0.5)*A.vectors
         
-        >>> assert numpy.allclose((A+A).mean,(2*A).mean)
-        >>> assert numpy.allclose((A+A).mean,2*A.mean)
+        >>> assert (A+A).mean==(2*A).mean
+        >>> assert (A+A).mean==2*A.mean
         
-        >>> assert numpy.allclose((A+B).mean,A.mean+B.mean)
-        >>> assert numpy.allclose((A+B).cov,A.cov+B.cov)
+        >>> assert (A+B).mean==A.mean+B.mean
+        >>> assert (A+B).cov==A.cov+B.cov
 
         it also works with __neg__, __sub__, and scalar multiplication.
         
@@ -834,13 +842,13 @@ class Mvar(object,Automath,Inplace):
         watch out subtraction is the inverse of addition 
          
             >>> assert (A-B)+B == A
-            >>> assert numpy.allclose((A-B).mean, A.mean- B.mean)
-            >>> assert numpy.allclose((A-B).cov, A.cov - B.cov)
+            >>> assert (A-B).mean== A.mean- B.mean
+            >>> assert (A-B).cov== A.cov - B.cov
             
         if you want something that acts like rand()-rand() use:
             
-            >>> assert numpy.allclose((A+B*(-1*numpy.eye(A.mean.size))).mean, A.mean - B.mean)
-            >>> assert numpy.allclose((A+B*(-1*numpy.eye(A.mean.size))).cov, A.cov + B.cov)
+            >>> assert (A+B*(-1*numpy.eye(A.mean.size))).mean== A.mean - B.mean
+            >>> assert (A+B*(-1*numpy.eye(A.mean.size))).cov== A.cov + B.cov
 
         __sub__ also fits with __neg__, __add__, and scalar multiplication.
         
@@ -994,8 +1002,8 @@ if __name__=="__main__":
         
     N=numpy.random.randint(2,10)
     
-    print 'from numpy import array,matrix'
-    print 'from mvar import mvar'
+    print 'from numpy import array'
+    print 'from mvar import Mvar,Matrix'
     print '#test objects used'
     print 'A=',A
     print 'B=',B
@@ -1006,6 +1014,8 @@ if __name__=="__main__":
     print 'N=',N
     
     doctest.testmod()
+    #print A/B
+    #print A*(B**(-1))
     
 
     
