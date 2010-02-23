@@ -29,6 +29,30 @@ from helpers import autostack,diagstack,astype,paralell,close,dot,rotation2d
 from automath import Automath
 from inplace import Inplace
 
+class Matrix(numpy.matrix):
+    """
+    Imporved version of the martix class.
+    the only modification is that division doesn't try to do elementwise division,
+    it tries to multiply by the inverse of the other
+    """
+    def __new__(cls,data,dtype=None,copy=True):
+        self=numpy.matrix(data,dtype,copy)
+        self.__class__=cls
+        return self
+    
+    def __div__(self,other):
+        return self*other**(-1)
+
+    def __rdiv__(self,other):
+        return other*self**(-1)
+
+    def __repr__(self):
+        S=numpy.matrix.__repr__(self)
+        return 'M'+S[1:]
+    
+    __str__ = __repr__
+
+
 class Mvar(object,Automath,Inplace):
     """
     Multivariate normal distributions packaged to act like a vector.
@@ -145,9 +169,9 @@ class Mvar(object,Automath,Inplace):
         stack=numpy.real_if_close(stack)
         
         #unpack the stack into the object's parameters
-        self.mean = numpy.matrix(stack[-1,1:])
-        self.scale = numpy.matrix(numpy.diagflat(stack[:-1,0]))
-        self.rotation = numpy.matrix(stack[:-1,1:])
+        self.mean = Matrix(stack[-1,1:])
+        self.scale = Matrix(numpy.diagflat(stack[:-1,0]))
+        self.rotation = Matrix(stack[:-1,1:])
         
         assert not do_square or do_compress,"do_square calls do_compress"
         
@@ -156,9 +180,9 @@ class Mvar(object,Automath,Inplace):
         elif do_compress:
             self.do_compress()
         
-        self.rotation = numpy.matrix(self.rotation)
-        self.scale = numpy.matrix(self.scale)
-        self.mean=numpy.matrix(self.mean)
+        self.rotation = Matrix(self.rotation)
+        self.scale = Matrix(self.scale)
+        self.mean=Matrix(self.mean)
         
     def do_square(self,**kwargs):
         """
@@ -175,8 +199,8 @@ class Mvar(object,Automath,Inplace):
 
         if not numpy.allclose(dot(V.H,V),numpy.eye(V.shape[0]),**kwargs):
             (scale,rotation) = numpy.linalg.eigh(dot(V.H,S,S,V))
-            self.rotation=numpy.matrix(rotation).H
-            self.scale=numpy.matrix(numpy.diagflat(scale**(0.5+0j)))
+            self.rotation=Matrix(rotation).H
+            self.scale=Matrix(numpy.diagflat(scale**(0.5+0j)))
         
         self.do_compress(**kwargs)
         
@@ -195,8 +219,8 @@ class Mvar(object,Automath,Inplace):
         #drop the scale/rotation where the scale is close to zero
         stack=stack[C,:]
         #unstack them
-        self.scale = numpy.matrix(numpy.diagflat(stack[:,0]))
-        self.rotation = numpy.matrix(stack[:,1:])
+        self.scale = Matrix(numpy.diagflat(stack[:,0]))
+        self.rotation = Matrix(stack[:,1:])
     
     ############## alternate creation methods
     @staticmethod
@@ -251,7 +275,7 @@ class Mvar(object,Automath,Inplace):
         scale,rotation = numpy.linalg.eigh(cov)
         
         return Mvar.from_attr(
-            vectors=numpy.matrix(rotation).H,
+            vectors=Matrix(rotation).H,
             #square root the scales
             scale=numpy.real_if_close((scale)**(0.5+0j)),
             do_square=False,
@@ -282,7 +306,7 @@ class Mvar(object,Automath,Inplace):
             return data.copy()
         
         #convert the data to a matrix 
-        data=numpy.matrix(data)
+        data=Matrix(data)
         #create the mvar from the mean and covariance of the data
         return Mvar.from_cov(
             cov = numpy.cov(data,bias=bias,rowvar=0),
@@ -389,7 +413,7 @@ class Mvar(object,Automath,Inplace):
             mean=numpy.hstack([mvar.mean for mvar in mvars]),
             #stack the vector packets diagonally
             rotation=diagstack([mvar.rotation for mvar in mvars]),
-            scale=numpy.hstack([numpy.matrix(mvar.scale) for scale in mvars]),
+            scale=numpy.hstack([Matrix(mvar.scale) for scale in mvars]),
             **kwargs
         )
     
@@ -519,7 +543,7 @@ class Mvar(object,Automath,Inplace):
             >>> assert A*B==A*dot(B.rotation.T,B.scale,B.rotation)
         """
         rotation = self.rotation
-        new_scale = numpy.matrix(numpy.array(self.scale)**(power-1))
+        new_scale = Matrix(numpy.array(self.scale)**(power-1))
         
         transform = dot(rotation.T,new_scale,rotation)
         
@@ -534,12 +558,12 @@ class Mvar(object,Automath,Inplace):
         rconvert=lambda 
             item,
             helper=lambda item:(
-                numpy.matrix(item) 
+                Matrix(item) 
                 if item.ndim else
                 item
             )
         :(  
-            numpy.matrix(dot(item.rotation.H,item.scale,item.rotation)) if 
+            Matrix(dot(item.rotation.H,item.scale,item.rotation)) if 
 
             isinstance(item,Mvar) else 
             helper(numpy.array(item))
@@ -547,7 +571,7 @@ class Mvar(object,Automath,Inplace):
         #this dict is used to dispatch multiplications based on the type of 
         #the right operand, after it has been passed through rconvert
         multipliers={
-            (numpy.matrix):(
+            (Matrix):(
                 lambda self,matrix:Mvar.from_attr(
                     mean=dot(self.mean,matrix),
                     vectors=dot(self.scale,self.rotation,matrix),
@@ -568,12 +592,12 @@ class Mvar(object,Automath,Inplace):
             All non Mvar imputs will be converted to numpy arrays, then 
             treated as constants if zero dimensional, or matrixes otherwise 
             
-            Mvar always beats constant. Between Mvar and numpy.matrix the left 
+            Mvar always beats constant. Between Mvar and Matrix the left 
             operand wins 
             
             >>> assert isinstance(A*B,Mvar)
             >>> assert isinstance(A*M,Mvar)
-            >>> assert isinstance(M*A,numpy.matrix) 
+            >>> assert isinstance(M*A,Matrix) 
             >>> assert isinstance(A*K1,Mvar)
             >>> assert isinstance(A*N,Mvar)
             >>> assert isinstance(K1*A,Mvar)
@@ -614,7 +638,7 @@ class Mvar(object,Automath,Inplace):
             second mvar(!) (really any mvar after the leftmost mvar or matrix)
 
         Mvar*constant == constant*Mvar
-            numpy.matrix multiplication and scalar multiplication behave differently 
+            Matrix multiplication and scalar multiplication behave differently 
             from eachother.  
             
             For this to be a properly defined vector space scalar 
@@ -682,7 +706,7 @@ class Mvar(object,Automath,Inplace):
         self,
         other,
         #here we convert the left operand to a numpy.ndarray if it is a scalar,
-        #otherwise we convert it to a numpy.matrix.
+        #otherwise we convert it to a Matrix.
         #the self (right operand) will stay an Mvar for scalar multiplication
         #or be converted to a rotation.T*scale*rotation matrix for matrix 
         #multiplication
@@ -690,11 +714,11 @@ class Mvar(object,Automath,Inplace):
             other,
             self,
             helper=lambda other,self: (
-                numpy.matrix(other) if 
+                Matrix(other) if 
                 other.ndim else
                 other
                 ,
-                numpy.matrix(dot(self.rotation.H,self.scale,self.rotation)) if 
+                Matrix(dot(self.rotation.H,self.scale,self.rotation)) if 
                 other.ndim else
                 self
             )
@@ -704,7 +728,7 @@ class Mvar(object,Automath,Inplace):
         multipliers={
             #if the left operand is a matrix, the mvar has been converted to
             #to a matrix -> use matrix multiply
-            (numpy.matrix):dot,
+            (Matrix):dot,
             #if the left operand is a constant use scalar multiply
             (numpy.ndarray):(
                 lambda constant,self:Mvar.from_cov(
@@ -722,10 +746,10 @@ class Mvar(object,Automath,Inplace):
         
             >>> assert K1*A == A*K1
         
-            but it matters a lot for numpy.matrix/Mvar multiplication
+            but it matters a lot for Matrix/Mvar multiplication
         
             >>> assert isinstance(A*M,Mvar)
-            >>> assert isinstance(M*A,numpy.matrix)
+            >>> assert isinstance(M*A,Matrix)
         
         be careful with right multiplying:
             Because power must fit with multiplication
@@ -893,7 +917,7 @@ def wiki(P,M):
     """
     yk=M.mean.T-P.mean.T
     Sk=P.cov+M.cov
-    Kk=dot(P.cov,numpy.matrix(Sk).I)
+    Kk=dot(P.cov,Matrix(Sk).I)
     
     return Mvar.from_cov(
         mean=(P.mean.T+dot(Kk,yk)).T,
@@ -948,7 +972,7 @@ def issquare(A):
     return A.ndim==2 and shape[0] == shape[1]
 
 def isrotation(A):
-    R=numpy.matrix(A)
+    R=Matrix(A)
     return (R*R.H == eye(R.shape[0])).all()
 
 def isdiag(A):
@@ -960,10 +984,10 @@ if __name__=="__main__":
     import doctest
     #create test objects
     A=Mvar.from_attr(mean=10*numpy.random.randn(1,2),vectors=10*numpy.random.randn(2,2))
-    B=Mvar.from_cov(mean=10*numpy.random.randn(1,2),cov=(lambda x:dot(x,x.H))(10*numpy.matrix(numpy.random.randn(2,2))))
+    B=Mvar.from_cov(mean=10*numpy.random.randn(1,2),cov=(lambda x:dot(x,x.H))(10*Matrix(numpy.random.randn(2,2))))
     C=Mvar.from_data(numpy.dot(numpy.random.randn(50,2),10*numpy.random.randn(2,2)))
     
-    M=numpy.matrix(numpy.random.randn(2,2))
+    M=Matrix(numpy.random.randn(2,2))
     
     K1=numpy.random.rand()+0j
     K2=numpy.random.rand()+0j
