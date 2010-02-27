@@ -189,10 +189,6 @@ class Mvar(object,Automath,Inplace):
         elif do_compress:
             self.do_compress()
         
-        self.rotation = Matrix(self.rotation)
-        self.scale = Matrix(self.scale)
-        self.mean=Matrix(self.mean)
-        
     def do_square(self,**kwargs):
         """
         this is NOT x**2 it is to set the vectors to perpendicular and unit 
@@ -205,9 +201,6 @@ class Mvar(object,Automath,Inplace):
         #something like the plane class I've started developing in the adjacent file
         V=self.rotation
         S=self.scale
-        
-        A=Matrix(dot(V.H,V))
-        B=Matrix(numpy.eye(V.shape[0]))
     
         if not Matrix(dot(V.H,V))==Matrix(numpy.eye(V.shape[0])):
             (scale,rotation) = numpy.linalg.eigh(dot(V.H,S,S,V))
@@ -280,7 +273,7 @@ class Mvar(object,Automath,Inplace):
             autostack([
                 [scale,vectors],
                 [  1.0,   mean],
-            ])
+            ]),**kwargs
         )
     
     @staticmethod
@@ -556,8 +549,10 @@ class Mvar(object,Automath,Inplace):
             >>> assert A*B==A*dot(B.rotation.T,B.scale,B.rotation)
         """
         rotation = self.rotation
-        new_scale = Matrix(numpy.array(self.scale)**(power-1))
-        
+        new_scale = Matrix(
+            numpy.diag(numpy.diagonal(self.scale)**(power-1))
+        )
+            
         transform = dot(rotation.T,new_scale,rotation)
         
         return self*transform
@@ -1014,8 +1009,7 @@ if __name__=="__main__":
     print 'N=',N
     
     doctest.testmod()
-    #print A/B
-    #print A*(B**(-1))
+
     
 
     

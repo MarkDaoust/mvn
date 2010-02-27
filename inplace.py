@@ -2,10 +2,11 @@
 
 class Inplace():
     """
-    given: self.copy(other)
-    produces: +=, -=, *=, /=, **=, &=, |=, ^=, <<=, >>=
-    
-    attempts creates inplace versions of operators
+    given: a class with self.copy(other) and definition of the basic forms of 
+    the operators (+,-,*,/,**,&,|,^,<<,>>)
+
+    creates inplace versions of operators
+    (+=, -=, *=, /=, **=, &=, |=, ^=, <<=, >>=)
     """
     def __iadd__(self,other):
         self.copy(self + other)
