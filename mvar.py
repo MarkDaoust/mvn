@@ -202,8 +202,8 @@ class Mvar(object,Automath,Inplace):
         V=self.rotation
         S=self.scale
     
-        if not Matrix(dot(V.H,V))==Matrix(numpy.eye(V.shape[0])):
-            (scale,rotation) = numpy.linalg.eig(dot(V.H,S,S,V))
+        if not Matrix(V.H*V)==Matrix(numpy.eye(V.shape[0])):
+            (scale,rotation) = numpy.linalg.eig(V.H*S*S*V)
             self.rotation=Matrix(rotation).H
             self.scale=Matrix(numpy.diagflat(scale**(0.5+0j)))
         
@@ -343,19 +343,19 @@ class Mvar(object,Automath,Inplace):
         """
         get the covariance matrix used by the object
         
-        >>> assert A.cov==dot(A.vectors.H,A.vectors)
-        >>> assert A.cov==dot(A.rotation.H,A.scale,A.scale,A.rotation)
+        >>> assert A.cov==A.vectors.H*A.vectors
+        >>> assert A.cov==A.rotation.H*A.scale*A.scale*A.rotation
         """
         vectors=self.vectors
-        return dot(vectors.H,vectors)
+        return vectors.H*vectors
     
     def get_vectors(self):
         """
         get the matrix of scaled eigenvectors (as rows)
 
-        >>> assert A.vectors==dot(A.scale,A.rotation)
+        >>> assert A.vectors==A.scale*A.rotation
         """
-        return dot(self.scale,self.rotation)
+        return self.scale*self.rotation
     
     def get_affine(self):
         return  autostack([
@@ -444,7 +444,7 @@ class Mvar(object,Automath,Inplace):
             self.mean,
         ])
 
-        return dot(data,transform)
+        return Matrix(data*transform)
     
     ############ Math
 
@@ -530,30 +530,28 @@ class Mvar(object,Automath,Inplace):
               
             >>> assert (A**0).scale==numpy.eye(A.mean.size)
             >>> assert (A**0).rotation== A.rotation
-            >>> assert (A**0).mean==dot(
-            ...     A.mean,A.rotation.H,A.scale**-1,A.rotation
-            ... )
+            >>> assert (A**0).mean == A.mean*A.rotation.H*A.scale**-1*A.rotation
             
         derivation of multiplication:
         
-            >>> assert A.vectors == dot(A.scale,A.rotation)
-            >>> assert (A**K1).vectors == dot(numpy.diag(A.scale.diagonal()**K1),A.rotation)
-            >>> assert (A**K1).vectors == dot(A.vectors,A.rotation.H,numpy.diag(A.scale.diagonal()**(K1-1)),A.rotation)
-            >>> assert (A**K1).mean == dot(A.mean,A.rotation.H,numpy.diag(A.scale.diagonal()**(K1-1)),A.rotation)
+            >>> assert A.vectors == A.scale*A.rotation
+            >>> assert (A**K1).vectors == numpy.diag(A.scale.diagonal()**K1)*A.rotation
+            >>> assert (A**K1).vectors == A.vectors*A.rotation.H*numpy.diag(A.scale.diagonal()**(K1-1))*A.rotation
+            >>> assert (A**K1).mean == A.mean*A.rotation.H*numpy.diag(A.scale.diagonal()**(K1-1))*A.rotation
             
             that's a matrix multiply.
             
             So all Mvars on the right,in a multiply, can just be converted to 
             matrix:
             
-            >>> assert A*B==A*dot(B.rotation.H,B.scale,B.rotation)
+            >>> assert A*B==A*B.rotation.H*B.scale*B.rotation
         """
         rotation = self.rotation
         new_scale = Matrix(
             numpy.diag(numpy.diagonal(self.scale)**(power-1))
         )
             
-        transform = dot(rotation.H,new_scale,rotation)
+        transform = rotation.H*new_scale*rotation
         
         return self*transform
         
@@ -571,7 +569,7 @@ class Mvar(object,Automath,Inplace):
                 item
             )
         :(  
-            Matrix(dot(item.rotation.H,item.scale,item.rotation)) if 
+            Matrix(item.rotation.H*item.scale*item.rotation) if 
 
             isinstance(item,Mvar) else 
             helper(numpy.array(item))
@@ -581,8 +579,8 @@ class Mvar(object,Automath,Inplace):
         multipliers={
             (Matrix):(
                 lambda self,matrix:Mvar.from_attr(
-                    mean=dot(self.mean,matrix),
-                    vectors=dot(self.scale,self.rotation,matrix),
+                    mean=self.mean*matrix,
+                    vectors=self.scale*self.rotation*matrix,
                 )
             ),
             (numpy.ndarray):(
@@ -633,8 +631,8 @@ class Mvar(object,Automath,Inplace):
             multiplying two Mvars together is defined to fit with power
             
             >>> assert A*A==A**2
-            >>> assert (A*B).affine==(A*dot(B.rotation.H,B.vectors)).affine
-            >>> assert (A*B).mean==dot(A.mean,B.rotation.H,B.scale,B.rotation)
+            >>> assert (A*B).affine==(A*B.rotation.H*B.vectors).affine
+            >>> assert (A*B).mean==A.mean*B.rotation.H*B.scale*B.rotation
             >>> assert A*(B**2) == A*(B.cov)
             
             Note that the result does not depend on the mean of the 
@@ -721,7 +719,7 @@ class Mvar(object,Automath,Inplace):
                 other.ndim else
                 other
                 ,
-                Matrix(dot(self.rotation.H,self.scale,self.rotation)) if 
+                Matrix(self.rotation.H*self.scale*self.rotation) if 
                 other.ndim else
                 self
             )
@@ -731,7 +729,7 @@ class Mvar(object,Automath,Inplace):
         multipliers={
             #if the left operand is a matrix, the mvar has been converted to
             #to a matrix -> use matrix multiply
-            (Matrix):dot,
+            (Matrix):operator.mul,
             #if the left operand is a constant use scalar multiply
             (numpy.ndarray):(
                 lambda constant,self:Mvar.from_cov(
@@ -771,7 +769,7 @@ class Mvar(object,Automath,Inplace):
             multiplying two Mvars together fits with the definition of power
             
             >>> assert B*B == B**2
-            >>> assert A*B == A*dot(B.rotation.H,B.vectors) 
+            >>> assert A*B == A*B.rotation.H*B.vectors 
             
             the second Mvar is automatically converted to a matrix, and the 
             result is handled by matrix multiply
@@ -780,7 +778,7 @@ class Mvar(object,Automath,Inplace):
             second mvar(!)
         
         martix*Mvar
-            >>> assert M*A==dot(M,A.rotation.H,A.scale,A.rotation)
+            >>> assert M*A==M*A.rotation.H*A.scale*A.rotation
 
         Mvar*constant==constant*Mvar
             >>> assert A*K1 == K1*A
@@ -981,7 +979,7 @@ if __name__=="__main__":
     import doctest
     #create random test objects
     A=Mvar.from_attr(mean=10*numpy.random.randn(1,2),vectors=10*astype(numpy.random.randn(2,2,2),complex))
-    B=Mvar.from_cov(mean=10*numpy.random.randn(1,2),cov=(lambda x:dot(x,x.H))(10*Matrix(astype(numpy.random.randn(2,2,2),complex))))
+    B=Mvar.from_cov(mean=10*numpy.random.randn(1,2),cov=(lambda x:x*x.H)(Matrix(10*astype(numpy.random.randn(2,2,2),complex))))
     C=Mvar.from_data(numpy.dot(astype(numpy.random.randn(50,2,2),complex),10*astype(numpy.random.randn(2,2,2),complex)))
    
     
