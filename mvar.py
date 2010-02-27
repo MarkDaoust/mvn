@@ -980,9 +980,10 @@ def isdiag(A):
 if __name__=="__main__":
     import doctest
     #create random test objects
-    A=Mvar.from_attr(mean=10*numpy.random.randn(1,2),vectors=10*numpy.random.randn(2,2))
-    B=Mvar.from_cov(mean=10*numpy.random.randn(1,2),cov=(lambda x:dot(x,x.H))(10*Matrix(numpy.random.randn(2,2))))
-    C=Mvar.from_data(numpy.dot(numpy.random.randn(50,2),10*numpy.random.randn(2,2)))
+    A=Mvar.from_attr(mean=10*numpy.random.randn(1,2),vectors=10*astype(numpy.random.randn(2,2,2),complex))
+    B=Mvar.from_cov(mean=10*numpy.random.randn(1,2),cov=(lambda x:dot(x,x.H))(10*Matrix(astype(numpy.random.randn(2,2,2),complex))))
+    C=Mvar.from_data(numpy.dot(astype(numpy.random.randn(50,2,2),complex),10*astype(numpy.random.randn(2,2,2),complex)))
+   
     
     M=Matrix(numpy.random.randn(2,2))
     
@@ -1002,10 +1003,6 @@ if __name__=="__main__":
     print 'K2=',K2
     print 'N=',N
     
-    print 
-    print (A-B)+B == A
-    print (A-B).cov== A.cov - B.cov
-    print B+(-A) == B+(-1)*A == B-A and (B-A)+A==B
     doctest.testmod()
 
     

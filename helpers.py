@@ -8,7 +8,7 @@ def astype(self,newtype):
     """
     duplicate=self
     duplicate.dtype=newtype
-    return duplicate
+    return numpy.squeeze(duplicate)
 
 def diagstack(arrays):
     """
