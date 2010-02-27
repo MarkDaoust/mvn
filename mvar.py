@@ -910,12 +910,12 @@ def wiki(P,M):
     The quickest way to prove it's equivalent is by examining this:
         >>> assert A & B == ((A*A**-2)+(B*B**-2))**-1
     """
-    yk=M.mean.T-P.mean.T
+    yk=M.mean.H-P.mean.H
     Sk=P.cov+M.cov
     Kk=dot(P.cov,Matrix(Sk).I)
     
     return Mvar.from_cov(
-        mean=(P.mean.T+dot(Kk,yk)).T,
+        mean=(P.mean.H+dot(Kk,yk)).H,
         cov=dot((numpy.eye(P.mean.size)-Kk),P.cov)
     )
 
@@ -1000,6 +1000,7 @@ if __name__=="__main__":
     print 'K1=',K1
     print 'K2=',K2
     print 'N=',N
+    
     
     doctest.testmod()
 
