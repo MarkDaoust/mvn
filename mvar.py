@@ -28,38 +28,8 @@ except ImportError:
 from helpers import autostack,diagstack,astype,paralell,close,dot,rotation2d
 from automath import Automath
 from inplace import Inplace
-
-class Matrix(numpy.matrix):
-    """
-    Imporved version of the martix class.
-    the only modifications are:
-        division doesn't try to do elementwise division, it tries to multiply 
-            by the inverse of the other
-        __eq__ runs numpy.allclose, so the matrix is treated as one thing, not 
-            a collection of things.
-    """
-    def __new__(cls,data,dtype=None,copy=True):
-        self=numpy.matrix(data,dtype,copy)
-        self.__class__=cls
-        return self
-
-    def __eq__(self,other):
-        return numpy.allclose(self,other)
-    
-    def __div__(self,other):
-        return self*other**(-1)
-
-    def __rdiv__(self,other):
-        return other*self**(-1)
-
-    def __repr__(self):
-        S=numpy.matrix.__repr__(self)
-        return 'M'+S[1:]
-
-    def diagonal(self):
-        return numpy.squeeze(numpy.array(numpy.matrix.diagonal(self)))
-    
-    __str__ = __repr__
+from matrix import Matrix
+from plane import Plane
 
 
 class Mvar(object,Automath,Inplace):
@@ -176,11 +146,11 @@ class Mvar(object,Automath,Inplace):
             low valued vectors uses the same defaults as numpy.allclose()
         """
         stack=numpy.real_if_close(stack)
-        
+        stack=Matrix(stack)
         #unpack the stack into the object's parameters
-        self.mean = Matrix(stack[-1,1:])
-        self.scale = Matrix(numpy.diagflat(stack[:-1,0]))
-        self.rotation = Matrix(stack[:-1,1:])
+        self.mean = stack[-1,1:]
+        self.scale = numpy.diagflat(stack[:-1,0])
+        self.rotation = stack[:-1,1:]
         
         assert not do_square or do_compress,"do_square calls do_compress"
         
@@ -280,19 +250,35 @@ class Mvar(object,Automath,Inplace):
     def from_cov(cov,**kwargs):
         """
         everything in kwargs is passed directly to the constructor
-        don't bother to set 'do_square' to true, they will automatically 
-        be orthogonal when pulled out of the covariance
+        don't bother to set 'do_square' is set false: the eigenvectors will 
+        automatically be orthogonal when pulled out of the cov matrix
         """
         #get the scale and rotation matracies
         scale,rotation = numpy.linalg.eig(cov)
         
         return Mvar.from_attr(
-            vectors=Matrix(rotation).H,
+            rotation=Matrix(rotation).H,
             #square root the scales
             scale=numpy.real_if_close((scale)**(0.5+0j)),
-            do_square=False,
             **kwargs
         )
+
+    @staticmethod
+    def from_std(std,**kwargs):
+        """
+        everything in kwargs is passed directly to the constructor
+        'do_square' is set false: the eigenvectors will automatically 
+        be orthogonal when pulled out of the std matrix
+        """
+        #get the scale and rotation matracies
+        scale,rotation = numpy.linalg.eig(std)
+        
+        return Mvar.from_attr(
+            rotation=Matrix(rotation).H,
+            scale=scale,
+            **kwargs
+        )
+
     
     @staticmethod
     def from_data(data, bias=0, **kwargs):
@@ -826,9 +812,9 @@ class Mvar(object,Automath,Inplace):
         >>> assert (A+B).cov==A.cov+B.cov
         
         watch out subtraction is the inverse of addition 
-         
+            >>> assert A-A == Mvar.from_attr(mean=[0,0])
             >>> assert (A-B)+B == A
-            >>> assert (A-B).mean== A.mean- B.mean
+            >>> assert (A-B).mean== A.mean - B.mean
             >>> assert (A-B).cov== A.cov - B.cov
             
         if you want something that acts like rand()-rand() use:
@@ -839,24 +825,50 @@ class Mvar(object,Automath,Inplace):
         __sub__ also fits with __neg__, __add__, and scalar multiplication.
         
             >>> assert B+(-A) == B+(-1)*A == B-A
+            >>> assert A-B == -(B-A)
             
             but watchout you'll end up with complex... everything?
         """
+        #stack all the vectors
+        stack=numpy.vstack((self.vectors,other.vectors))
+        
+        #U=U=Plane(vectors=numpy.hstack((numpy.vstack((A.vectors,B.vectors)),numpy.eye(4,2))).H).vectors.H
+        #the above line does not give a unitary result.
+        
         return Mvar.from_cov(
             mean= (self.mean+other.mean),
-            cov = (self.cov + other.cov),
+            #this next line is what fails my tests
+            #solution? 
+            #http://en.wikipedia.org/wiki/Square_root_of_a_matrix:
+            #   math notation converted to local python standard)
+            #   """if T = A*A.H = B*B.H, then there exists a unitary U s.t. 
+            #    A = B*U"""
+            #http://en.wikipedia.org/wiki/Unitary_matrix
+            #   """In mathematics, a unitary matrix is an nxn complex matrix U 
+            #    satisfying the condition U.H*U = I, U*U.H = I"""
+            #so:
+            #   cov=stack.H*stack              #stack is Nxn
+            #   cov=new_vectors.H*new_vectors  #new_vectors is nxn
+            #   stack=U.H*new_vectors.H ; stack.H=new_vectors*U
+            #   U.H*U=I ; U*U.H=I
+            #   
+            #   start with U ~= stack
+            #   then use the plane class to orthogonalize the cross-space vectors
+            #   of U -> U.H*U = I and that just gives us the vectors, without calculating the covariance..
+            cov = (stack.H*stack),
         )
         
     ################# Non-Math python internals
     def __iter__(self):
-        pass
+        vectors=self.vectors
+        return iter(numpy.vstack(vectors,-vectors))
         
     def __repr__(self):
         return '\n'.join([
             'Mvar.from_attr(',
             '    mean=',8*' '+self.mean.__repr__().replace('\n','\n'+8*' ')+',',
             '    scale=',8*' '+self.scale.__repr__().replace('\n','\n'+8*' ')+',',
-            '    vectors=',8*' '+self.rotation.__repr__().replace('\n','\n'+8*' ')+',',
+            '    rotation=',8*' '+self.rotation.__repr__().replace('\n','\n'+8*' ')+',',
             ')',
         ])
     
@@ -978,8 +990,8 @@ def isdiag(A):
 if __name__=="__main__":
     import doctest
     #create random test objects
-    A=Mvar.from_attr(mean=10*numpy.random.randn(1,2),vectors=10*astype(numpy.random.randn(2,2,2),complex))
-    B=Mvar.from_cov(mean=10*numpy.random.randn(1,2),cov=(lambda x:x*x.H)(Matrix(10*astype(numpy.random.randn(2,2,2),complex))))
+    A=Mvar.from_attr(mean=10*astype(numpy.random.randn(1,2,2),complex),vectors=10*astype(numpy.random.randn(2,2,2),complex))
+    B=Mvar.from_cov(mean=10*astype(numpy.random.randn(1,2,2),complex),cov=(lambda x:x*x.H)(Matrix(10*astype(numpy.random.randn(2,2,2),complex))))
     C=Mvar.from_data(numpy.dot(astype(numpy.random.randn(50,2,2),complex),10*astype(numpy.random.randn(2,2,2),complex)))
    
     
@@ -1001,7 +1013,7 @@ if __name__=="__main__":
     print 'K2=',K2
     print 'N=',N
     
-    
+    print A+B
     doctest.testmod()
 
     
