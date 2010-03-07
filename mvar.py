@@ -25,7 +25,7 @@ except ImportError:
         )
 
 #local
-from helpers import autostack,diagstack,astype,paralell,close,dot,rotation2d
+from helpers import autostack,diagstack,astype,paralell,close,dots,rotation2d
 from automath import Automath
 from inplace import Inplace
 from matrix import Matrix
@@ -232,7 +232,7 @@ class Mvar(object,Automath,Inplace):
             if isdiag(scale):
                 scale=scale.diagonal()
             scale=scale.squeeze()
-            assert scale.ndim==1,"scales must be flat or diagonal"
+            assert scale.ndim==1,"scales must be callable, flat or diagonal"
             scale=scale[:,numpy.newaxis]
         
         if not callable(mean):
@@ -262,23 +262,6 @@ class Mvar(object,Automath,Inplace):
             scale=numpy.real_if_close((scale)**(0.5+0j)),
             **kwargs
         )
-
-    @staticmethod
-    def from_std(std,**kwargs):
-        """
-        everything in kwargs is passed directly to the constructor
-        'do_square' is set false: the eigenvectors will automatically 
-        be orthogonal when pulled out of the std matrix
-        """
-        #get the scale and rotation matracies
-        scale,rotation = numpy.linalg.eig(std)
-        
-        return Mvar.from_attr(
-            rotation=Matrix(rotation).H,
-            scale=scale,
-            **kwargs
-        )
-
     
     @staticmethod
     def from_data(data, bias=0, **kwargs):
@@ -822,7 +805,7 @@ class Mvar(object,Automath,Inplace):
             >>> assert (A+B*(-1*numpy.eye(A.mean.size))).mean== A.mean - B.mean
             >>> assert (A+B*(-1*numpy.eye(A.mean.size))).cov== A.cov + B.cov
 
-        __sub__ also fits with __neg__, __add__, and scalar multiplication.
+        __sub__ should also fit with __neg__, __add__, and scalar multiplication.
         
             >>> assert B+(-A) == B+(-1)*A == B-A
             >>> assert A-B == -(B-A)
@@ -831,30 +814,22 @@ class Mvar(object,Automath,Inplace):
         """
         #stack all the vectors
         stack=numpy.vstack((self.vectors,other.vectors))
-        
-        #U=U=Plane(vectors=numpy.hstack((numpy.vstack((A.vectors,B.vectors)),numpy.eye(4,2))).H).vectors.H
-        #the above line does not give a unitary result.
-        
+
         return Mvar.from_cov(
             mean= (self.mean+other.mean),
             #this next line is what fails my tests
             #solution? 
             #http://en.wikipedia.org/wiki/Square_root_of_a_matrix:
-            #   math notation converted to local python standard)
+            #   (math notation converted to local python standard)
             #   """if T = A*A.H = B*B.H, then there exists a unitary U s.t. 
             #    A = B*U"""
+            #
+            #a unitary matrix is a complex rotation matrix
             #http://en.wikipedia.org/wiki/Unitary_matrix
             #   """In mathematics, a unitary matrix is an nxn complex matrix U 
             #    satisfying the condition U.H*U = I, U*U.H = I"""
-            #so:
-            #   cov=stack.H*stack              #stack is Nxn
-            #   cov=new_vectors.H*new_vectors  #new_vectors is nxn
-            #   stack=U.H*new_vectors.H ; stack.H=new_vectors*U
-            #   U.H*U=I ; U*U.H=I
-            #   
-            #   start with U ~= stack
-            #   then use the plane class to orthogonalize the cross-space vectors
-            #   of U -> U.H*U = I and that just gives us the vectors, without calculating the covariance..
+            #
+            #I don't know how to fix it but this is close. 
             cov = (stack.H*stack),
         )
         
@@ -924,11 +899,11 @@ def wiki(P,M):
     """
     yk=M.mean.H-P.mean.H
     Sk=P.cov+M.cov
-    Kk=dot(P.cov,Matrix(Sk).I)
+    Kk=dots(P.cov,Matrix(Sk).I)
     
     return Mvar.from_cov(
-        mean=(P.mean.H+dot(Kk,yk)).H,
-        cov=dot((numpy.eye(P.mean.size)-Kk),P.cov)
+        mean=(P.mean.H+dots(Kk,yk)).H,
+        cov=dots((numpy.eye(P.mean.size)-Kk),P.cov)
     )
 
 def isplit(sequence,fkey=bool): 
@@ -992,7 +967,7 @@ if __name__=="__main__":
     #create random test objects
     A=Mvar.from_attr(mean=10*astype(numpy.random.randn(1,2,2),complex),vectors=10*astype(numpy.random.randn(2,2,2),complex))
     B=Mvar.from_cov(mean=10*astype(numpy.random.randn(1,2,2),complex),cov=(lambda x:x*x.H)(Matrix(10*astype(numpy.random.randn(2,2,2),complex))))
-    C=Mvar.from_data(numpy.dot(astype(numpy.random.randn(50,2,2),complex),10*astype(numpy.random.randn(2,2,2),complex)))
+    C=Mvar.from_data(dots(astype(numpy.random.randn(50,2,2),complex),10*astype(numpy.random.randn(2,2,2),complex)))
    
     
     M=Matrix(numpy.random.randn(2,2))
@@ -1013,7 +988,6 @@ if __name__=="__main__":
     print 'K2=',K2
     print 'N=',N
     
-    print A+B
     doctest.testmod()
 
     

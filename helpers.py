@@ -1,6 +1,8 @@
 import itertools
 import numpy
 
+from matrix import Matrix
+
 def astype(self,newtype):
     """
     return an array pointing to the same data, but interpreting it as a 
@@ -37,10 +39,10 @@ def autostack(rows,default=0):
     vertically stack the results of horizontally stacking each row in rows, 
     with no need to explicitly declare the size of and callables
     
-    >>>autostack([ 
-    ...    [numpy.eye(3),numpy.zeros]
-    ...    [  numpy.ones,          1]
-    ...])
+    >>> autostack([ 
+    ...     [numpy.eye(3),numpy.zeros]
+    ...     [  numpy.ones,          1]
+    ... ])
     array([[ 1.,  0.,  0.,  0.],
            [ 0.,  1.,  0.,  0.],
            [ 0.,  0.,  1.,  0.],
@@ -50,21 +52,32 @@ def autostack(rows,default=0):
     The 'default' parameter controls the size when a row of column contains 
     only callables, 
 
-    >>>autostack([
-    ...    [[1,2,3]],
-    ...    [numpy.ones]
-    ...],default=0)
+    >>> autostack([
+    ...     [[1,2,3]],
+    ...     [numpy.ones]
+    ... ],default=0)
     array([[ 1.,  2.,  3.]])
     
-    >>>autostack([
-    ...    [[1,2,3]],
-    ...    [numpy.ones]
-    ...],default=4)
+    >>> autostack([
+    ...     [[1,2,3]],
+    ...     [numpy.ones]
+    ... ],default=4)
     array([[ 1.,  2.,  3.],
            [ 1.,  1.,  1.],
            [ 1.,  1.,  1.],
            [ 1.,  1.,  1.],
            [ 1.,  1.,  1.]])
+
+    >>> autostack([
+    ...     [   [1,2,3],1],
+    ...     [eye       ,[[1]
+    ...                , [1]]]
+    ... ])
+    array([[ 1.,  2.,  3.,  1.],
+           [ 1.,  0.,  0.,  1],
+           [ 0.,  1.,  0.,  1]])
+
+
     """
     
     #convert the data items into an object array 
@@ -163,7 +176,7 @@ def close(a,other = None,atol=1e-5,rtol=1e-8):
     
     return ((delta<atol) | (delta/MAX<rtol))
 
-def dot(*args):
+def dots(*args):
     """
     like numpy.dot but takes any number or arguments
     """
@@ -175,4 +188,4 @@ def rotation2d(angle):
         [ numpy.cos(angle),numpy.sin(angle)],
         [-numpy.sin(angle),numpy.cos(angle)],
     ])
-    
+

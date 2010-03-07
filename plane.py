@@ -1,17 +1,27 @@
 import numpy
 
 from helpers import autostack
-from matrix import Matrix 
+from matrix import Matrix,eye
 
 class Plane(object):
     """
     there's a problem here: this creates something who's transpose is it's unverse,
-    not something who's
-    """
+    not something who's conjugate transpose is it's inverse
+    (and what do I even mean by inverse - they're usually not square) 
+    
+    >>> P1=Plane(vectors=Matrix(numpy.random.randn(3,3)))
+    >>> assert P1.vectors.T*P1.vectors==(lambda shape:numpy.eye(*shape))
+    
+    >>> R=numpy.random.randn(3,3,2)
+    >>> R.dtype=complex
+    >>> P2=Plane(vectors=Matrix(R))
+    >>> assert (P1.vectors.T*P1.vectors)!= eye,'this isn't supposed to match' 
+    >>> assert (P1.vectors.H*P1.vectors)== eye,'this is'
+    """ 
     
     def __init__(self,
-        mean=numpy.zeros,
         vectors=numpy.zeros,
+        mean=numpy.zeros,
         do_square=True,
         do_unit=True
     ):
@@ -20,31 +30,36 @@ class Plane(object):
             [          1,mean   ],
         ]))
         
+        if len(vectors) > len(vectors[0]):
+            raise ValueError('the sequence of vectors making up a plane must not be longer than the vectrors themselves')
+        
         self.vectors=stack[:-1,1:]
         self.mean=stack[-1,1:]
         
-        if do_square: self.do_square()
-        if do_unit: self.do_unit()
-         
-    def do_square(self):
-        vectors=self.vectors
-        for (n,vector) in enumerate(vectors[:-1,:]):
-            vectors[n+1:,:]-=_project(vectors[n+1:,:],dir=vector)
-        self.vectors=vectors
+        if do_square: self.vectors=square(vectors)
+        if do_unit: self.vectors=unit(vectors)
         
-    def do_unit(self):
-        vectors=self.vectors
-        #the two .T's here are just to deal with numpy broadcasting, don't replace them with .T's
-        self.vectors=Matrix(numpy.array(vectors.T)/numpy.sqrt(numpy.sum(numpy.array(vectors)**2,1))).T
-        
-        
-def _project(vectors,dir):
-    dir=dir/numpy.sqrt(numpy.sum(numpy.array(dir)**2))
     
+def square(vectors):
+    for (n,vector) in enumerate(vectors[:-1,:]):
+        vectors[n+1:,:]-=project(vectors[n+1:,:],dir=vector)
+        
+    return vectors
+    
+def unit(vectors):
+    return Matrix(numpy.array(vectors.T)/numpy.sqrt(numpy.sum(numpy.array(vectors)**2,1))).T
+    
+def project(vectors,dir):
+    dir=unit(dir)
+        
     return numpy.apply_along_axis(
         lambda vector,onto=dir: numpy.dot(vector,onto.T),        
         axis=1,
         arr=vectors,
     )*dir
 
-Q=Plane(vectors=Matrix([[1+0j,0+2j,3+4j],[2,1+3j,0+0j],[0+1j,2,0+5j]])).vectors
+
+if __name__=="__main__":
+    import doctest
+    doctest.testmod()
+
