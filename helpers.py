@@ -189,3 +189,14 @@ def rotation2d(angle):
         [-numpy.sin(angle),numpy.cos(angle)],
     ])
 
+def issquare(A):
+    shape=A.shape
+    return A.ndim==2 and shape[0] == shape[1]
+
+def isrotation(A):
+    R=Matrix(A)
+    return (R*R.H == eye(R.shape[0])).all()
+
+def isdiag(A):
+    shape=A.shape
+    return A.ndim==2 and ((A != 0) == numpy.eye(shape[0],shape[1])).all()

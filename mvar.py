@@ -1,7 +1,21 @@
 #! /usr/bin/env python
 
+"""
+This module contains only two things: the "Mvar" class, and the "wiki" 
+function.
+
+Mvar is the main idea of the package: Multivariate normal distributions 
+    packaged to act like a vector. Perfect for kalman filtering, sensor fusion, 
+    (and maybe expectation maximization)  
+
+wiki is just to demonstrate the equivalency between my blending algorithm, 
+    and the wikipedia version of it.
+    (http://en.wikipedia.org/wiki/Kalman_filtering#Update)
+
+see their documention for more information.    
+"""
+
 ##imports
-#internals
 
 #builtins
 import itertools
@@ -13,75 +27,72 @@ import operator
 #3rd party
 import numpy
 
-try:
-    from matplotlib.patches import Ellipse
-except ImportError:
-    def Ellipse(*args,**kwargs):
-        """
-        Unable to find matplotlib.patches.Ellipse
-        """
-        raise ImportError(
-            "Ellipse is required, from matplotlib.patches, to get a patch"
-        )
+#maybe imports: third party things that we can live without
+from maybe import Ellipse
 
 #local
-from helpers import autostack,diagstack,astype,paralell,close,dots,rotation2d
+from helpers import autostack,diagstack,astype,paralell,close,dots,rotation2d,isdiag
 from automath import Automath
 from inplace import Inplace
 from matrix import Matrix
 from plane import Plane
 
 
+
 class Mvar(object,Automath,Inplace):
     """
-    Multivariate normal distributions packaged to act like a vector.
-        (it's an extension of the vectors)
+    Multivariate normal distributions packaged to act like a vector 
+    (http://en.wikipedia.org/wiki/Vector_space)
     
-    This is done with kalman filtering in mind, but is good for anything where 
-        you need to track linked uncertianties across multiple variables.
-
+    The class fully supports complex numbers.
+    
     basic math operators (+,-,*,/,**,&) have been overloaded to work 'normally'
-    for kalman filtering and common sense. But there are *a lot* of surprising 
-    features in the math these things produce, so watchout.
+        for kalman filtering and common sense. But there are several surprising 
+        features in the math these things produce, so watchout.
     
+    This is perfect for kalman filtering, sensor fusion, or anything where you 
+        need to track linked uncertianties across multiple variables 
+        (
+            like maybe the expectation maximization algorithm
+            http://en.wikipedia.org/wiki/Expectation-maximization_algorithm
+            and principal component analysis 
+        )
+
     since the operations are defined for kalman filtering, the entire process 
-    becomes:
+        becomes (yes it's this simple.):
         
         state[t+1] = (state[t]*STM + noise) & measurment
         
-        state is a list of mvars (indexed by time), noise and measurment are 
-        Mvars, (noise having a zero mean) and 'STM' is the state transition 
-        matrix
+        Where 'state' is a list of mvars (indexed by time), 'noise' and 
+        'measurment' are Mvars, ('noise' having a zero mean) and 'STM' is the 
+        state transition matrix
         
-    
-    A nice side effect of this is that sensor fusion is just:
-    
+    Sensor fusion is just:
         result = measurment1 & measurrment2 & measurment3
-       
         or
-        
-        result = paralell(*measurments)
+        result = Mvar.blend(*measurments)
         
     normally (at least in what I read on wikipedia) these things are handled 
-    with mean and covariance, but I find mean,scale,rotation to be more useful, 
-    so that is how the data is actually managed, but other useful info in 
-    accessable through virtual attributes (properties).
+        with mean and covariance, but I find mean, scale, and rotation matrixes 
+        to be more useful, so that is how the data is actually managed in this 
+        class, but other useful info in accessable through virtual attributes 
+        (properties).
     
-    This system make compression (think principal component analysis) much 
-    easier and more useful, but until I can think of a way to get directly 
-    from data to the eigenvectors of the covariance matrix of the data, without 
-    calculating the covariance, it is of limited utility).
+        This system make compression (think principal component analysis) much 
+        easier and more useful, because I've finally found a way get 
+        eigenvectors withoug calculating a full covariance matrix. 
     
     actual attributes:
         mean
             mean of the distribution
         scale
-            the eigenvalue asociated with each eigenvector,as a diagonal matrix
+            the eigenvalue asociated with each eigenvector, as a diagonal matrix
         rotation
             unit eigenvectors, as rows
+        
     virtual attributes:    
         vectors
-            vectors eigenvectors, as rows
+            scaled eigenvectors, as rows
         cov
             covariance matrix
         affine
@@ -152,11 +163,10 @@ class Mvar(object,Automath,Inplace):
         self.scale = numpy.diagflat(stack[:-1,0])
         self.rotation = stack[:-1,1:]
         
-        assert not do_square or do_compress,"do_square calls do_compress"
-        
         if do_square:
             self.do_square()
-        elif do_compress:
+        
+        if do_compress:
             self.do_compress()
         
     def do_square(self,**kwargs):
@@ -166,18 +176,19 @@ class Mvar(object,Automath,Inplace):
         
         **kwargs is just passed on to do_compress
         """
-        #to decouple compress from square you'll need do the square on the 
-        #Mvar's brane instead of the full-space, to do that you'll need
-        #something like the plane class I've started developing in the adjacent file
-        V=self.rotation
-        S=self.scale
-    
-        if not Matrix(V.H*V)==Matrix(numpy.eye(V.shape[0])):
-            (scale,rotation) = numpy.linalg.eig(V.H*S*S*V)
-            self.rotation=Matrix(rotation).H
-            self.scale=Matrix(numpy.diagflat(scale**(0.5+0j)))
-        
+        V=self.scale*self.rotation
+        (scale,rotation) = numpy.linalg.eig(V.H*V)
+        self.rotation=Matrix(rotation).H
+        self.scale=Matrix(numpy.diagflat(scale**(0.5+0j)))
         self.do_compress(**kwargs)
+        
+        ## this seems right for real numbers fails a bunch of tests 
+        #V=self.scale*self.rotation
+        #(Xval,Xvec)=numpy.linalg.eigh(V*V.H)
+        #Xvec=Xvec.H*V
+        #Xval=numpy.real_if_close(Xval**(0.5+0j))
+        #self.scale=numpy.diagflat(Xval)
+        #self.rotation=numpy.vstack([(vector/value) for vector,value in zip(Xvec,Xval)])
         
     def do_compress(self,rtol=1e-5,atol=1e-8):
         """
@@ -420,11 +431,34 @@ class Mvar(object,Automath,Inplace):
     #### logical operations
     def __eq__(self,other):
         """
-        A==?
+        >>> assert A==A
+        
         compares the means and covariances or the distributions
         """
         return self.mean==other.mean and self.cov==other.cov
-        
+    
+    def __abs__(self):
+        """
+        >>> A=abs(A)
+        >>> assert A ==abs(-A)
+        """
+        return Mvar.from_cov(mean=self.mean,cov=self.cov)
+
+    def __pos__(self):
+        """
+        >>> assert A == +A
+        """
+        return self
+    
+    def __invert__(self):
+        """
+        invert negates the covariance without negating the mean.
+        >>> assert (~A).mean == A.mean
+        >>> assert (~A).vectors == (-A).vectors
+        """
+        return Mvar.from_attr(mean=self.mean, vectors=(0+1j)*self.vectors)
+    
+    
     def blend(*mvars):
         """
         A & ?
@@ -703,7 +737,7 @@ class Mvar(object,Automath,Inplace):
             (numpy.ndarray):(
                 lambda constant,self:Mvar.from_cov(
                     mean= constant*self.mean,
-                    cov = constant*self.cov,
+                    cov = constant*self.cov
                 )
             )
         }
@@ -947,20 +981,6 @@ def isplit(sequence,fkey=bool):
         result[key] = R
         
     return result
-
-    
-def issquare(A):
-    shape=A.shape
-    return A.ndim==2 and shape[0] == shape[1]
-
-def isrotation(A):
-    R=Matrix(A)
-    return (R*R.H == eye(R.shape[0])).all()
-
-def isdiag(A):
-    shape=A.shape
-    return A.ndim==2 and ((A != 0) == numpy.eye(shape[0],shape[1])).all()
-
 
 if __name__=="__main__":
     import doctest

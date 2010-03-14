@@ -8,11 +8,12 @@ class Automath():
     abctract base class
     It attempts to define a complete set of sensible operations from a more 
     limited set
-    if you define (+) you get an inefficient natural integer multiply (*N)
-    if you define (*) you get an inefficient natural integer power (*N)
-    if you define mulyiply for negative integers (*-N) you get neg (-)
-        and from neg you get sub
-    if you define power for negative integers (**-N) you get div (/)
+    if you define (A+B) you get an inefficient positive integer multiply (A*N)
+    if you define (A*B) you get an inefficient positive integer power (A*N)
+    if you define mulyiply for negative integers (A*-N) you get neg (-A) and 
+        sub (A-B)
+    if you define power for negative integers (A**-N) you get div (A/B)
+    if you define (A & B) and (A-B) and 
     """
     def __radd__(self,other):
         return self+other
@@ -44,3 +45,8 @@ class Automath():
     def __rdiv__(self,other):
         return other*self**(-1)
     
+    def __or__(self,other):
+        return (self+other)-(self & other)
+
+    def __xor__(self,other):
+        return (self+other)-2*(self & other)
