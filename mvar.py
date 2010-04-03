@@ -176,19 +176,16 @@ class Mvar(object,Automath,Inplace):
         
         **kwargs is just passed on to do_compress
         """
-        V=self.scale*self.rotation
+
         (scale,rotation) = numpy.linalg.eig(V.H*V)
-        self.rotation=Matrix(rotation).H
-        self.scale=Matrix(numpy.diagflat(scale**(0.5+0j)))
-        self.do_compress(**kwargs)
+        rotation=Matrix(rotation).H
+        scale=numpy.real_if_close(Matrix(numpy.diagflat(scale**(0.5+0j))))
         
-        ## this seems right for real numbers fails a bunch of tests 
-        #V=self.scale*self.rotation
-        #(Xval,Xvec)=numpy.linalg.eigh(V*V.H)
-        #Xvec=Xvec.H*V
-        #Xval=numpy.real_if_close(Xval**(0.5+0j))
-        #self.scale=numpy.diagflat(Xval)
-        #self.rotation=numpy.vstack([(vector/value) for vector,value in zip(Xvec,Xval)])
+        (Xval,Xvec)=numpy.linalg.eigh(V*V.H)
+        Xvec=Xvec.H*V
+        
+        Xvec=numpy.vstack([(value**-1*vector) for vector,value in zip(Xvec,Xval)])
+        Xval=numpy.real_if_close(numpy.diagflat(Xval**(0.5+0j)))
         
     def do_compress(self,rtol=1e-5,atol=1e-8):
         """
