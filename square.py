@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 """
-this module contains one function: squuare
+this module contains one function: square
 """
-
 
 import numpy
 from matrix import Matrix
@@ -10,6 +9,9 @@ from operator import ge
 from helpers import astype
 
 def square(vectors):
+    """
+    given a series of vectors, this function calculates 
+    """
     vectors=Matrix(vectors)
     
     if ge(*vectors.shape):

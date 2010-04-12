@@ -183,6 +183,9 @@ def dots(*args):
     assert len(args)>1
     return reduce(numpy.dot,args)
 
+def sortrows(data,column=0):
+    return stack[numpy.argsort(data[:,column].flatten()),:]
+
 def rotation2d(angle):
     return numpy.array([
         [ numpy.cos(angle),numpy.sin(angle)],
