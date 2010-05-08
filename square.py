@@ -13,14 +13,19 @@ def square(vectors):
     given a series of vectors, this function calculates 
     """
     vectors=Matrix(vectors)
+    shape=vectors.shape
     
-    if ge(*vectors.shape):
+    if not numpy.all(shape):
+        var=numpy.zeros([0])
+        vec=numpy.zeros([0,shape[1]])
+    elif ge(*shape):
         cov=vectors.H*vectors
         (var,vec)=numpy.linalg.eigh(vectors.H*vectors)
         vec=vec.H
     else:
         Xcov=vectors*vectors.H
-        (Xval,Xvec)=numpy.linalg.eigh(vectors*vectors.H)
+        
+        (Xval,Xvec)=numpy.linalg.eigh(Xcov)
         
         var=numpy.diag(Xcov)
         

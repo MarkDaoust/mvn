@@ -164,6 +164,10 @@ class Mvar(object,Automath,Inplace):
         """
         #stack everything to check sizes and automatically inflate any 
         #functions that were passed in
+        
+        var= var if callable(var) else numpy.squeeze(var)[:,numpy.newaxis]
+        mean= mean if callable(mean) else numpy.squeeze(mean)[numpy.newaxis,:]
+        
         stack=Matrix(autostack([
             [var,vectors],
             [1  ,mean   ],
@@ -174,7 +178,7 @@ class Mvar(object,Automath,Inplace):
         self.var = numpy.array(stack[:-1,0]).flatten()
         self.vectors = stack[:-1,1:]
         
-        assert numpy.all(isreal(var)),"variances must be real"
+        assert numpy.isreal(var).all(),"variances must be real"
         
         if do_square:
             self.do_square()
@@ -223,7 +227,7 @@ class Mvar(object,Automath,Inplace):
         return Mvar(
             vectors=vectors,
             var=var,
-            do_square=false,
+            do_square=False,
             **kwargs
         )
     
@@ -253,6 +257,8 @@ class Mvar(object,Automath,Inplace):
         
         #calculate the covariance
         data-=mean
+        data=Matrix(data)
+        
         cov=(data.H*data)/N
         
         #create the mvar from the mean and covariance of the data
@@ -354,7 +360,7 @@ class Mvar(object,Automath,Inplace):
         a large number of samples will have the same mean and cov as the 
         Mvar being sampled
         """
-        assert all(self.var>0),(
+        assert (self.var>0).all(),(
             "you can't sample a distribution with negative variance"
         )
         
@@ -376,9 +382,9 @@ class Mvar(object,Automath,Inplace):
     def __abs__(self):
         """
         sets all the variances to positive
-        >>> assert numpy.all(A.var>=0)
+        >>> assert (A.var>=0).all()
         >>> assert abs(A) == abs(~A)
-        >>> assert numpy.all(A.mean == abs(A).mean)
+        >>> assert (A.mean == abs(A).mean).all()
         """
         result=self.copy()
         result.var=numpy.abs(self.var)
@@ -451,21 +457,21 @@ class Mvar(object,Automath,Inplace):
     def __pow__(self,power):
         """
         A**?
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
         This definition was developed to turn kalman blending into a standard 
         resistor-style 'paralell' operation
         
-        The main idea is that only the scale matrix (eigenvalues) gets powered.
+        The main idea is that only the variances get powered.
         (which is normal for diagonalizable matrixes), stretching the sheet at 
-        an independant rate along each (perpendicular) eigenvector
+        at an aprpriate rate along each (perpendicular) eigenvector
         
-        Because the scale matrix is a diagonal, powers on it are easy, 
-        so this is not restricted to integer powers
+        Because powers on the variance are easy, this is not restricted to 
+        integer powers
         
         But the mean is also affected by the stretching. It's as if the usual 
         value of the mean is a "zero power mean" transformed by whatever is 
-        the current value of the A.vectors.H*A.scaled matrix and if you change that 
-        the mean changes with it..
+        the current value of the self.scaled matrix and if you change that 
+        matrix the mean changes with it..
         
         Most things you expect to work just work.
         
@@ -473,77 +479,27 @@ class Mvar(object,Automath,Inplace):
             >>> assert (A**K1)*(A**K2)==A**(K1+K2)
             >>> assert A**K1/A**K2==A**(K1-K2)
         
-        Zero power h333333as some interesting properties: 
+        Zero power has some interesting properties: 
             
             The resulting ellipse is always a unit sphere, with the orientation 
             unchanged, but the mean is wherever it gets stretched to while we 
             transform the ellipse to a sphere
               
-            >>> assert (A**0).scale==numpy.eye(A.mean.size)
+            >>> assert ((A**0).var == numpy.ones(A.mean.shape)).all()
             >>> assert (A**0).vectors== A.vectors
             >>> assert (A**0).mean == A.mean*(A**-1).transform == A.mean*A.transform**(-1)
             
-        derivation of multiplication:
-            >>> assert A.scaled == A.scale*A.vectors
-            >>> assert (A**K1).scaled == numpy.diag(A.scale.diagonal()**K1)*A.vectors
-            >>> scaled = lambda mvar:Matrix(numpy.diagflat(mvar.var**0.5))*mvar.scaled 
-            >>> assert (
-                (A**K1).scaled == 
-                scaled(A)*A.vectors.H*Matrix(numpy.diagflat(A.var**((K1-1)/2))*A.scaled
-            >>> assert (A**K1).mean == A.mean*A.vectors.H*numpy.diag(A.scale.diagonal()**(K1-1))*A.vectors
-            
-            that's a matrix multiply.
-            
-            So all Mvars on the right,in a multiply, can just be converted to 
-            matrix:
+        derivation of multiplication from this is messy.just remember that 
+        all Mvars on the right, in a multiply, can just be converted to matrix:
             
             >>> assert A*B==A*B.vectors.H*B.scale*B.vectors
         """
-        vectors = self.vectors
-        new_scale = Matrix(
-            numpy.diag(numpy.diagonal(self.scale)**(power-1))
-        )
-            
-        transform = vectors.H*new_scale*vectors
+        vectors=self.vectors
+        transform = vectors.H*numpy.diagflat(self.var**(power-1))*vectors
         
         return self*transform
         
-    def __mul__(
-        self,
-        other,
-        #this function is applied to the right operand, to simplify the types 
-        #of the objects we have to deal with, and to convert any Mvars on 
-        #the left into a vectors.H*scale*vectors matrix.
-        rconvert=lambda 
-            item,
-            helper=lambda item:(
-                Matrix(item) 
-                if item.ndim else
-                item
-            )
-        :(  
-            Matrix(item.vectors.H*item.scale*item.vectors) if 
-
-            isinstance(item,Mvar) else 
-            helper(numpy.array(item))
-        ),
-        #this dict is used to dispatch multiplications based on the type of 
-        #the right operand, after it has been passed through rconvert
-        multipliers={
-            (Matrix):(
-                lambda self,matrix:Mvar.from_attr(
-                    mean=self.mean*matrix,
-                    scaled=self.scale*self.vectors*matrix,
-                )
-            ),
-            (numpy.ndarray):(
-                lambda self,constant:Mvar.from_cov(
-                    mean= constant*self.mean,
-                    cov = constant*self.cov
-                )
-            )
-        }    
-    ):
+    def __mul__(self,other):        
         """
         A*?
         
@@ -584,7 +540,6 @@ class Mvar(object,Automath,Inplace):
             multiplying two Mvars together is defined to fit with power
             
             >>> assert A*A==A**2
-            >>> assert (A*B).affine==(A*B.vectors.H*B.scaled).affine
             >>> assert (A*B).mean==A.mean*B.vectors.H*B.scale*B.vectors
             >>> assert A*(B**2) == A*(B.cov)
             
@@ -825,7 +780,7 @@ class Mvar(object,Automath,Inplace):
         return '\n'.join([
             'Mvar.from_attr(',
             '    mean=',8*' '+self.mean.__repr__().replace('\n','\n'+8*' ')+',',
-            '    scale=',8*' '+self.scale.__repr__().replace('\n','\n'+8*' ')+',',
+            '    var=',8*' '+self.var.__repr__().replace('\n','\n'+8*' ')+',',
             '    vectors=',8*' '+self.vectors.__repr__().replace('\n','\n'+8*' ')+',',
             ')',
         ])
@@ -931,30 +886,62 @@ def isplit(sequence,fkey=bool):
         
     return result
 
+
+_rconvert=(
+    lambda item,helper=lambda item: Matrix(item) if item.ndim else item:(  
+        Matrix(item.vectors.H*item.scale*item.vectors) if 
+        isinstance(item,Mvar) else 
+        helper(numpy.array(item))
+    )
+)
+
+_multipliers={
+    Matrix:lambda self,matrix:Mvar.from_attr(
+        mean=self.mean*matrix,
+        scaled=self.scale*self.vectors*matrix,
+    ),
+    numpy.ndarray:lambda self,constant:Mvar.from_cov(
+        mean= constant*self.mean,
+        cov = constant*self.cov,
+    )
+}    
+
 if __name__=="__main__":
     import doctest
-    #create random test objects
-    A=Mvar.from_attr(mean=10*astype(numpy.random.randn(1,2,2),complex),scaled=10*astype(numpy.random.randn(2,2,2),complex))
-    B=Mvar.from_cov(mean=10*astype(numpy.random.randn(1,2,2),complex),cov=(lambda x:x*x.H)(Matrix(10*astype(numpy.random.randn(2,2,2),complex))))
-    C=Mvar.from_data(dots(astype(numpy.random.randn(50,2,2),complex),10*astype(numpy.random.randn(2,2,2),complex)))
-   
-    
-    M=Matrix(numpy.random.randn(2,2))
-    
-    K1=numpy.random.rand()+0j
-    K2=numpy.random.rand()+0j
-        
-    N=numpy.random.randint(2,10)
-    
+
     print 'from numpy import array'
     print 'from mvar import Mvar,Matrix'
     print '#test objects used'
+    
+    #create random test objects
+    A=Mvar(
+        mean=10*astype(numpy.random.randn(1,2,2),complex),
+        vectors=10*astype(numpy.random.randn(2,2,2),complex)
+    )
     print 'A=',A
+    
+    B=Mvar.from_cov(
+        mean=10*astype(numpy.random.randn(1,2,2),complex),
+        cov=(lambda x:x*x.H)(Matrix(10*astype(numpy.random.randn(2,2,2),complex)))
+    )
     print 'B=',B
+    
+    C=Mvar.from_data(dots(
+        astype(numpy.random.randn(50,2,2),complex),
+        10*astype(numpy.random.randn(2,2,2),complex),
+    ))
     print 'C=',C
+    
+    M=Matrix(numpy.random.randn(2,2))
     print 'M=',M.__repr__()
+    
+    K1=numpy.random.rand()+0j
     print 'K1=',K1
+    
+    K2=numpy.random.rand()+0j
     print 'K2=',K2
+        
+    N=numpy.random.randint(2,10)
     print 'N=',N
     
     doctest.testmod()

@@ -134,7 +134,7 @@ def autostack(rows,default=0):
                 (maxheight[down],maxwidth[right])
             ))
         
-    #do the stacking
+    #do the stacking    
     return numpy.vstack([
         numpy.hstack(row) 
         for row in data
@@ -184,7 +184,7 @@ def dots(*args):
     return reduce(numpy.dot,args)
 
 def sortrows(data,column=0):
-    return stack[numpy.argsort(data[:,column].flatten()),:]
+    return data[numpy.argsort(data[:,column].flatten()),:]
 
 def rotation2d(angle):
     return numpy.array([
