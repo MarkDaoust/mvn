@@ -19,7 +19,6 @@ see their documention for more information.
 
 #builtins
 import itertools
-from itertools import izip as zip
 import collections 
 
 import operator
@@ -94,7 +93,7 @@ class Mvar(object,Automath,Inplace):
             unit vectors, as rows, not necessarily orthogonal. 
             only guranteed to give the right covariance see below.
         
-        >>> assert A.vectors.H*A.var*A.vectors == A.cov
+        >>> assert A.vectors.H*numpy.diagflat(A.var)*A.vectors == A.cov
         
     virtual attributes (properties):
         cov
@@ -178,7 +177,8 @@ class Mvar(object,Automath,Inplace):
         self.var = numpy.array(stack[:-1,0]).flatten()
         self.vectors = stack[:-1,1:]
         
-        assert numpy.isreal(var).all(),"variances must be real"
+        assert numpy.isreal(self.var).all(),"variances must be real"
+        self.
         
         if do_square:
             self.do_square()
@@ -276,7 +276,7 @@ class Mvar(object,Automath,Inplace):
         
         >>> assert A.cov==A.vectors.H*numpy.diagflat(A.var)*A.vectors
         >>> assert A.cov==A.get_cov()
-        >>> assert A.scaled.H*A.scaled=abs(A).cov
+        >>> assert A.scaled.H*A.scaled==abs(A).cov
         """
         return self.vectors.H*numpy.diagflat(self.var)*self.vectors
     
@@ -319,7 +319,7 @@ class Mvar(object,Automath,Inplace):
         A.copy(B)
         """ 
         if other is None:
-            return Mvar.from_attr(
+            return Mvar(
                 mean=self.mean,
                 vectors=self.vectors,
                 var=self.var
@@ -592,8 +592,6 @@ class Mvar(object,Automath,Inplace):
             
             matrix multiplication is implemented as follows
             
-            assert A*M == Mvar.from_affine(A.affine*diagstack([M,1]))
-            
         given __mul__ and __pow__ it would be immoral to not overload divide 
         as well, automath takes care of these details
             A/?
@@ -607,7 +605,7 @@ class Mvar(object,Automath,Inplace):
             >>> assert K1/A == K1*(A**(-1))
             >>> assert M/A==M*(A**(-1))
         """
-        other=rconvert(other)
+        other=_rconvert(other)
         return multipliers[type(other)](self,other) 
     
     def __rmul__(
@@ -626,7 +624,7 @@ class Mvar(object,Automath,Inplace):
                 other.ndim else
                 other
                 ,
-                Matrix(self.vectors.H*self.scale*self.vectors) if 
+                Matrix(self.vectors.H*numpy.diagflat(self.var**(0.5+0j))*self.vectors) if 
                 other.ndim else
                 self
             )
@@ -685,7 +683,7 @@ class Mvar(object,Automath,Inplace):
             second mvar(!)
         
         martix*Mvar
-            >>> assert M*A==M*A.vectors.H*A.scale*A.vectors
+            >>> assert M*A==M*A.vectors.H*numpy.diagflat(A.var**(0.5+0j))*A.vectors
 
         Mvar*constant==constant*Mvar
             >>> assert A*K1 == K1*A
@@ -733,7 +731,7 @@ class Mvar(object,Automath,Inplace):
         >>> assert (A+B).cov==A.cov+B.cov
         
         watch out subtraction is the inverse of addition 
-            >>> assert A-A == Mvar.from_attr(mean=[0,0])
+            >>> assert A-A == Mvar(mean=[0,0])
             >>> assert (A-B)+B == A
             >>> assert (A-B).mean== A.mean - B.mean
             >>> assert (A-B).cov== A.cov - B.cov
@@ -778,7 +776,7 @@ class Mvar(object,Automath,Inplace):
         
     def __repr__(self):
         return '\n'.join([
-            'Mvar.from_attr(',
+            'Mvar(',
             '    mean=',8*' '+self.mean.__repr__().replace('\n','\n'+8*' ')+',',
             '    var=',8*' '+self.var.__repr__().replace('\n','\n'+8*' ')+',',
             '    vectors=',8*' '+self.vectors.__repr__().replace('\n','\n'+8*' ')+',',
@@ -806,7 +804,7 @@ class Mvar(object,Automath,Inplace):
             )
         
         #unpack the width and height from the scale matrix 
-        width,height = nstd*numpy.diag(self.scale)
+        width,height = nstd*numpy.diagflat(self.scale)
         
         #return an Ellipse patch
         return Ellipse(
@@ -896,7 +894,7 @@ _rconvert=(
 )
 
 _multipliers={
-    Matrix:lambda self,matrix:Mvar.from_attr(
+    Matrix:lambda self,matrix:Mvar(
         mean=self.mean*matrix,
         scaled=self.scale*self.vectors*matrix,
     ),
