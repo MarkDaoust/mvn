@@ -378,13 +378,15 @@ class Mvar(object,Automath,Inplace):
         
         compares the means and covariances of the distributions
         """
-        return numpy.allclose(self.mean,other.mean) and self.cov==other.cov
+        return Matrix(self.mean)==Matrix(other.mean) and self.cov==other.cov
     
     def __abs__(self):
         """
         sets all the variances to positive
         >>> assert (A.var>=0).all()
         >>> assert abs(A) == abs(~A)
+        
+        but does not touch the mean
         >>> assert Matrix(A.mean) == Matrix(abs(A).mean)
         """
         result=self.copy()
@@ -408,7 +410,8 @@ class Mvar(object,Automath,Inplace):
         """
         invert negates the covariance without negating the mean.
         >>> assert Matrix((~A).mean) == Matrix(A.mean)
-        >>> assert Matrix((~A).var) == Matrix((-A).var) == Matrix(-(A.var))
+        >>> assert Matrix((~A).var) == Matrix((-A).var) 
+        >>> assert Matrix((~A).var) == Matrix(-(A.var))
         """
         result=self.copy()
         result.var=-(self.var)
@@ -443,6 +446,10 @@ class Mvar(object,Automath,Inplace):
         >>> assert A & B & C == paralell(*abc)
         >>> assert A & B & C == Mvar.blend(*abc)== Mvar.__and__(*abc)
         >>> assert A & B & C == A & (B & C)
+        
+        >>> assert (A & A).cov == A.cov/2
+        >>> assert Matrix((A & A).mean) == Matrix(A.mean)
+        
         
         The proof that this is identical to the wikipedia definition of blend 
         is a little too involved to write here. Just try it (see the "wiki 
@@ -482,7 +489,8 @@ class Mvar(object,Automath,Inplace):
         
         Zero power has some interesting properties: 
             
-            The resulting ellipse is always a unit sphere, with the orientation 
+            The resulting ellipse is always a unit sphere, 
+???????????            with the orientation 
             unchanged, but the mean is wherever it gets stretched to while we 
             transform the ellipse to a sphere
               
@@ -496,7 +504,11 @@ class Mvar(object,Automath,Inplace):
             >>> assert A*B==A*B.transform
         """
         vectors=self.vectors
-        transform = vectors.H*numpy.diagflat(self.var**((power-1)/(2+0j)))*vectors
+        transform = (
+            vectors.H*
+            numpy.diagflat(self.var**((power-1)/(2+0j)))*
+            vectors
+        )
         
         return self*transform
         
@@ -819,7 +831,7 @@ def wiki(P,M):
     Kk=dots(P.cov,Matrix(Sk).I)
     
     return Mvar.from_cov(
-        mean=Matrix(P.mean).H+dots(Kk,yk),
+        mean=(Matrix(P.mean).H+dots(Kk,yk)).H,
         cov=dots((numpy.eye(P.mean.size)-Kk),P.cov)
     )
 
@@ -894,20 +906,20 @@ if __name__=="__main__":
     
     #create random test objects
     A=Mvar(
-        mean=10*astype(numpy.random.randn(1,2,2),complex),
-        vectors=10*astype(numpy.random.randn(2,2,2),complex)
+        mean=5*astype(numpy.random.randn(1,2,2),complex),
+        vectors=5*astype(numpy.random.randn(2,2,2),complex)
     )
     print 'A=',A
     
     B=Mvar.from_cov(
-        mean=10*astype(numpy.random.randn(1,2,2),complex),
+        mean=5*astype(numpy.random.randn(1,2,2),complex),
         cov=(lambda x:x*x.H)(Matrix(10*astype(numpy.random.randn(2,2,2),complex)))
     )
     print 'B=',B
     
     C=Mvar.from_data(dots(
         astype(numpy.random.randn(50,2,2),complex),
-        10*astype(numpy.random.randn(2,2,2),complex),
+        5*astype(numpy.random.randn(2,2,2),complex),
     ))
     print 'C=',C
     
