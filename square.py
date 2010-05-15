@@ -1,6 +1,18 @@
 #!/usr/bin/env python
 """
 this module contains one function: square
+
+ 
+http://en.wikipedia.org/wiki/Square_root_of_a_matrix:
+(math notation converted to local python standard)
+    '''if T = A*A.H = B*B.H, then there exists a unitary U s.t. 
+    A = B*U'''
+
+a unitary matrix is a complex rotation matrix
+http://en.wikipedia.org/wiki/Unitary_matrix
+    '''In mathematics, a unitary matrix is an nxn complex matrix U 
+    satisfying the condition U.H*U = I, U*U.H = I'''
+I don't know how to fix it but this is close. 
 """
 
 import numpy

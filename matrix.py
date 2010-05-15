@@ -1,18 +1,7 @@
 import numpy
 import collections
-
-def eye(*args,**kwargs):
-    """
-    improved version of numpy.eye
-    
-    behaves the same but will accept a shape tuple as a first 
-    argument. 
-    
-    >>> assert eye((2,2)) == eye(2,2) == eye(2)
-    """
-    if isinstance(args[0],collections.Iterable):
-        args=itertools.chain(args[0],args[1:])
-    return Matrix(numpy.eye(*args,**kwargs))
+import itertools
+import functools
 
 class Matrix(numpy.matrix):
     """
@@ -59,3 +48,24 @@ class Matrix(numpy.matrix):
     def diagonal(self):
         return numpy.squeeze(numpy.array(numpy.matrix.diagonal(self)))
     
+    def flatten(self):
+        return numpy.array(self).flatten()
+
+    def squeeze(self):
+        return numpy.array(self).squeeze()
+
+    @staticmethod
+    @functools.wraps(numpy.eye)
+    def eye(*args,**kwargs):
+        """
+        improved version of numpy.eye
+        
+        behaves the same but will accept a shape tuple as a first 
+        argument. 
+        
+        >>> assert eye((2,2)) == eye(2,2) == eye(2)
+        """
+        #if isinstance(args[0],collections.Iterable):
+        if hasattr(args[0],'__iter__'):
+            args=itertools.chain(args[0],args[1:])
+        return Matrix(numpy.eye(*args,**kwargs))

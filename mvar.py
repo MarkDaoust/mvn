@@ -132,7 +132,7 @@ class Mvar(object,Automath,Inplace):
     
     ############## Creation
     def __init__(self,
-        vectors=numpy.zeros,
+        vectors=Matrix.eye,
         var=numpy.ones,
         mean=numpy.zeros,
         do_square=True,
@@ -145,7 +145,7 @@ class Mvar(object,Automath,Inplace):
         vectors: defaults to zeros
         var: (variance) defaults to ones
         
-        >>> assert A.vectors.H*A.var*A.vectors == A.cov
+        >>> assert A.vectors.H*numpy.diagflat(A.var)*A.vectors == A.cov
         
         mean: defaults to zeros
         
@@ -164,8 +164,8 @@ class Mvar(object,Automath,Inplace):
         #stack everything to check sizes and automatically inflate any 
         #functions that were passed in
         
-        var= var if callable(var) else numpy.squeeze(var)[:,numpy.newaxis]
-        mean= mean if callable(mean) else numpy.squeeze(mean)[numpy.newaxis,:]
+        var= var if callable(var) else numpy.asarray(var).squeeze()[:,numpy.newaxis]
+        mean= mean if callable(mean) else numpy.asarray(mean).squeeze()[numpy.newaxis,:]
         
         stack=Matrix(autostack([
             [var,vectors],
@@ -174,11 +174,10 @@ class Mvar(object,Automath,Inplace):
         
         #unpack the stack into the object's parameters
         self.mean = numpy.array(stack[-1,1:]).flatten()
-        self.var = numpy.array(stack[:-1,0]).flatten()
+        self.var = numpy.real_if_close(numpy.array(stack[:-1,0]).flatten())
         self.vectors = stack[:-1,1:]
         
         assert numpy.isreal(self.var).all(),"variances must be real"
-        self.
         
         if do_square:
             self.do_square()
@@ -207,7 +206,8 @@ class Mvar(object,Automath,Inplace):
         
         #keep only the var/vector pairs where the variance is not close to zero
         #and sort by variance
-        stack=sortrows(stack[~C,:],column=0)
+        
+        stack = sortrows(stack[~C,:],column=0) if C.size else stack[:0,:]
 
         #unstack them
         self.var = numpy.array(stack[:,0]).flatten()
@@ -295,6 +295,7 @@ class Mvar(object,Automath,Inplace):
         doc="""
             get the vectors, scaled by the standard deviations. 
             Useful for transforming from unit-eigen-space, to data-space
+            >>> assert A.vectors.H*A.scaled==A.transform
         """
     )
     
@@ -305,8 +306,8 @@ class Mvar(object,Automath,Inplace):
             self.vectors
         ),
         doc="""
-            get the get the un-rotate*scaled transform, 
             Useful for transforming from unit-data-space, to data-space
+            assert A.cov==A.transform*A.transform
         """
     )
 
@@ -377,14 +378,14 @@ class Mvar(object,Automath,Inplace):
         
         compares the means and covariances of the distributions
         """
-        return Matrix(self.mean)==Matrix(other.mean) and self.cov==other.cov
+        return numpy.allclose(self.mean,other.mean) and self.cov==other.cov
     
     def __abs__(self):
         """
         sets all the variances to positive
         >>> assert (A.var>=0).all()
         >>> assert abs(A) == abs(~A)
-        >>> assert (A.mean == abs(A).mean).all()
+        >>> assert Matrix(A.mean) == Matrix(abs(A).mean)
         """
         result=self.copy()
         result.var=numpy.abs(self.var)
@@ -396,7 +397,7 @@ class Mvar(object,Automath,Inplace):
         >>> assert A == +A
         
         but it is also a shortcut to do_square
-        >>> assert (+A).vectors*(+A).vectors.H==matrix.eye
+        >>> assert (+A).vectors*(+A).vectors.H==Matrix.eye
         
         it does the squaring in place, then returns the copy.
         """
@@ -406,8 +407,8 @@ class Mvar(object,Automath,Inplace):
     def __invert__(self):
         """
         invert negates the covariance without negating the mean.
-        >>> assert (~A).mean == A.mean
-        >>> assert (~A).var == (-A).var == -(A.var)
+        >>> assert Matrix((~A).mean) == Matrix(A.mean)
+        >>> assert Matrix((~A).var) == Matrix((-A).var) == Matrix(-(A.var))
         """
         result=self.copy()
         result.var=-(self.var)
@@ -485,17 +486,17 @@ class Mvar(object,Automath,Inplace):
             unchanged, but the mean is wherever it gets stretched to while we 
             transform the ellipse to a sphere
               
-            >>> assert ((A**0).var == numpy.ones(A.mean.shape)).all()
+            >>> assert Matrix((A**0).var) == Matrix(numpy.ones(A.mean.shape))
             >>> assert (A**0).vectors== A.vectors
             >>> assert (A**0).mean == A.mean*(A**-1).transform == A.mean*A.transform**(-1)
             
         derivation of multiplication from this is messy.just remember that 
         all Mvars on the right, in a multiply, can just be converted to matrix:
             
-            >>> assert A*B==A*B.vectors.H*B.scale*B.vectors
+            >>> assert A*B==A*B.transform
         """
         vectors=self.vectors
-        transform = vectors.H*numpy.diagflat(self.var**(power-1))*vectors
+        transform = vectors.H*numpy.diagflat(self.var**((power-1)/(2+0j)))*vectors
         
         return self*transform
         
@@ -518,7 +519,7 @@ class Mvar(object,Automath,Inplace):
             >>> assert isinstance(K1*A,Mvar)
             
             whenever an mvar is found on the right it is converted to a 
-            vectors.H*scale*vectors matrix and the multiplication is 
+            vectors.H*scaled matrix and the multiplication is 
             re-called.
             
         general properties:
@@ -540,7 +541,7 @@ class Mvar(object,Automath,Inplace):
             multiplying two Mvars together is defined to fit with power
             
             >>> assert A*A==A**2
-            >>> assert (A*B).mean==A.mean*B.vectors.H*B.scale*B.vectors
+            >>> assert Matrix((A*B).mean)==Matrix(A.mean)*B.transform
             >>> assert A*(B**2) == A*(B.cov)
             
             Note that the result does not depend on the mean of the 
@@ -557,11 +558,11 @@ class Mvar(object,Automath,Inplace):
             >>> assert (A+A).scaled==(2*A).scaled
             >>> assert (A+A).scaled==(2**0.5)*A.scaled
             
-            >>> assert (A+A).mean==(2*A).mean
-            >>> assert (A+A).mean==2*A.mean
+            >>> assert Matrix((A+A).mean)==Matrix((2*A).mean)
+            >>> assert Matrix((A+A).mean)==Matrix(2*A.mean)
             
             >>> assert (A*K1).scaled==(K1**0.5)*A.scaled
-            >>> assert (A*K1).mean==K1*A.mean
+            >>> assert Matrix((A*K1).mean)==Matrix(K1*A.mean)
             
             >>> assert sum(itertools.repeat(A,N-1),A) == A*(N)
             
@@ -584,11 +585,11 @@ class Mvar(object,Automath,Inplace):
             
             simple scale is like this
             >>> assert (A*(numpy.eye(A.mean.size)*K1)).scaled==A.scaled*K1
-            >>> assert (A*(numpy.eye(A.mean.size)*K1)).mean==A.mean*K1
+            >>> assert ((A*(numpy.eye(A.mean.size)*K1)).mean==A.mean*K1).all()
             
             or more generally
             >>> assert (A*M).cov==M.H*A.cov*M
-            >>> assert (A*M).mean==A.mean*M
+            >>> assert Matrix((A*M).mean)==Matrix(A.mean*M)
             
             matrix multiplication is implemented as follows
             
@@ -606,7 +607,7 @@ class Mvar(object,Automath,Inplace):
             >>> assert M/A==M*(A**(-1))
         """
         other=_rconvert(other)
-        return multipliers[type(other)](self,other) 
+        return _multipliers[type(other)](self,other) 
     
     def __rmul__(
         self,
@@ -614,19 +615,14 @@ class Mvar(object,Automath,Inplace):
         #here we convert the left operand to a numpy.ndarray if it is a scalar,
         #otherwise we convert it to a Matrix.
         #the self (right operand) will stay an Mvar for scalar multiplication
-        #or be converted to a vectors.H*scale*vectors matrix for matrix 
+        #or be converted to a A.transform matrix for matrix 
         #multiplication
         convert=lambda
             other,
             self,
             helper=lambda other,self: (
-                Matrix(other) if 
-                other.ndim else
-                other
-                ,
-                Matrix(self.vectors.H*numpy.diagflat(self.var**(0.5+0j))*self.vectors) if 
-                other.ndim else
-                self
+                Matrix(other) if other.ndim else other,
+                self.transform if other.ndim else self
             )
         :helper(numpy.array(other),self)
         ,
@@ -674,7 +670,7 @@ class Mvar(object,Automath,Inplace):
             multiplying two Mvars together fits with the definition of power
             
             >>> assert B*B == B**2
-            >>> assert A*B == A*B.vectors.H*B.scaled 
+            >>> assert A*B == A*B.transform
             
             the second Mvar is automatically converted to a matrix, and the 
             result is handled by matrix multiply
@@ -683,7 +679,7 @@ class Mvar(object,Automath,Inplace):
             second mvar(!)
         
         martix*Mvar
-            >>> assert M*A==M*A.vectors.H*numpy.diagflat(A.var**(0.5+0j))*A.vectors
+            >>> assert M*A==M*A.transform
 
         Mvar*constant==constant*Mvar
             >>> assert A*K1 == K1*A
@@ -724,49 +720,34 @@ class Mvar(object,Automath,Inplace):
         >>> assert (A+A).scaled==(2*A).scaled
         >>> assert (A+A).scaled==(2**0.5)*A.scaled
         
-        >>> assert (A+A).mean==(2*A).mean
-        >>> assert (A+A).mean==2*A.mean
+        >>> assert Matrix((A+A).mean)==Matrix((2*A).mean)
+        >>> assert Matrix((A+A).mean)==Matrix(2*A.mean)
         
-        >>> assert (A+B).mean==A.mean+B.mean
+        >>> assert Matrix((A+B).mean)==Matrix(A.mean+B.mean)
         >>> assert (A+B).cov==A.cov+B.cov
         
         watch out subtraction is the inverse of addition 
             >>> assert A-A == Mvar(mean=[0,0])
             >>> assert (A-B)+B == A
-            >>> assert (A-B).mean== A.mean - B.mean
+            >>> assert Matrix((A-B).mean) == Matrix(A.mean - B.mean)
             >>> assert (A-B).cov== A.cov - B.cov
             
         if you want something that acts like rand()-rand() use:
             
-            >>> assert (A+B*(-1*numpy.eye(A.mean.size))).mean== A.mean - B.mean
+            >>> assert Matrix((A+B*(-1*numpy.eye(A.mean.size))).mean) == Matrix(A.mean - B.mean)
             >>> assert (A+B*(-1*numpy.eye(A.mean.size))).cov== A.cov + B.cov
 
         __sub__ should also fit with __neg__, __add__, and scalar multiplication.
         
             >>> assert B+(-A) == B+(-1)*A == B-A
             >>> assert A-B == -(B-A)
+            >>> assert A+(B-B)==A
             
             but watchout you'll end up with complex... everything?
         """
-        #stack all the scaled
-        stack=numpy.vstack((self.scaled,other.scaled))
-
         return Mvar.from_cov(
             mean= (self.mean+other.mean),
-            #this next line is what fails my tests
-            #solution? 
-            #http://en.wikipedia.org/wiki/Square_root_of_a_matrix:
-            #   (math notation converted to local python standard)
-            #   """if T = A*A.H = B*B.H, then there exists a unitary U s.t. 
-            #    A = B*U"""
-            #
-            #a unitary matrix is a complex rotation matrix
-            #http://en.wikipedia.org/wiki/Unitary_matrix
-            #   """In mathematics, a unitary matrix is an nxn complex matrix U 
-            #    satisfying the condition U.H*U = I, U*U.H = I"""
-            #
-            #I don't know how to fix it but this is close. 
-            cov = (stack.H*stack),
+            cov = (self.cov+other.cov),
         )
         
     ################# Non-Math python internals
@@ -804,7 +785,7 @@ class Mvar(object,Automath,Inplace):
             )
         
         #unpack the width and height from the scale matrix 
-        width,height = nstd*numpy.diagflat(self.scale)
+        width,height = nstd*numpy.diagflat(self.var**(0.5+0j))
         
         #return an Ellipse patch
         return Ellipse(
@@ -833,12 +814,12 @@ def wiki(P,M):
     The quickest way to prove it's equivalent is by examining this:
         >>> assert A & B == ((A*A**-2)+(B*B**-2))**-1
     """
-    yk=M.mean.H-P.mean.H
+    yk=Matrix(M.mean).H-Matrix(P.mean).H
     Sk=P.cov+M.cov
     Kk=dots(P.cov,Matrix(Sk).I)
     
     return Mvar.from_cov(
-        mean=(P.mean.H+dots(Kk,yk)).H,
+        mean=Matrix(P.mean).H+dots(Kk,yk),
         cov=dots((numpy.eye(P.mean.size)-Kk),P.cov)
     )
 
@@ -887,7 +868,7 @@ def isplit(sequence,fkey=bool):
 
 _rconvert=(
     lambda item,helper=lambda item: Matrix(item) if item.ndim else item:(  
-        Matrix(item.vectors.H*item.scale*item.vectors) if 
+        Matrix(item.transform) if 
         isinstance(item,Mvar) else 
         helper(numpy.array(item))
     )
@@ -895,8 +876,8 @@ _rconvert=(
 
 _multipliers={
     Matrix:lambda self,matrix:Mvar(
-        mean=self.mean*matrix,
-        scaled=self.scale*self.vectors*matrix,
+        mean=Matrix(self.mean)*matrix,
+        vectors=self.scaled*matrix,
     ),
     numpy.ndarray:lambda self,constant:Mvar.from_cov(
         mean= constant*self.mean,
@@ -944,7 +925,3 @@ if __name__=="__main__":
     
     doctest.testmod()
 
-    
-
-    
-    

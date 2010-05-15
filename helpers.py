@@ -167,14 +167,15 @@ def close(a,other = None,atol=1e-5,rtol=1e-8):
         if callable(other):
             other=other(a.shape)
         delta = numpy.abs(a-other)
+
     
-    MAX = numpy.max(delta)
+    MAX = numpy.max(delta) if delta.size else 0
     #if the largest element is less than the absolute tolerence
     #then everythng is close
     if MAX<atol:
         return numpy.ones(delta.shape,dtype=bool)
     
-    return ((delta<atol) | (delta/MAX<rtol))
+    return (delta<atol) | (delta/MAX<rtol) if MAX else (delta<atol)
 
 def dots(*args):
     """
@@ -184,7 +185,7 @@ def dots(*args):
     return reduce(numpy.dot,args)
 
 def sortrows(data,column=0):
-    return data[numpy.argsort(data[:,column].flatten()),:]
+    return data[numpy.argsort(data[:,column].flatten()),:] if data.size else data
 
 def rotation2d(angle):
     return numpy.array([
