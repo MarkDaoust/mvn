@@ -184,6 +184,8 @@ class Mvar(object,Automath,Inplace):
         
         if compress:
             self.compress(**kwargs)
+            
+        self.vectors=Matrix(self.vectors)
         
     def square(self):
         """
@@ -194,25 +196,18 @@ class Mvar(object,Automath,Inplace):
         
     def compress(self,**kwargs):
         """
-        drop any vector/variance pairs with variance under the tolerence limits
-        the defaults match numpy's for 'allclose'
+        drop any vector/variance pairs with sqrt(variance) under the tolerence 
+        limits the defaults match numpy's for 'allclose'
         """
         #convert the variance to a column vector
-        var=self.var[:,numpy.newaxis]
-        #align the variances with the vectors
-        stack=numpy.hstack([var,self.vectors])
+        std=abs(self.var[:,numpy.newaxis])**0.5
+        
         #find wihich elements are close to zero
-        C=numpy.array(close(stack[:,0],**kwargs)).squeeze()
+        C=close(std,**kwargs).squeeze()
         
-        #keep only the var/vector pairs where the variance is not close to zero
-        #and sort by variance
-        
-        stack = sortrows(stack[~C,:],column=0) if C.size else stack[:0,:]
-
-        #unstack them
-        self.var = numpy.array(stack[:,0]).flatten()
-        self.vectors = Matrix(stack[:,1:])
-    
+        self.var = self.var[~C]
+        self.vectors = self.vectors[~C,:] if C.size else self.vectors[:0,:]
+            
     ############## alternate creation methods
     @staticmethod
     def from_cov(cov,**kwargs):
