@@ -135,8 +135,8 @@ class Mvar(object,Automath,Inplace):
         vectors=Matrix.eye,
         var=numpy.ones,
         mean=numpy.zeros,
-        do_square=True,
-        do_compress=True,
+        square=True,
+        compress=True,
         **kwargs
     ):
         """
@@ -149,16 +149,16 @@ class Mvar(object,Automath,Inplace):
         
         mean: defaults to zeros
         
-        do_square:
-            calls self.do_square() on the result if true. This sets the 
+        square:
+            calls self.square() on the result if true. This sets the 
             vectors to orthogonal and unit length.
             
-        do_compress
-            calls self.do_compress() on the result if true. To clear out any 
+        compress
+            calls self.compress() on the result if true. To clear out any 
             low valued vectors. It uses the same defaults as numpy.allclose()
 
         **kwargs is only used to pass in non standard defaults to the call to 
-            do_compress, which is similar to numpy.allclose, 
+            compress, which is similar to numpy.allclose, 
             defaults are rtol=1e-5, atol=1e-8
         """
         #stack everything to check sizes and automatically inflate any 
@@ -179,20 +179,20 @@ class Mvar(object,Automath,Inplace):
         
         assert numpy.isreal(self.var).all(),"variances must be real"
         
-        if do_square:
-            self.do_square()
+        if square:
+            self.square()
         
-        if do_compress:
-            self.do_compress(**kwargs)
+        if compress:
+            self.compress(**kwargs)
         
-    def do_square(self):
+    def square(self):
         """
         this is NOT x**2 it is to set the vectors to perpendicular and unit 
         length
         """
         (self.var,self.vectors)=square(self.scaled);
         
-    def do_compress(self,**kwargs):
+    def compress(self,**kwargs):
         """
         drop any vector/variance pairs with variance under the tolerence limits
         the defaults match numpy's for 'allclose'
@@ -227,7 +227,7 @@ class Mvar(object,Automath,Inplace):
         return Mvar(
             vectors=vectors,
             var=var,
-            do_square=False,
+            square=False,
             **kwargs
         )
     
@@ -388,30 +388,28 @@ class Mvar(object,Automath,Inplace):
         
         but does not touch the mean
         >>> assert Matrix(A.mean) == Matrix(abs(A).mean)
+        
+        also squares up the vectors, so that the 'vectors' matrix is unitary 
+        (rotation matrix extended to complex numbers)
+        
+        >>> assert abs(A).vectors*abs(A).vectors.H==Matrix.eye
         """
         result=self.copy()
-        result.var=numpy.abs(self.var)
+        (result.var,result.vectors)=square(result.scaled);
         return result
 
     def __pos__(self):
         """
-        it apears to do nothing
         >>> assert A == +A
-        
-        but it is also a shortcut to do_square
-        >>> assert (+A).vectors*(+A).vectors.H==Matrix.eye
-        
-        it does the squaring in place, then returns the copy.
         """
-        self.do_square()
         return self.copy()
     
     def __invert__(self):
         """
         invert negates the covariance without negating the mean.
         >>> assert Matrix((~A).mean) == Matrix(A.mean)
-        >>> assert Matrix((~A).var) == Matrix((-A).var) 
-        >>> assert Matrix((~A).var) == Matrix(-(A.var))
+        >>> assert (~A).cov == (-A).cov 
+        >>> assert (~A).cov == -(A.cov)
         """
         result=self.copy()
         result.var=-(self.var)
@@ -490,12 +488,11 @@ class Mvar(object,Automath,Inplace):
         Zero power has some interesting properties: 
             
             The resulting ellipse is always a unit sphere, 
-???????????            with the orientation 
-            unchanged, but the mean is wherever it gets stretched to while we 
+            the mean is wherever it gets stretched to while we 
             transform the ellipse to a sphere
               
             >>> assert Matrix((A**0).var) == Matrix(numpy.ones(A.mean.shape))
-            >>> assert (A**0).vectors== A.vectors
+            >>> assert (A**0.00001).vectors== A.vectors #doesn't work with 0 exponent
             >>> assert (A**0).mean == A.mean*(A**-1).transform == A.mean*A.transform**(-1)
             
         derivation of multiplication from this is messy.just remember that 

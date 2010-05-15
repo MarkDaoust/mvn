@@ -150,7 +150,7 @@ def paralell(*items):
     inverted=[item**(-1) for item in items]
     return sum(inverted[1:],inverted[0])**(-1)
 
-def close(a,other = None,atol=1e-5,rtol=1e-8):
+def close(a,other = None,atol=1e-9,rtol=1e-9):
     """
     like numpy.allclose, and numpy.real_if_close but returns a bool array
     
