@@ -22,6 +22,11 @@ import itertools
 import collections 
 
 import operator
+#conditional
+if __name__=="__main__":
+    import doctest
+    import sys
+    import pickle
 
 #3rd party
 import numpy
@@ -31,7 +36,7 @@ from maybe import Ellipse
 
 #local
 from helpers import autostack,diagstack,ascomplex,paralell
-from helpers import approx,dots,rotation2d,isdiag,sortrows
+from helpers import approx,dots,rotation2d
 
 from square import square
 
@@ -96,13 +101,19 @@ class Mvar(object,Automath,Inplace):
         >>> assert A.vectors.H*numpy.diagflat(A.var)*A.vectors == A.cov
         
     virtual attributes (properties):
+        ndim
+            >>> assert A.ndim == A.mean.size
+
         cov
             gets or sets the covariance matrix
         scaled
             gets the vectors, scaled by one standard deviation
             (transforms from unit-eigen-space to data-space) 
         transform
-            assert self.transform == (self.cov)**0.5 
+            >>> assert A.transform**2 == abs(A).cov 
+            
+            this is just more efficient than square-rooting the covariance, 
+            since it is stored de-composed
             (transforms from unit-data-space to data-space) 
             
     
@@ -164,8 +175,9 @@ class Mvar(object,Automath,Inplace):
         #stack everything to check sizes and automatically inflate any 
         #functions that were passed in
         
-        var= var if callable(var) else numpy.asarray(var).squeeze()[:,numpy.newaxis]
-        mean= mean if callable(mean) else numpy.asarray(mean).squeeze()[numpy.newaxis,:]
+        var= var if callable(var) else numpy.array(var).flatten()[:,numpy.newaxis]
+        mean= mean if callable(mean) else numpy.array(mean).flatten()[numpy.newaxis,:]
+        vectors=vectors if callable(vectors) or vectors.size else Matrix(numpy.zeros((0,mean.size)))
         
         stack=Matrix(autostack([
             [var,vectors],
@@ -173,7 +185,7 @@ class Mvar(object,Automath,Inplace):
         ]))
         
         #unpack the stack into the object's parameters
-        self.mean = numpy.array(stack[-1,1:]).flatten()
+        self.mean = stack[-1,1:]
         self.var = numpy.real_if_close(numpy.array(stack[:-1,0]).flatten())
         self.vectors = stack[:-1,1:]
         
@@ -186,6 +198,7 @@ class Mvar(object,Automath,Inplace):
             self.compress(**kwargs)
             
         self.vectors=Matrix(self.vectors)
+        self.mean = Matrix(self.mean)
         
     def square(self):
         """
@@ -200,11 +213,10 @@ class Mvar(object,Automath,Inplace):
         limits the defaults match numpy's for 'allclose'
         """
         #convert the variance to a column vector
-        std=abs(self.var[:,numpy.newaxis])**0.5
+        std=abs(self.var)**0.5
         
-        #find wihich elements are approx zero
-        C=approx(std,**kwargs).squeeze()
-        
+        #find wihich elements are close to zero
+        C=approx(std,**kwargs)
         self.var = self.var[~C]
         self.vectors = self.vectors[~C,:] if C.size else self.vectors[:0,:]
             
@@ -216,7 +228,7 @@ class Mvar(object,Automath,Inplace):
         """
         assert cov==cov.H,'Covariance matrixes must be Hermitan'
         #get the variances and vectors.
-        (var,vectors) = numpy.linalg.eigh(cov)
+        (var,vectors) = numpy.linalg.eigh(cov) if cov.size else (Matrix([]),Matrix([]))
         vectors=Matrix(vectors.H)
         
         return Mvar(
@@ -302,10 +314,31 @@ class Mvar(object,Automath,Inplace):
         ),
         doc="""
             Useful for transforming from unit-data-space, to data-space
-            assert A.cov==A.transform*A.transform
+            >>> assert A.cov==A.transform*A.transform
+            >>> assert A*B.transform == A*B
         """
     )
-
+    
+    ndim=property(
+        fget=lambda self:(self.mean.size),
+        doc="""
+            get the number of dimensions of the space the mvar exists in
+            >>> assert A.ndim==A.mean.size
+        """
+    )
+    
+    shape=property(
+        fget=lambda self:(self.vectors.shape),
+        doc="""
+            get the shape of the vectors,the first element is the number of 
+            vectors, the secondis their lengths: the number of dimensions of 
+            the space they are embedded in
+            
+            >>> assert A.vectors.shape == A.shape
+            >>> assert (A.var.size,A.mean.size)==A.shape
+            >>> assert A.shape[1]==A.ndim
+        """
+    )
 
     ########## Utilities
     def copy(self,other=None):
@@ -357,10 +390,11 @@ class Mvar(object,Automath,Inplace):
         Mvar being sampled
         """
         assert (self.var>0).all(),(
-            "you can't sample a distribution with negative variance"
+            """I can't sample a distribution with negative variance, 
+            if you can please let me know how"""
         )
         
-        data= Matrix(numpy.random.randn(n,self.mean.size))*self.scaled.T
+        data= Matrix(numpy.random.randn(n,self.shape[0]))*self.scaled.T
         
         return Matrix(numpy.array(data)+self.mean)
     
@@ -390,7 +424,9 @@ class Mvar(object,Automath,Inplace):
         >>> assert abs(A).vectors*abs(A).vectors.H==Matrix.eye
         """
         result=self.copy()
-        (result.var,result.vectors)=square(result.scaled);
+        var,vectors=square(result.scaled);
+        result.vectors=Matrix(vectors)
+        result.var=var
         return result
 
     def __pos__(self):
@@ -433,12 +469,11 @@ class Mvar(object,Automath,Inplace):
         >>> assert A & B == B & A 
         >>> assert A & B == 1/(1/A+1/B)
         
-        >>> abc=[A,B,C]
-        >>> #the order doesn't matter, shuffle abc in place.
-        >>> numpy.random.shuffle(abc)
+        >>> abc=numpy.random.permutation([A,B,C])
         >>> assert A & B & C == paralell(*abc)
         >>> assert A & B & C == Mvar.blend(*abc)== Mvar.__and__(*abc)
-        >>> assert A & B & C == A & (B & C)
+        
+        >>> assert (A & B) & C == A & (B & C)
         
         >>> assert (A & A).cov == A.cov/2
         >>> assert Matrix((A & A).mean) == Matrix(A.mean)
@@ -476,10 +511,14 @@ class Mvar(object,Automath,Inplace):
         
         Most things you expect to work just work.
         
-            >>> assert A**0== A**(-1)*A== A*A**(-1)== A/A        
+            >>> assert A**0 == A**(-1)*A
+            >>> assert A**0 == A*A**(-1)
+            >>> assert A**0 == A/A  
+            
             >>> assert (A**K1)*(A**K2)==A**(K1+K2)
             >>> assert A**K1/A**K2==A**(K1-K2)
-        
+            >>> assert (A**K1).vectors==A.vectors 
+            
         Zero power has some interesting properties: 
             
             The resulting ellipse is always a unit sphere, 
@@ -494,6 +533,7 @@ class Mvar(object,Automath,Inplace):
         all Mvars on the right, in a multiply, can just be converted to matrix:
             
             >>> assert A*B==A*B.transform
+            >>> assert M*B==M*B.transform
         """
         vectors=self.vectors
         transform = (
@@ -534,7 +574,7 @@ class Mvar(object,Automath,Inplace):
             but the asociative property is lost if you mix constants and 
             matrixes (but I think it's ok if you only have 1 of the two types?)
             
-            >>> assert (A*4).cov == (A*(2*numpy.eye(2))).cov
+            >>> assert (A*4).cov == (A*(2*numpy.eye(A.ndim))).cov
             
             ????
             asociative if only mvars and matrixes?
