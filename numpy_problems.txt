@@ -1,2 +1,0 @@
-dividing one matrix by another is done element wize
-

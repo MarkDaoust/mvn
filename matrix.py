@@ -2,6 +2,7 @@ import numpy
 import collections
 import itertools
 import functools
+import re
 
 class Matrix(numpy.matrix):
     """
@@ -40,9 +41,16 @@ class Matrix(numpy.matrix):
         return other*self**(-1)
 
     def __repr__(self):
-        S=numpy.matrix.__repr__(self)
-        return 'M'+S[1:]
+        result='M'+numpy.matrix.__repr__(self)[1:]
+        result=result.replace('[], shape=(','numpy.zeros(')
+        for match in re.findall('numpy.zeros\([0-9, ]*\)',result):
+            result=result.replace(
+                match,
+                match.replace('(','([').replace(')','])')
+            )
+        return result.replace('dtype=','dtype=numpy.')
     
+
     __str__ = __repr__
 
     def diagonal(self):

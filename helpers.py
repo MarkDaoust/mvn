@@ -3,14 +3,16 @@ import numpy
 
 from matrix import Matrix
 
-def astype(self,newtype):
+def ascomplex(self):
     """
     return an array pointing to the same data, but interpreting it as a 
     different type
     """
+    shape=self.shape
     duplicate=self
-    duplicate.dtype=newtype
-    return numpy.squeeze(duplicate)
+    duplicate.dtype=complex
+    duplicate.shape=shape[:-1]
+    return duplicate
 
 def diagstack(arrays):
     """
@@ -150,7 +152,7 @@ def paralell(*items):
     inverted=[item**(-1) for item in items]
     return sum(inverted[1:],inverted[0])**(-1)
 
-def close(a,other = None,atol=1e-5,rtol=1e-8):
+def approx(a,other = None,atol=1e-5,rtol=1e-8):
     """
     like numpy.allclose, and numpy.real_if_close but returns a bool array
     
@@ -171,7 +173,7 @@ def close(a,other = None,atol=1e-5,rtol=1e-8):
     
     MAX = numpy.max(delta) if delta.size else 0
     #if the largest element is less than the absolute tolerence
-    #then everythng is close
+    #then everythng is approx=
     if MAX<atol:
         return numpy.ones(delta.shape,dtype=bool)
     

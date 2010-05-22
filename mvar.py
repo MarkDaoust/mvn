@@ -30,8 +30,8 @@ import numpy
 from maybe import Ellipse
 
 #local
-from helpers import autostack,diagstack,astype,paralell
-from helpers import close,dots,rotation2d,isdiag,sortrows
+from helpers import autostack,diagstack,ascomplex,paralell
+from helpers import approx,dots,rotation2d,isdiag,sortrows
 
 from square import square
 
@@ -202,8 +202,8 @@ class Mvar(object,Automath,Inplace):
         #convert the variance to a column vector
         std=abs(self.var[:,numpy.newaxis])**0.5
         
-        #find wihich elements are close to zero
-        C=close(std,**kwargs).squeeze()
+        #find wihich elements are approx zero
+        C=approx(std,**kwargs).squeeze()
         
         self.var = self.var[~C]
         self.vectors = self.vectors[~C,:] if C.size else self.vectors[:0,:]
@@ -799,10 +799,7 @@ class Mvar(object,Automath,Inplace):
             width=width, height=height,
             #and rotation angle pulled from the vectors matrix
             angle=numpy.rad2deg(
-                numpy.angle(astype(
-                    self.vectors,
-                    complex,
-                )).flatten()[0]
+                numpy.angle(ascomplex(self.vectors)).flatten()[0]
             ),
             #while transmitting any kwargs.
             **kwargs
@@ -898,20 +895,20 @@ if __name__=="__main__":
     
     #create random test objects
     A=Mvar(
-        mean=5*astype(numpy.random.randn(1,2,2),complex),
-        vectors=5*astype(numpy.random.randn(2,2,2),complex)
+        mean=5*ascomplex(numpy.random.randn(1,2,2)),
+        vectors=5*ascomplex(numpy.random.randn(2,2,2))
     )
     print 'A=',A
     
     B=Mvar.from_cov(
-        mean=5*astype(numpy.random.randn(1,2,2),complex),
-        cov=(lambda x:x*x.H)(Matrix(10*astype(numpy.random.randn(2,2,2),complex)))
+        mean=5*ascomplex(numpy.random.randn(1,2,2)),
+        cov=(lambda x:x*x.H)(Matrix(10*ascomplex(numpy.random.randn(2,2,2))))
     )
     print 'B=',B
     
     C=Mvar.from_data(dots(
-        astype(numpy.random.randn(50,2,2),complex),
-        5*astype(numpy.random.randn(2,2,2),complex),
+        ascomplex(numpy.random.randn(50,2,2)),
+        5*ascomplex(numpy.random.randn(2,2,2)),
     ))
     print 'C=',C
     

@@ -18,7 +18,7 @@ I don't know how to fix it but this is close.
 import numpy
 from matrix import Matrix
 from operator import ge
-from helpers import astype
+from helpers import ascomplex
 
 def square(vectors):
     """
@@ -49,7 +49,7 @@ def square(vectors):
 if __name__=='__main__':
     for n in xrange(1,20):
         shape=(numpy.random.randint(1,10),numpy.random.randint(1,10),2)
-        vectors=Matrix(astype(numpy.random.randn(*shape),complex))
+        vectors=Matrix(ascomplex(numpy.random.randn(*shape)))
         
         (var,vec)=square(vectors)
         var=Matrix(numpy.diagflat(var))
