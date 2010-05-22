@@ -605,7 +605,7 @@ class Mvar(object,Automath,Inplace):
             >>> assert Matrix((A+A).mean)==Matrix((2*A).mean)
             >>> assert Matrix((A+A).mean)==Matrix(2*A.mean)
             
-            >>> assert (A*K1).scaled==(K1**0.5)*A.scaled
+            >>> assert (A*K1).scaled==(K1**(0.5+0j))*A.scaled
             >>> assert Matrix((A*K1).mean)==Matrix(K1*A.mean)
             
             >>> assert sum(itertools.repeat(A,N-1),A) == A*(N)
@@ -628,8 +628,8 @@ class Mvar(object,Automath,Inplace):
             update step.
             
             simple scale is like this
-            >>> assert (A*(numpy.eye(A.mean.size)*K1)).scaled==A.scaled*K1
-            >>> assert ((A*(numpy.eye(A.mean.size)*K1)).mean==A.mean*K1).all()
+            >>> assert (A*(numpy.eye(A.ndim)*K1)).scaled==A.scaled*K1
+            >>> assert ((A*(numpy.eye(A.ndim)*K1)).mean==A.mean*K1).all()
             
             or more generally
             >>> assert (A*M).cov==M.H*A.cov*M
@@ -650,39 +650,12 @@ class Mvar(object,Automath,Inplace):
             >>> assert K1/A == K1*(A**(-1))
             >>> assert M/A==M*(A**(-1))
         """
-        other=_rconvert(other)
+        other=_convert(other)
         return _multipliers[type(other)](self,other) 
     
     def __rmul__(
         self,
         other,
-        #here we convert the left operand to a numpy.ndarray if it is a scalar,
-        #otherwise we convert it to a Matrix.
-        #the self (right operand) will stay an Mvar for scalar multiplication
-        #or be converted to a A.transform matrix for matrix 
-        #multiplication
-        convert=lambda
-            other,
-            self,
-            helper=lambda other,self: (
-                Matrix(other) if other.ndim else other,
-                self.transform if other.ndim else self
-            )
-        :helper(numpy.array(other),self)
-        ,
-        #dispatch the multiplication based on the type of the left operand
-        multipliers={
-            #if the left operand is a matrix, the mvar has been converted to
-            #to a matrix -> use matrix multiply
-            (Matrix):operator.mul,
-            #if the left operand is a constant use scalar multiply
-            (numpy.ndarray):(
-                lambda constant,self:Mvar.from_cov(
-                    mean= constant*self.mean,
-                    cov = constant*self.cov
-                )
-            )
-        }
     ):
         """
         ?*A
@@ -742,8 +715,8 @@ class Mvar(object,Automath,Inplace):
             >>> assert K1/A == K1*(A**(-1))
             >>> assert M/A==M*(A**(-1))
         """
-        (other,self)= convert(other,self)
-        return multipliers[type(other)](other,self)
+        (other,self)= _rconvert(other,self)
+        return _rmultipliers[type(other)](other,self)
     
     def __add__(self,other):
         """
@@ -771,15 +744,15 @@ class Mvar(object,Automath,Inplace):
         >>> assert (A+B).cov==A.cov+B.cov
         
         watch out subtraction is the inverse of addition 
-            >>> assert A-A == Mvar(mean=[0,0])
+            >>> assert A-A == Mvar(mean=numpy.zeros_like(A.mean))
             >>> assert (A-B)+B == A
             >>> assert Matrix((A-B).mean) == Matrix(A.mean - B.mean)
             >>> assert (A-B).cov== A.cov - B.cov
             
         if you want something that acts like rand()-rand() use:
             
-            >>> assert Matrix((A+B*(-1*numpy.eye(A.mean.size))).mean) == Matrix(A.mean - B.mean)
-            >>> assert (A+B*(-1*numpy.eye(A.mean.size))).cov== A.cov + B.cov
+            >>> assert Matrix((A+B*(-1*numpy.eye(A.ndim))).mean) == Matrix(A.mean - B.mean)
+            >>> assert (A+B*(-1*numpy.eye(A.ndim))).cov== A.cov + B.cov
 
         __sub__ should also fit with __neg__, __add__, and scalar multiplication.
         
@@ -806,7 +779,8 @@ class Mvar(object,Automath,Inplace):
             '    var=',8*' '+self.var.__repr__().replace('\n','\n'+8*' ')+',',
             '    vectors=',8*' '+self.vectors.__repr__().replace('\n','\n'+8*' ')+',',
             ')',
-        ])
+        ]).replace('dtype=','dtype=numpy.').replace('numpy.numpy','numpy')
+        
     
     __str__=__repr__
 
@@ -823,7 +797,7 @@ class Mvar(object,Automath,Inplace):
             the eigen values. So the standard deviations are projected, if you 
             want volumetric standard deviations I think you need to multiply by sqrt(ndim)
         """
-        if self.mean.size != 2:
+        if self.ndim != 2:
             raise ValueError(
                 'this method can only produce patches for 2d data'
             )
@@ -852,8 +826,9 @@ def wiki(P,M):
     """
     Direct implementation of the wikipedia blending algorythm
     
-    The quickest way to prove it's equivalent is by examining this:
-        >>> assert A & B == ((A*A**-2)+(B*B**-2))**-1
+    The quickest way to prove it's equivalent is by examining these:
+        >>> assert A**-1 == A*A**-2
+        >>> assert A & B == ((A**-1)+(B**-1))**-1
     """
     yk=Matrix(M.mean).H-Matrix(P.mean).H
     Sk=P.cov+M.cov
@@ -861,7 +836,7 @@ def wiki(P,M):
     
     return Mvar.from_cov(
         mean=(Matrix(P.mean).H+dots(Kk,yk)).H,
-        cov=dots((numpy.eye(P.mean.size)-Kk),P.cov)
+        cov=dots((numpy.eye(P.ndim)-Kk),P.cov)
     )
 
 def isplit(sequence,fkey=bool): 
@@ -906,8 +881,12 @@ def isplit(sequence,fkey=bool):
         
     return result
 
+_scalarMul=lambda self,constant:Mvar.from_cov(
+    mean= constant*self.mean,
+    cov = constant*self.cov,
+)
 
-_rconvert=(
+_convert=(
     lambda item,helper=lambda item: Matrix(item) if item.ndim else item:(  
         Matrix(item.transform) if 
         isinstance(item,Mvar) else 
@@ -920,11 +899,29 @@ _multipliers={
         mean=Matrix(self.mean)*matrix,
         vectors=self.scaled*matrix,
     ),
-    numpy.ndarray:lambda self,constant:Mvar.from_cov(
-        mean= constant*self.mean,
-        cov = constant*self.cov,
+    numpy.ndarray:_scalarMul
+}
+
+_rconvert=(lambda 
+    other,self,
+    helper=lambda other,self: (
+        Matrix(other) if other.ndim else other,
+        self.transform if other.ndim else self
+    ):
+    helper(numpy.array(other),self)
+)
+_rmultipliers={
+    #if the left operand is a matrix, the mvar has been converted to
+    #to a matrix -> use matrix multiply
+    (Matrix):operator.mul,
+    #if the left operand is a constant use scalar multiply
+    (numpy.ndarray):(
+        lambda constant,self:Mvar.from_cov(
+            mean= constant*self.mean,
+            cov = constant*self.cov
+        )
     )
-}    
+}
 
 if __name__=="__main__":
     import doctest
