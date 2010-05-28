@@ -292,18 +292,18 @@ class Mvar(object,Automath,Inplace):
         
      ############ get methods/properties
 
-    def get_cov(self):
+    def getCov(self):
         """
         get the covariance matrix used by the object
         
         >>> assert A.cov==A.vectors.H*numpy.diagflat(A.var)*A.vectors
-        >>> assert A.cov==A.get_cov()
+        >>> assert A.cov==A.getCov()
         >>> assert A.scaled.H*A.scaled==abs(A).cov
         """
         return self.vectors.H*numpy.diagflat(self.var)*self.vectors
     
     cov = property(
-        fget=get_cov, 
+        fget=getCov, 
         fset=lambda self,cov:self.copy(
             Mvar.from_cov(
                 mean=self.mean,
@@ -320,13 +320,16 @@ class Mvar(object,Automath,Inplace):
             >>> assert A.vectors.H*A.scaled==A.transform
         """
     )
-    
-    transform = property(
-        fget=lambda self:(
+
+    def getTransform(self,power=1):
+        return (
             self.vectors.H*
-            Matrix(numpy.diagflat(self.var**(0.5+0j)))*
+            numpy.diagflat(self.var**(power/(2+0j)))*
             self.vectors
-        ),
+        )
+   
+    transform = property(
+        fget=getTransform,
         doc="""
             Useful for transforming from unit-data-space, to data-space
             >>> assert A.cov==A.transform*A.transform
@@ -532,7 +535,6 @@ class Mvar(object,Automath,Inplace):
             
             >>> assert (A**K1)*(A**K2)==A**(K1+K2)
             >>> assert A**K1/A**K2==A**(K1-K2)
-            >>> assert (A**K1).vectors==A.vectors 
             
         Zero power has some interesting properties: 
             
@@ -541,7 +543,6 @@ class Mvar(object,Automath,Inplace):
             transform the ellipse to a sphere
               
             >>> assert Matrix((A**0).var) == Matrix(numpy.ones(A.mean.shape))
-            >>> assert (A**0.00001).vectors== A.vectors #doesn't work with 0 exponent
             >>> assert (A**0).mean == A.mean*(A**-1).transform == A.mean*A.transform**(-1)
             
         derivation of multiplication from this is messy.just remember that 
@@ -549,15 +550,9 @@ class Mvar(object,Automath,Inplace):
             
             >>> assert A*B==A*B.transform
             >>> assert M*B==M*B.transform
+            >>> assert A**2==A*A==A*A.transform
         """
-        vectors=self.vectors
-        transform = (
-            vectors.H*
-            numpy.diagflat(self.var**((power-1)/(2+0j)))*
-            vectors
-        )
-        
-        return self*transform
+        return self*self.getTransform(power-1)
         
     def __mul__(self,other):        
         """
@@ -899,25 +894,36 @@ def _makeTestObjects():
     randn=numpy.random.randn
     randint=numpy.random.randint
 
-    ndim=2
+    ndim=randint(1,10)
+    
+    #create a number, n, of random vectors, 
+    #with a default length of 'ndim', 
+    #they can be made compley by setting cplx=True
+    rvec=lambda n=1,m=ndim,cplx=False:Matrix(
+        ascomplex(randn(n,m,2)) 
+        if cplx else 
+        randn(n,m)
+    )
 
     #create random test objects
     A=Mvar(
-        mean=5*ascomplex(randn(1,2,2)),
-        vectors=5*ascomplex(randn(2,2,2))
+        mean=5*randn()*rvec(),
+        vectors=5*randn()*rvec(ndim)
     )
-    
+
     B=Mvar.from_cov(
-        mean=5*ascomplex(randn(1,2,2)),
-        cov=(lambda x:x*x.H)(Matrix(10*ascomplex(randn(2,2,2))))
+        mean=5*randn()*rvec(),
+        cov=(lambda x:x.H*x)(5*randn()*rvec(2*ndim))
     )
+
     
-    C=Mvar.from_data(dots(
-        ascomplex(randn(50,2,2)),
-        5*ascomplex(randn(2,2,2)),
-    ))
+    C=Mvar.from_data(
+        rvec(5*ndim)*rvec(ndim)
+    )
+
+    A,B,C=numpy.random.permutation([A,B,C])
     
-    M=Matrix(randn(2,2))
+    M=rvec(ndim)
     
     K1=rand()+0j
     
