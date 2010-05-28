@@ -12,21 +12,34 @@ wiki is just to demonstrate the equivalency between my blending algorithm,
     and the wikipedia version of it.
     (http://en.wikipedia.org/wiki/Kalman_filtering#Update)
 
+The docstrings are full of examples. The test objects are created by run_test.sh, 
+and stored in test_objects.pkl. You can get the most recent versions of them by 
+importing test_results.py
+in the test objects
+    A,B and C are instances of the Mvar class  
+    K1 and K2 are random numbers
+    M is a matrix
+    N is an integer
+
 see their documention for more information.    
 """
 
 ##imports
 
+#conditional
+if __name__=='__main__':
+    #builtin    
+    import sys
+    import doctest
+    import pickle
+    
+    #self!    
+    import mvar
+
 #builtins
 import itertools
 import collections 
-
 import operator
-#conditional
-if __name__=="__main__":
-    import doctest
-    import sys
-    import pickle
 
 #3rd party
 import numpy
@@ -47,6 +60,8 @@ from matrix import Matrix
 
 class Mvar(object,Automath,Inplace):
     """
+    >>> assert 1==0
+
     Multivariate normal distributions packaged to act like a vector 
     (http://en.wikipedia.org/wiki/Vector_space)
     
@@ -818,8 +833,6 @@ class Mvar(object,Automath,Inplace):
             #while transmitting any kwargs.
             **kwargs
         )
-
-
 ## extras    
 
 def wiki(P,M):
@@ -838,48 +851,6 @@ def wiki(P,M):
         mean=(Matrix(P.mean).H+dots(Kk,yk)).H,
         cov=dots((numpy.eye(P.ndim)-Kk),P.cov)
     )
-
-def isplit(sequence,fkey=bool): 
-    """
-        return a defaultdict (where the default is an empty list), 
-        where every value is a sub iterator produced from the sequence
-        where items are sent to iterators based on the value of fkey(item).
-        
-        >>> isodd = isplit(xrange(1,7),lambda item:bool(item%2))
-        >>> isodd[True]
-        [1, 3, 5]
-        >>> isodd[False]
-        [2, 4, 6]
-        
-        which gives the same results as
-        
-        >>> X=xrange(1,7)
-        >>> [item for item in X if bool(item%2)]
-        [1, 3, 5]
-        >>> [item for item in X if not bool(item%2)]
-        [2, 4, 6]
-        
-        or you could make a mess of maps and filter
-        but this is so smooth,and really shortens things 
-        when dealing with a lot of keys 
-        
-        >>> bytype = isplit([1,'a',True,"abc",5,7,False],type)
-        >>> bytype[int]
-        [1, 5, 7]
-        >>> bytype[str]
-        ['a', 'abc']
-        >>> bytype[bool]
-        [True, False]
-        >>> bytype[dict]
-        []
-    """
-    result = collections.defaultdict(list)
-    for key,iterator in itertools.groupby(sequence,fkey):
-        R = result[key]
-        R.extend(iterator)
-        result[key] = R
-        
-    return result
 
 _scalarMul=lambda self,constant:Mvar.from_cov(
     mean= constant*self.mean,
@@ -923,43 +894,88 @@ _rmultipliers={
     )
 }
 
-if __name__=="__main__":
-    import doctest
+def _makeTestObjects():   
+    rand=numpy.random.rand
+    randn=numpy.random.randn
+    randint=numpy.random.randint
 
-    print 'from numpy import array'
-    print 'from mvar import Mvar,Matrix'
-    print '#test objects used'
-    
+    ndim=2
+
     #create random test objects
     A=Mvar(
-        mean=5*ascomplex(numpy.random.randn(1,2,2)),
-        vectors=5*ascomplex(numpy.random.randn(2,2,2))
+        mean=5*ascomplex(randn(1,2,2)),
+        vectors=5*ascomplex(randn(2,2,2))
     )
-    print 'A=',A
     
     B=Mvar.from_cov(
-        mean=5*ascomplex(numpy.random.randn(1,2,2)),
-        cov=(lambda x:x*x.H)(Matrix(10*ascomplex(numpy.random.randn(2,2,2))))
+        mean=5*ascomplex(randn(1,2,2)),
+        cov=(lambda x:x*x.H)(Matrix(10*ascomplex(randn(2,2,2))))
     )
-    print 'B=',B
     
     C=Mvar.from_data(dots(
-        ascomplex(numpy.random.randn(50,2,2)),
-        5*ascomplex(numpy.random.randn(2,2,2)),
+        ascomplex(randn(50,2,2)),
+        5*ascomplex(randn(2,2,2)),
     ))
-    print 'C=',C
     
-    M=Matrix(numpy.random.randn(2,2))
-    print 'M=',M.__repr__()
+    M=Matrix(randn(2,2))
     
-    K1=numpy.random.rand()+0j
-    print 'K1=',K1
+    K1=rand()+0j
     
-    K2=numpy.random.rand()+0j
-    print 'K2=',K2
+    K2=rand()+0j
         
-    N=numpy.random.randint(2,10)
-    print 'N=',N
-    
-    doctest.testmod()
+    N=randint(2,10)
+
+    testObjects={
+        'ndim':ndim,
+        'A':A,'B':B,'C':C,
+        'M':M,
+        'K1':K1,'K2':K2,
+        'N':N
+    }
+
+    return testObjects
+
+if __name__=='__main__':
+    #overwrite everything we just created with the copy that was 
+    #created when we imported mvar, so ther's on't one copy.
+    from mvar import *
+
+    #initialize the pickle file name, an the dictionry of test objects
+    pickle_name='test_objects.pkl'
+    testObjects={}
+
+    R='-r' in sys.argv
+
+    if R:
+        print "#attempting to load pickle"        
+        try:
+            testObjects = pickle.load(open(pickle_name,'r'))
+        except IOError:
+            print "#    IOError"
+        except  EOFError:
+            print "#    EOFError"
+        except pickle.UnpicklingError:
+            print "#    UnpicklingError"
+        else:
+            print "#loaded"
+
+    if not testObjects:
+        print "#creating new test objects"
+        testObjects=_makeTestObjects()
+        print "#dumping new pickle"
+        pickle.dump(
+            testObjects,
+            open(pickle_name,'w'),
+        )
+
+    print '\n'.join([
+        'import pickle',
+        'testObjects = pickle.load(open("'+pickle_name+'","r"))',
+    ])
+
+    for key,val in testObjects.items():
+        setattr(mvar,key,val)
+
+    doctest.testmod(mvar)
+
 

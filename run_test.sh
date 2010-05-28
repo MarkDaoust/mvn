@@ -1,8 +1,8 @@
 #! /bin/bash
-echo starting
+echo '#starting'
 mkfifo pipe
-./run_test.py &> pipe &
-tee test_results.py < pipe
+./comment_doctest.py ./mvar.py $1 &> pipe &
+< pipe tee test_results.py
 rm pipe
-echo done
+echo '#done'
 sleep 1

@@ -206,3 +206,46 @@ def isrotation(A):
 def isdiag(A):
     shape=A.shape
     return A.ndim==2 and ((A != 0) == numpy.eye(shape[0],shape[1])).all()
+
+
+def isplit(sequence,fkey=bool): 
+    """
+        return a defaultdict (where the default is an empty list), 
+        where every value is a sub iterator produced from the sequence
+        where items are sent to iterators based on the value of fkey(item).
+        
+        >>> isodd = isplit(xrange(1,7),lambda item:bool(item%2))
+        >>> isodd[True]
+        [1, 3, 5]
+        >>> isodd[False]
+        [2, 4, 6]
+        
+        which gives the same results as
+        
+        >>> X=xrange(1,7)
+        >>> [item for item in X if bool(item%2)]
+        [1, 3, 5]
+        >>> [item for item in X if not bool(item%2)]
+        [2, 4, 6]
+        
+        or you could make a mess of maps and filter
+        but this is so smooth,and really shortens things 
+        when dealing with a lot of keys 
+        
+        >>> bytype = isplit([1,'a',True,"abc",5,7,False],type)
+        >>> bytype[int]
+        [1, 5, 7]
+        >>> bytype[str]
+        ['a', 'abc']
+        >>> bytype[bool]
+        [True, False]
+        >>> bytype[dict]
+        []
+    """
+    result = collections.defaultdict(list)
+    for key,iterator in itertools.groupby(sequence,fkey):
+        R = result[key]
+        R.extend(iterator)
+        result[key] = R
+        
+    return result
