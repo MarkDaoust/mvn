@@ -2,6 +2,7 @@
 """
 this module contains one function: square
 
+I was surprisedm when it worked. the idea was based on these two lines from wikipedia
  
 http://en.wikipedia.org/wiki/Square_root_of_a_matrix:
 (math notation converted to local python standard)
@@ -12,7 +13,6 @@ a unitary matrix is a complex rotation matrix
 http://en.wikipedia.org/wiki/Unitary_matrix
     '''In mathematics, a unitary matrix is an nxn complex matrix U 
     satisfying the condition U.H*U = I, U*U.H = I'''
-I don't know how to fix it but this is close. 
 """
 
 import numpy
@@ -22,7 +22,10 @@ from helpers import ascomplex
 
 def square(vectors):
     """
-    given a series of vectors, this function calculates 
+    given a series of vectors, this function calculates:
+        (variances,vectors)=numpy.linalg.eigh(vectors.H*vectors)
+    it's a seperate function because if there are less vectors 
+    than dimensions the process can be accelerated, it just takes some dancing
     """
     vectors=Matrix(vectors)
     shape=vectors.shape

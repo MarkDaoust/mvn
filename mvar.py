@@ -17,8 +17,9 @@ and stored in test_objects.pkl. You can get the most recent versions of them by
 importing test_results.py, which will give you an dictionary of the objects used
 in the test objects
     A,B and C are instances of the Mvar class  
-    K1 and K2 are random numbers
+    K1 and K2 are random complex numbers
     M and M2 are matrixes
+    E is an apropriately sized eye matrix
     N is an integer
 
 see their documention for more information.    
@@ -199,8 +200,6 @@ class Mvar(object,Automath,Inplace):
         self.var = numpy.real_if_close(numpy.array(stack[:-1,0]).flatten())
         self.vectors = stack[:-1,1:]
         
-        assert numpy.isreal(self.var).all(),"variances must be real"
-        
         if square:
             self.copy(abs(self))
         
@@ -233,11 +232,10 @@ class Mvar(object,Automath,Inplace):
         """
         everything in kwargs is passed directly to the constructor
         """
-        assert cov==cov.H,'Covariance matrixes must be Hermitan'
         #get the variances and vectors.
-        (var,vectors) = numpy.linalg.eigh(cov) if cov.size else (Matrix([]),Matrix([]))
-        vectors=Matrix(vectors.H)
-        
+        (var,vectors) = numpy.linalg.eig(cov) if cov.size else (Matrix([]),Matrix([]))
+        vectors=Matrix(vectors.H)     
+
         return Mvar(
             vectors=vectors,
             var=var,
@@ -529,6 +527,8 @@ class Mvar(object,Automath,Inplace):
             >>> assert A**0 == A*A**(-1)
             >>> assert A**0 == A/A  
             
+            >>> K1=K1.real
+            >>> K2=K2.real
             >>> assert (A**K1)*(A**K2)==A**(K1+K2)
             >>> assert A**K1/A**K2==A**(K1-K2)
             
@@ -579,8 +579,7 @@ class Mvar(object,Automath,Inplace):
             >>> assert (2*A.cov) == 2*A.cov
             
             and this is different from multiplication by a scale matrix
-            >>> E=numpy.eye(A.ndim)
-            >>> assert (A*4).cov == (A*(2*E)).cov
+            >>> assert (A*N**2).cov == (A*(N*E)).cov
 
 
             constants still commute:          
@@ -632,15 +631,13 @@ class Mvar(object,Automath,Inplace):
             multiplication must fit with addition, and addition here is 
             defined so it can be used in the kalman noise addition step so: 
             
-            >>> assert (A+A).scaled==(2*A).scaled
-            >>> assert (A+A).scaled==(2**0.5)*A.scaled
+            >>> assert (A+A)==(2*A)
             
             >>> assert Matrix((A+A).mean)==Matrix((2*A).mean)
             >>> assert Matrix((A+A).mean)==Matrix(2*A.mean)
             
             >>> assert Matrix((A*K1).mean)==Matrix(K1*A.mean)
-            >>> K1=abs(K1) #it only works correctly with positive numbers
-            >>> assert (A*K1).scaled==(K1**(0.5+0j))*A.scaled
+            >>> assert (A*K1).cov== (A.cov)*K1
             
 
             >>> assert sum(itertools.repeat(A,N-1),A) == A*(N)
@@ -663,19 +660,17 @@ class Mvar(object,Automath,Inplace):
             update step.
             
             simple scale is like this:
-            >>> assert (A*(numpy.eye(A.ndim)*K1)).mean==A.mean*K1
-            >>> K1=abs(K1) #only works correctly with positive scale
-            >>> assert (A*(numpy.eye(A.ndim)*K1)).scaled==A.scaled*K1
-                        
+            >>> assert (A*(E*K1)).mean==A.mean*K1
+            >>> assert (A*(E*K1)).cov ==(E*K1).H*A.cov*(E*K1)
             
             or more generally
             >>> assert (A*M).cov==M.H*A.cov*M
-            >>> assert Matrix((A*M).mean)==Matrix(A.mean*M)
+            >>> assert (A*M).mean==A.mean*M
             
             matrix multiplication is implemented as follows
             
         given __mul__ and __pow__ it would be immoral to not overload divide 
-        as well, automath takes care of these details
+        as well, the Automath class takes care of these details
             A/?
             
             >>> assert A/B == A*(B**(-1))
@@ -770,10 +765,7 @@ class Mvar(object,Automath,Inplace):
         so if you want simple scale use matrix multiplication like rand()*(2*eye)
         
         scalar multiplication however fits with addition:
-        
-        >>> assert (A+A).scaled==(2*A).scaled
-        >>> assert (A+A).scaled==(2**0.5)*A.scaled
-        
+
         >>> assert Matrix((A+A).mean)==Matrix((2*A).mean)
         >>> assert Matrix((A+A).mean)==Matrix(2*A.mean)
         
@@ -788,7 +780,7 @@ class Mvar(object,Automath,Inplace):
             
         if you want something that acts like rand()-rand() use:
             
-            >>> assert Matrix((A+B*(-1*numpy.eye(A.ndim))).mean) == Matrix(A.mean - B.mean)
+            >>> assert Matrix((A+B*(-1*E)).mean) == Matrix(A.mean - B.mean)
             >>> assert (A+B*(-1*numpy.eye(A.ndim))).cov== A.cov + B.cov
 
         __sub__ should also fit with __neg__, __add__, and scalar multiplication.
@@ -952,17 +944,18 @@ def _makeTestObjects():
     
     M=rvec(ndim)
     M2=rvec(ndim)
+    E=Matrix.eye(ndim)
     
-    K1=randn()+0j
+    K1=randn()+randn()*1j
     
-    K2=randn()+0j
+    K2=randn()+randn()*1j
         
     N=randint(1,10)
 
     testObjects={
         'ndim':ndim,
         'A':A,'B':B,'C':C,
-        'M':M,'M2':M2,
+        'M':M,'M2':M2,'E':E,
         'K1':K1,'K2':K2,
         'N':N
     }
