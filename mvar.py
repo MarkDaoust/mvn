@@ -682,9 +682,38 @@ class Mvar(object,Automath,Inplace):
             >>> assert K1/A == K1*(A**(-1))
             >>> assert M/A==M*(A**(-1))
         """
-        other=_mulConvert(other)
-        return _multipliers[type(other)](self,other) 
+        other=self._mulConvert(other)
+        return self._multipliers[type(other)](self,other) 
     
+    def _scalarMul(self,constant):
+        return Mvar.from_cov(
+            mean= constant*self.mean,
+            cov = constant*self.cov,
+        )
+
+    def _matrixMul(self,matrix):
+        return Mvar(
+            mean=Matrix(self.mean)*matrix,
+            vectors=self.scaled*matrix,
+        )
+    
+    @staticmethod
+    def _mulConvert(item,
+        helper=lambda item: Matrix(item) if item.ndim else item
+    ):
+        return (
+            item.transform if 
+            isinstance(item,Mvar) else 
+            helper(numpy.array(item))
+        )
+
+    _multipliers={
+        Matrix:_matrixMul,
+        numpy.ndarray:_scalarMul
+    }
+
+
+
     def __rmul__(
         self,
         other,
@@ -747,8 +776,26 @@ class Mvar(object,Automath,Inplace):
             >>> assert K1/A == K1*(A**(-1))
             >>> assert M/A==M*(A**(-1))
         """
-        (other,self)= _rmulConvert(other,self)
-        return _rmultipliers[type(other)](other,self)
+        (transform,other)= self._rmulConvert(other)
+        return self._rmultipliers[type(other)](transform,other)
+
+    def _rmulConvert(self,other,
+        helper=lambda self,other:(
+            self.transform if other.ndim else self,
+            Matrix(other) if other.ndim else other,
+        )
+    ):
+        return helper(self,numpy.array(other))
+
+    _rmultipliers={
+        #if the left operand is a matrix, the mvar has been converted to
+        #to a matrix -> use matrix multiply
+        (Matrix):lambda self,other:other*self,
+        #if the left operand is a constant use scalar multiply
+        (numpy.ndarray):_scalarMul
+    }
+
+
     
     def __add__(self,other):
         """
@@ -847,6 +894,7 @@ class Mvar(object,Automath,Inplace):
             #while transmitting any kwargs.
             **kwargs
         )
+
 ## extras    
 
 def wiki(P,M):
@@ -855,7 +903,7 @@ def wiki(P,M):
     
     The quickest way to prove it's equivalent is by examining these:
         >>> assert A**-1 == A*A**-2
-        >>> assert A & B == ((A**-1)+(B**-1))**-1
+        >>> assert A & B == (A*A**-2+B*B**-2)**-1
     """
     yk=Matrix(M.mean).H-Matrix(P.mean).H
     Sk=P.cov+M.cov
@@ -865,48 +913,6 @@ def wiki(P,M):
         mean=(Matrix(P.mean).H+dots(Kk,yk)).H,
         cov=dots((numpy.eye(P.ndim)-Kk),P.cov)
     )
-
-_scalarMul=lambda self,constant:Mvar.from_cov(
-    mean= constant*self.mean,
-    cov = constant*self.cov,
-)
-
-_mulConvert=(
-    lambda item,helper=lambda item: Matrix(item) if item.ndim else item:(  
-        Matrix(item.transform) if 
-        isinstance(item,Mvar) else 
-        helper(numpy.array(item))
-    )
-)
-
-_multipliers={
-    Matrix:lambda self,matrix:Mvar(
-        mean=Matrix(self.mean)*matrix,
-        vectors=self.scaled*matrix,
-    ),
-    numpy.ndarray:_scalarMul
-}
-
-_rmulConvert=(lambda 
-    other,self,
-    helper=lambda other,self: (
-        Matrix(other) if other.ndim else other,
-        self.transform if other.ndim else self
-    ):
-    helper(numpy.array(other),self)
-)
-_rmultipliers={
-    #if the left operand is a matrix, the mvar has been converted to
-    #to a matrix -> use matrix multiply
-    (Matrix):operator.mul,
-    #if the left operand is a constant use scalar multiply
-    (numpy.ndarray):(
-        lambda constant,self:Mvar.from_cov(
-            mean= constant*self.mean,
-            cov = constant*self.cov
-        )
-    )
-}
 
 def _makeTestObjects():   
     rand=numpy.random.rand
