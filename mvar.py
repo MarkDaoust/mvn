@@ -975,7 +975,7 @@ if __name__=='__main__':
     from mvar import *
 
     #initialize the pickle file name, an the dictionry of test objects
-    pickle_name='test_objects.pkl'
+    pickle_name='testObjects.pkl'
     testObjects={}
 
     if '-r' in sys.argv:
@@ -1002,8 +1002,13 @@ if __name__=='__main__':
 
     print '\n'.join([
         'import pickle',
-        'testObjects = pickle.load(open("'+pickle_name+'","r"))',
+        'locals().update(',
+        '    pickle.load(open("'+pickle_name+'","r"))',
+        ')'
     ])
+
+
+    mvar.__dict__.update(testObjects)
 
     for key,val in testObjects.items():
         setattr(mvar,key,val)
