@@ -583,8 +583,10 @@ class Mvar(object,Automath,Inplace):
             >>> assert (A*4).cov == (A*(2*E)).cov
 
 
-            constants still commute            
-            >>> assert K1*A*M == A*K1*M == A*M*K1
+            constants still commute:          
+            >>> K1=abs(K1) #but only if the constant is positive
+            >>> assert K1*A*M == A*K1*M 
+            >>> assert K1*A*M == A*M*K1
 
             constants are still asociative
             >>> assert (K1*A)*K2 == K1*(A*K2)
@@ -636,9 +638,11 @@ class Mvar(object,Automath,Inplace):
             >>> assert Matrix((A+A).mean)==Matrix((2*A).mean)
             >>> assert Matrix((A+A).mean)==Matrix(2*A.mean)
             
-            >>> assert (A*K1).scaled==(K1**(0.5+0j))*A.scaled
             >>> assert Matrix((A*K1).mean)==Matrix(K1*A.mean)
+            >>> K1=abs(K1) #it only works correctly with positive numbers
+            >>> assert (A*K1).scaled==(K1**(0.5+0j))*A.scaled
             
+
             >>> assert sum(itertools.repeat(A,N-1),A) == A*(N)
             
             >>> assert (A*K1).cov==A.cov*K1
@@ -658,9 +662,11 @@ class Mvar(object,Automath,Inplace):
             distribution. Defined this way to work with the kalman state 
             update step.
             
-            simple scale is like this
+            simple scale is like this:
+            >>> assert (A*(numpy.eye(A.ndim)*K1)).mean==A.mean*K1
+            >>> K1=abs(K1) #only works correctly with positive scale
             >>> assert (A*(numpy.eye(A.ndim)*K1)).scaled==A.scaled*K1
-            >>> assert ((A*(numpy.eye(A.ndim)*K1)).mean==A.mean*K1).all()
+                        
             
             or more generally
             >>> assert (A*M).cov==M.H*A.cov*M
@@ -947,11 +953,11 @@ def _makeTestObjects():
     M=rvec(ndim)
     M2=rvec(ndim)
     
-    K1=rand()+0j
+    K1=randn()+0j
     
-    K2=rand()+0j
+    K2=randn()+0j
         
-    N=randint(2,10)
+    N=randint(1,10)
 
     testObjects={
         'ndim':ndim,
