@@ -14,11 +14,11 @@ wiki is just to demonstrate the equivalency between my blending algorithm,
 
 The docstrings are full of examples. The test objects are created by run_test.sh, 
 and stored in test_objects.pkl. You can get the most recent versions of them by 
-importing test_results.py
+importing test_results.py, which will give you an dictionary of the objects used
 in the test objects
     A,B and C are instances of the Mvar class  
     K1 and K2 are random numbers
-    M is a matrix
+    M and M2 are matrixes
     N is an integer
 
 see their documention for more information.    
@@ -57,11 +57,8 @@ from automath import Automath
 from inplace import Inplace
 from matrix import Matrix
 
-
 class Mvar(object,Automath,Inplace):
     """
-    >>> assert 1==0
-
     Multivariate normal distributions packaged to act like a vector 
     (http://en.wikipedia.org/wiki/Vector_space)
     
@@ -100,8 +97,8 @@ class Mvar(object,Automath,Inplace):
         (properties).
     
         This system make compression (like principal component analysis) much 
-        easier and more useful. Especially since, in some of the newer code I 
-        can calculate the eigenvectors withoug necessarily calculating the 
+        easier and more useful. Especially since, I can calculate the eigenvectors 
+        withoug necessarily calculating the 
         covariance matrix
     
     actual attributes:
@@ -136,8 +133,6 @@ class Mvar(object,Automath,Inplace):
     common constructs.
         
     the get* functions all grab useful things out of the structure
-    
-    the do* functions all modify the structure inplace
     
     the inplace operators (like +=) work but, unlike in many classes, 
     do not currently speed up any operations.
@@ -176,7 +171,7 @@ class Mvar(object,Automath,Inplace):
         mean: defaults to zeros
         
         square:
-            calls self.square() on the result if true. This sets the 
+            if true calls runs abs on the self before returning it. This sets the 
             vectors to orthogonal and unit length.
             
         compress
@@ -207,33 +202,30 @@ class Mvar(object,Automath,Inplace):
         assert numpy.isreal(self.var).all(),"variances must be real"
         
         if square:
-            self.square()
+            self.copy(abs(self))
         
         if compress:
-            self.compress(**kwargs)
+            self.copy(self.compress(**kwargs))
             
         self.vectors=Matrix(self.vectors)
         self.mean = Matrix(self.mean)
-        
-    def square(self):
-        """
-        this is NOT x**2 it is to set the vectors to perpendicular and unit 
-        length
-        """
-        (self.var,self.vectors)=square(self.scaled);
         
     def compress(self,**kwargs):
         """
         drop any vector/variance pairs with sqrt(variance) under the tolerence 
         limits the defaults match numpy's for 'allclose'
         """
+        result=self.copy()
+
         #convert the variance to a column vector
-        std=abs(self.var)**0.5
+        std=abs(result.var)**0.5
         
         #find wihich elements are close to zero
         C=approx(std,**kwargs)
-        self.var = self.var[~C]
-        self.vectors = self.vectors[~C,:] if C.size else self.vectors[:0,:]
+        result.var = result.var[~C]
+        result.vectors = result.vectors[~C,:] if C.size else result.vectors[:0,:]
+
+        return result
             
     ############## alternate creation methods
     @staticmethod
@@ -362,14 +354,20 @@ class Mvar(object,Automath,Inplace):
     def copy(self,other=None):
         """
         either return a copy of an Mvar, or copy another into the self
-        B=A.copy()
-        A.copy(B)
+        >>> assert A.copy() == A
+        >>> assert A.copy() is not A
+
+        >>> B.copy(A)
+        >>> assert B == A
+        >>> assert B is not A
         """ 
         if other is None:
             return Mvar(
                 mean=self.mean,
                 vectors=self.vectors,
-                var=self.var
+                var=self.var,
+                compress=False,
+                square=False
             )
         else:
             self.__dict__=other.__dict__.copy()
@@ -442,9 +440,7 @@ class Mvar(object,Automath,Inplace):
         >>> assert abs(A).vectors*abs(A).vectors.H==Matrix.eye
         """
         result=self.copy()
-        var,vectors=square(result.scaled);
-        result.vectors=Matrix(vectors)
-        result.var=var
+        (result.var,result.vectors)=square(result.scaled);
         return result
 
     def __pos__(self):
@@ -572,25 +568,50 @@ class Mvar(object,Automath,Inplace):
             >>> assert isinstance(A*N,Mvar)
             >>> assert isinstance(K1*A,Mvar)
             
-            whenever an mvar is found on the right it is converted to a 
-            vectors.H*scaled matrix and the multiplication is 
-            re-called.
+            whenever an mvar is found on the right it is replaced by a 
+            self.transform matrix and the multiplication is re-called.
             
         general properties:
             
+            remember scalar multiplication fits with addition so:
+            >>> assert A+A == 2*A
+            >>> assert (2*A).mean==2*A.mean
+            >>> assert (2*A.cov) == 2*A.cov
+            
+            and this is different from multiplication by a scale matrix
+            >>> E=numpy.eye(A.ndim)
+            >>> assert (A*4).cov == (A*(2*E)).cov
+
+
             constants still commute            
             >>> assert K1*A*M == A*K1*M == A*M*K1
+
+            constants are still asociative
+            >>> assert (K1*A)*K2 == K1*(A*K2)
+
+            so are matrixes if the Mvar is not in the middle 
+            >>> assert (A*M)*M2 == A*(M*M2)
+            >>> assert (M*M2)*A == M*(M2*A)
+            >>> (M*A)*M2 == M*(A*M2)
+            False
+
+            and because of that, this also doesn't work:
+            >>> (A*B)*C == A*(B*C)
+            False
+
+            I don't fully understand, but
+            I think the reason that those don't work is because:            
+            >>> A.transform*M==(A*M).transform
+            False
+            >>> assert M*A.transform==(M*A),"this is from the definition"
             
-            but the asociative property is lost if you mix constants and 
-            matrixes (but I think it's ok if you only have 1 of the two types?)
-            
-            >>> assert (A*4).cov == (A*(2*numpy.eye(A.ndim))).cov
-            
-            ????
-            asociative if only mvars and matrixes?
-            ????
-            still distributive?
-            
+            distributive for constants only, I don't entierly understan why.
+            >>> assert A*(K1+K2)==A*K1+A*K2
+            >>> A*(M+M2)==A*M+A*M2
+            False
+            >>> A*(B+C)==A*B+A*C
+            False
+
         Mvar*Mvar
             multiplying two Mvars together is defined to fit with power
             
@@ -660,7 +681,7 @@ class Mvar(object,Automath,Inplace):
             >>> assert K1/A == K1*(A**(-1))
             >>> assert M/A==M*(A**(-1))
         """
-        other=_convert(other)
+        other=_mulConvert(other)
         return _multipliers[type(other)](self,other) 
     
     def __rmul__(
@@ -725,7 +746,7 @@ class Mvar(object,Automath,Inplace):
             >>> assert K1/A == K1*(A**(-1))
             >>> assert M/A==M*(A**(-1))
         """
-        (other,self)= _rconvert(other,self)
+        (other,self)= _rmulConvert(other,self)
         return _rmultipliers[type(other)](other,self)
     
     def __add__(self,other):
@@ -852,7 +873,7 @@ _scalarMul=lambda self,constant:Mvar.from_cov(
     cov = constant*self.cov,
 )
 
-_convert=(
+_mulConvert=(
     lambda item,helper=lambda item: Matrix(item) if item.ndim else item:(  
         Matrix(item.transform) if 
         isinstance(item,Mvar) else 
@@ -868,7 +889,7 @@ _multipliers={
     numpy.ndarray:_scalarMul
 }
 
-_rconvert=(lambda 
+_rmulConvert=(lambda 
     other,self,
     helper=lambda other,self: (
         Matrix(other) if other.ndim else other,
@@ -894,12 +915,12 @@ def _makeTestObjects():
     randn=numpy.random.randn
     randint=numpy.random.randint
 
-    ndim=randint(1,10)
+    ndim=randint(1,20)
     
-    #create a number, n, of random vectors, 
+    #create n random vectors, 
     #with a default length of 'ndim', 
     #they can be made compley by setting cplx=True
-    rvec=lambda n=1,m=ndim,cplx=False:Matrix(
+    rvec=lambda n=1,m=ndim,cplx=True:Matrix(
         ascomplex(randn(n,m,2)) 
         if cplx else 
         randn(n,m)
@@ -924,6 +945,7 @@ def _makeTestObjects():
     A,B,C=numpy.random.permutation([A,B,C])
     
     M=rvec(ndim)
+    M2=rvec(ndim)
     
     K1=rand()+0j
     
@@ -934,7 +956,7 @@ def _makeTestObjects():
     testObjects={
         'ndim':ndim,
         'A':A,'B':B,'C':C,
-        'M':M,
+        'M':M,'M2':M2,
         'K1':K1,'K2':K2,
         'N':N
     }
@@ -943,16 +965,14 @@ def _makeTestObjects():
 
 if __name__=='__main__':
     #overwrite everything we just created with the copy that was 
-    #created when we imported mvar, so ther's on't one copy.
+    #created when we imported mvar, so ther's only one copy.
     from mvar import *
 
     #initialize the pickle file name, an the dictionry of test objects
     pickle_name='test_objects.pkl'
     testObjects={}
 
-    R='-r' in sys.argv
-
-    if R:
+    if '-r' in sys.argv:
         print "#attempting to load pickle"        
         try:
             testObjects = pickle.load(open(pickle_name,'r'))
