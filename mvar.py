@@ -40,7 +40,6 @@ if __name__=='__main__':
 #builtins
 import itertools
 import collections 
-import operator
 
 #3rd party
 import numpy
@@ -526,7 +525,15 @@ class Mvar(object,Automath,Inplace):
             >>> assert A**0 == A**(-1)*A
             >>> assert A**0 == A*A**(-1)
             >>> assert A**0 == A/A  
-            
+            >>> assert A**0*A==A
+            >>> assert A*A**0==A
+
+            >>> (A**K1)*(A**K2)==A**(K1+K2)
+            False
+            >>> A**K1/A**K2==A**(K1-K2)
+            False
+
+            those only work if the k's are real            
             >>> K1=K1.real
             >>> K2=K2.real
             >>> assert (A**K1)*(A**K2)==A**(K1+K2)
@@ -538,7 +545,7 @@ class Mvar(object,Automath,Inplace):
             the mean is wherever it gets stretched to while we 
             transform the ellipse to a sphere
               
-            >>> assert Matrix((A**0).var) == Matrix(numpy.ones(A.mean.shape))
+            >>> assert Matrix((A**0).var) == numpy.ones
             >>> assert (A**0).mean == A.mean*(A**-1).transform == A.mean*A.transform**(-1)
             
         derivation of multiplication from this is messy.just remember that 
@@ -617,7 +624,7 @@ class Mvar(object,Automath,Inplace):
             multiplying two Mvars together is defined to fit with power
             
             >>> assert A*A==A**2
-            >>> assert Matrix((A*B).mean)==Matrix(A.mean)*B.transform
+            >>> assert (A*B).mean == A.mean*B.transform
             >>> assert A*(B**2) == A*(B.cov)
             
             Note that the result does not depend on the mean of the 
@@ -633,10 +640,10 @@ class Mvar(object,Automath,Inplace):
             
             >>> assert (A+A)==(2*A)
             
-            >>> assert Matrix((A+A).mean)==Matrix((2*A).mean)
-            >>> assert Matrix((A+A).mean)==Matrix(2*A.mean)
+            >>> assert (A+A).mean==(2*A).mean
+            >>> assert (A+A).mean==2*A.mean
             
-            >>> assert Matrix((A*K1).mean)==Matrix(K1*A.mean)
+            >>> assert (A*K1).mean==K1*A.mean
             >>> assert (A*K1).cov== (A.cov)*K1
             
 
@@ -693,7 +700,7 @@ class Mvar(object,Automath,Inplace):
 
     def _matrixMul(self,matrix):
         return Mvar(
-            mean=Matrix(self.mean)*matrix,
+            mean=self.mean*matrix,
             vectors=self.scaled*matrix,
         )
     
@@ -813,22 +820,22 @@ class Mvar(object,Automath,Inplace):
         
         scalar multiplication however fits with addition:
 
-        >>> assert Matrix((A+A).mean)==Matrix((2*A).mean)
-        >>> assert Matrix((A+A).mean)==Matrix(2*A.mean)
+        >>> assert (A+A).mean==(2*A).mean
+        >>> assert (A+A).mean==2*A.mean
         
-        >>> assert Matrix((A+B).mean)==Matrix(A.mean+B.mean)
+        >>> assert (A+B).mean==A.mean+B.mean
         >>> assert (A+B).cov==A.cov+B.cov
         
         watch out subtraction is the inverse of addition 
             >>> assert A-A == Mvar(mean=numpy.zeros_like(A.mean))
             >>> assert (A-B)+B == A
-            >>> assert Matrix((A-B).mean) == Matrix(A.mean - B.mean)
+            >>> assert (A-B).mean == A.mean - B.mean
             >>> assert (A-B).cov== A.cov - B.cov
             
-        if you want something that acts like rand()-rand() use:
+        if you want something that acts like rand()-rand() use an eye to scale:
             
-            >>> assert Matrix((A+B*(-1*E)).mean) == Matrix(A.mean - B.mean)
-            >>> assert (A+B*(-1*numpy.eye(A.ndim))).cov== A.cov + B.cov
+            >>> assert (A+B*(-1*E)).mean == A.mean - B.mean
+            >>> assert (A+B*(-1*E)).cov== A.cov + B.cov
 
         __sub__ should also fit with __neg__, __add__, and scalar multiplication.
         
@@ -899,19 +906,20 @@ class Mvar(object,Automath,Inplace):
 
 def wiki(P,M):
     """
-    Direct implementation of the wikipedia blending algorythm
+    Direct implementation of the wikipedia blending algorithm
     
     The quickest way to prove it's equivalent is by examining these:
         >>> assert A**-1 == A*A**-2
         >>> assert A & B == (A*A**-2+B*B**-2)**-1
+        >>> assert A & B == wiki(A,B)
     """
-    yk=Matrix(M.mean).H-Matrix(P.mean).H
+    yk=M.mean.H-P.mean.H
     Sk=P.cov+M.cov
-    Kk=dots(P.cov,Matrix(Sk).I)
+    Kk=P.cov*Sk.I
     
     return Mvar.from_cov(
-        mean=(Matrix(P.mean).H+dots(Kk,yk)).H,
-        cov=dots((numpy.eye(P.ndim)-Kk),P.cov)
+        mean=(P.mean.H+dots(Kk,yk)).H,
+        cov=(Matrix.eye(P.ndim)-Kk)*P.cov
     )
 
 def _makeTestObjects():   
