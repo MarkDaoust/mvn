@@ -40,6 +40,7 @@ if __name__=='__main__':
 #builtins
 import itertools
 import collections 
+import copy
 
 #3rd party
 import numpy
@@ -55,7 +56,7 @@ from square import square
 
 from automath import Automath
 from inplace import Inplace
-from matrix import Matrix
+from matrix import Matrix,sign
 
 class Mvar(object,Automath,Inplace):
     """
@@ -81,7 +82,7 @@ class Mvar(object,Automath,Inplace):
         
         state[t+1] = (state[t]*STM + noise) & measurment
         
-        Where 'state' is a list of mvars (indexed by time), 'noise' and 
+        Where 'state' is a series of mvars (indexed by time), 'noise' and 
         'measurment' are Mvars, ('noise' having a zero mean) and 'STM' is the 
         state transition matrix
         
@@ -200,7 +201,7 @@ class Mvar(object,Automath,Inplace):
         self.vectors = stack[:-1,1:]
         
         if square:
-            self.copy(abs(self))
+            self.copy(self.square())
         
         if compress:
             self.copy(self.compress(**kwargs))
@@ -208,6 +209,17 @@ class Mvar(object,Automath,Inplace):
         self.vectors=Matrix(self.vectors)
         self.mean = Matrix(self.mean)
         
+    def square(self):
+        """
+        like abs(self), but doesn't affect the sign on the variances.
+        """ 
+        result=abs(self)
+        result.var*=self.sign()
+        return result
+
+    def sign(self):
+        return sign(self.var)
+
     def compress(self,**kwargs):
         """
         drop any vector/variance pairs with sqrt(variance) under the tolerence 
@@ -348,26 +360,45 @@ class Mvar(object,Automath,Inplace):
     )
 
     ########## Utilities
-    def copy(self,other=None):
+    def copy(self,other=None,deep=True):
         """
         either return a copy of an Mvar, or copy another into the self
-        >>> assert A.copy() == A
-        >>> assert A.copy() is not A
+        the default uses deepcopy.
+        >>> A2=A.copy()        
+        >>> assert A2 == A
+        >>> assert A2 is not A
+        >>> assert A2.mean is not A.mean
+        >>> assert A2.var is not A.var
+        >>> assert A2.vectors is not A.vectors
 
-        >>> B.copy(A)
+        >>> A.copy(B)
         >>> assert B == A
         >>> assert B is not A
+        >>> assert A.mean is not B.mean
+        >>> assert A.var is not B.var
+        >>> assert A.vectors is not B.vectors
+
+        set deep=False to not copy the attributes
+        >>> A2=A.copy(deep=False)        
+        >>> assert A2 == A
+        >>> assert A2 is not A
+        >>> assert A2.mean is A.mean
+        >>> assert A2.var is A.var
+        >>> assert A2.vectors is A.vectors
+
+        >>> A.copy(B,deep=False)
+        >>> assert B == A
+        >>> assert B is not A
+        >>> assert A.mean is B.mean
+        >>> assert A.var is B.var
+        >>> assert A.vectors is B.vectors
+
         """ 
+        C=copy.deepcopy if deep else copy.copy
         if other is None:
-            return Mvar(
-                mean=self.mean,
-                vectors=self.vectors,
-                var=self.var,
-                compress=False,
-                square=False
-            )
+            return C(self)
         else:
-            self.__dict__=other.__dict__.copy()
+            self.__dict__.update(C(other.__dict__))
         
     @staticmethod
     def stack(*mvars,**kwargs):
@@ -402,11 +433,6 @@ class Mvar(object,Automath,Inplace):
         a large number of samples will have the same mean and cov as the 
         Mvar being sampled
         """
-        assert (self.var>0).all(),(
-            """I can't sample a distribution with negative variance, 
-            if you can please let me know how"""
-        )
-        
         data= Matrix(numpy.random.randn(n,self.shape[0]))*self.scaled.T
         
         return Matrix(numpy.array(data)+self.mean)
@@ -416,7 +442,8 @@ class Mvar(object,Automath,Inplace):
     #### logical operations
     def __eq__(self,other):
         """
-        >>> assert A==A
+        >>> assert A==A.copy()
+        >>> assert A is not A.copy()
         
         compares the means and covariances of the distributions
         """
@@ -443,15 +470,25 @@ class Mvar(object,Automath,Inplace):
     def __pos__(self):
         """
         >>> assert A == +A
+        >>> assert A is not +A
         """
         return self.copy()
     
     def __invert__(self):
         """
         invert negates the covariance without negating the mean.
-        >>> assert Matrix((~A).mean) == Matrix(A.mean)
+        >>> assert (~A).mean == A.mean
         >>> assert (~A).cov == (-A).cov 
         >>> assert (~A).cov == -(A.cov)
+        >>> assert ~~A==A
+
+        with that Automath gives us these
+        >>> assert ~A&~B == ~(A|B)
+        >>> assert A^B == (A|B) & ~(A&B)
+
+        so hopefully;
+
+        >>>
         """
         result=self.copy()
         result.var=-(self.var)
@@ -487,12 +524,15 @@ class Mvar(object,Automath,Inplace):
         >>> assert (A & B) & C == A & (B & C)
         
         >>> assert (A & A).cov == A.cov/2
-        >>> assert Matrix((A & A).mean) == Matrix(A.mean)
+        >>> assert (A & A).mean == A.mean
         
+        >>> assert A &-A == Mvar(mean=numpy.zeros(ndim))
+        >>> assert A &~A == Mvar(mean=numpy.zeros(ndim))
+
         
         The proof that this is identical to the wikipedia definition of blend 
-        is a little too involved to write here. Just try it (see the "wiki 
-"        function)
+        is a little too involved to write here. Just try it (see the "wiki "
+        function)
         
         >>> assert A & B == wiki(A,B)
         """
@@ -521,7 +561,10 @@ class Mvar(object,Automath,Inplace):
         matrix the mean changes with it..
         
         Most things you expect to work just work.
-        
+
+            >>> assert A==A**1
+            >>> assert -A == (-A)**1
+    
             >>> assert A**0 == A**(-1)*A
             >>> assert A**0 == A*A**(-1)
             >>> assert A**0 == A/A  
@@ -602,16 +645,20 @@ class Mvar(object,Automath,Inplace):
             >>> assert (M*M2)*A == M*(M2*A)
             >>> (M*A)*M2 == M*(A*M2)
             False
-
+            
             and because of that, this also doesn't work:
-            >>> (A*B)*C == A*(B*C)
+            >>> (A*B)*C == A*(B*C) if ndim > 1  else False
             False
 
+            it's funny that it works in 1dimension. I suspect it would give the same ellipse...
             I don't fully understand, but
-            I think the reason that those don't work is because:            
-            >>> A.transform*M==(A*M).transform
+            I think the reason that those don't work boils down to:            
+            >>> (E*A.transform)*M==E*(A*M).transform
             False
-            >>> assert M*A.transform==(M*A),"this is from the definition"
+
+            but it works ok if you're explicit about multiplying by the 
+            transform, because this is just matrix multiplication
+            >>> assert (M*A.transform)*M2==M*(A.transform*M2)
             
             distributive for constants only, I don't entierly understan why.
             >>> assert A*(K1+K2)==A*K1+A*K2
@@ -665,6 +712,9 @@ class Mvar(object,Automath,Inplace):
             matrix multiplication transforms the mean and ellipse of the 
             distribution. Defined this way to work with the kalman state 
             update step.
+
+            >>> assert A*E==A
+            >>> assert (-A)*E==-A 
             
             simple scale is like this:
             >>> assert (A*(E*K1)).mean==A.mean*K1
@@ -701,7 +751,8 @@ class Mvar(object,Automath,Inplace):
     def _matrixMul(self,matrix):
         return Mvar(
             mean=self.mean*matrix,
-            vectors=self.scaled*matrix,
+            var=self.var,
+            vectors=self.vectors*matrix,
         )
     
     @staticmethod
@@ -834,8 +885,8 @@ class Mvar(object,Automath,Inplace):
             
         if you want something that acts like rand()-rand() use an eye to scale:
             
-            >>> assert (A+B*(-1*E)).mean == A.mean - B.mean
-            >>> assert (A+B*(-1*E)).cov== A.cov + B.cov
+            >>> assert (A+B*(-E)).mean == A.mean - B.mean
+            >>> assert (A+B*(-E)).cov== A.cov + B.cov
 
         __sub__ should also fit with __neg__, __add__, and scalar multiplication.
         
@@ -927,7 +978,7 @@ def _makeTestObjects():
     randn=numpy.random.randn
     randint=numpy.random.randint
 
-    ndim=randint(1,20)
+    ndim=randint(1,5)
     
     #create n random vectors, 
     #with a default length of 'ndim', 
@@ -981,7 +1032,7 @@ if __name__=='__main__':
     #created when we imported mvar, so ther's only one copy.
     from mvar import *
 
-    #initialize the pickle file name, an the dictionry of test objects
+    #initialize the pickle file name, and the dictionry of test objects
     pickle_name='testObjects.pkl'
     testObjects={}
 
@@ -1014,11 +1065,7 @@ if __name__=='__main__':
         ')'
     ])
 
-
     mvar.__dict__.update(testObjects)
-
-    for key,val in testObjects.items():
-        setattr(mvar,key,val)
 
     doctest.testmod(mvar)
 

@@ -4,6 +4,22 @@ import itertools
 import functools
 import re
 
+def sign(self):
+    """
+    improved sign function:
+        returns a similar array of unit length (possibly complex) numbers pointing in the same 
+        direction as the input 
+    """
+    return numpy.divide(
+        self,
+        numpy.power(
+            numpy.multiply(
+                self,
+                self.conjugate()
+            ),0.5
+        )
+    )
+
 class Matrix(numpy.matrix):
     """
     Imporved version of the martix class.
@@ -33,6 +49,9 @@ class Matrix(numpy.matrix):
             if callable(other) 
             else numpy.allclose(self,other)
         )
+
+    def __ne__(self,other):
+        return not(self ==  other)
     
     def __div__(self,other):
         return self*other**(-1)
@@ -77,3 +96,16 @@ class Matrix(numpy.matrix):
         if hasattr(args[0],'__iter__'):
             args=itertools.chain(args[0],args[1:])
         return Matrix(numpy.eye(*args,**kwargs))
+
+    @staticmethod
+    @functools.wraps(numpy.ones)
+    def infs(*args,**kwargs):
+        return numpy.inf*numpy.ones(*args,**kwargs)
+
+
+    @staticmethod
+    @functools.wraps(numpy.ones)
+    def nans(*args,**kwargs):
+        return numpy.nan*numpy.ones(*args,**kwargs)
+
+Matrix.sign=sign
