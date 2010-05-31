@@ -20,7 +20,7 @@ from matrix import Matrix
 from operator import ge
 from helpers import ascomplex
 
-def square(vectors):
+def square(vectors=None,var=None):
     """
     given a series of vectors, this function calculates:
         (variances,vectors)=numpy.linalg.eigh(vectors.H*vectors)
@@ -29,18 +29,27 @@ def square(vectors):
     """
     vectors=Matrix(vectors)
     shape=vectors.shape
-    
+
+    var = numpy.ones(shape[0]) if var is None else numpy.real_if_close(var)
+
+    eig = numpy.linalg.eigh if numpy.isreal(var).all() and (var >= 0).all() else numpy.linalg.eig
+
+    var=var[:,numpy.newaxis]
+
+    vectorsH=vectors.H
+    vectors=Matrix(var*numpy.array(vectors))
+
     if not numpy.all(shape):
         var=numpy.zeros([0])
         vec=numpy.zeros([0,shape[1]])
     elif ge(*shape):
-        cov=vectors.H*vectors
-        (var,vec)=numpy.linalg.eigh(vectors.H*vectors)
+        cov=vectorsH*vectors
+        (var,vec)=eig(vectorsH*vectors)
         vec=vec.H
     else:
-        Xcov=vectors*vectors.H
+        Xcov=vectors*vectorsH
         
-        (Xval,Xvec)=numpy.linalg.eigh(Xcov)
+        (Xval,Xvec)=eig(Xcov)
         
         var=numpy.diag(Xcov)
         

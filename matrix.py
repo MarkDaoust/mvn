@@ -12,12 +12,7 @@ def sign(self):
     """
     return numpy.divide(
         self,
-        numpy.power(
-            numpy.multiply(
-                self,
-                self.conjugate()
-            ),0.5
-        )
+        abs(self),
     )
 
 class Matrix(numpy.matrix):

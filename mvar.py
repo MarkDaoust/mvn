@@ -58,6 +58,16 @@ from automath import Automath
 from inplace import Inplace
 from matrix import Matrix,sign
 
+def mag2(vectors):
+    return numpy.real_if_close(
+        numpy.sum(
+            numpy.array(vectors)*numpy.array(vectors.conjugate()),
+            axis = vectors.ndim-1
+    ))
+
+
+
+
 class Mvar(object,Automath,Inplace):
     """
     Multivariate normal distributions packaged to act like a vector 
@@ -211,10 +221,13 @@ class Mvar(object,Automath,Inplace):
         
     def square(self):
         """
-        like abs(self), but doesn't affect the sign on the variances.
+        squares up the vectors, so that the 'vectors' matrix is unitary 
+        (rotation matrix extended to complex numbers)
+        
+        >>> assert abs(A).vectors*abs(A).vectors.H==Matrix.eye
         """ 
-        result=abs(self)
-        result.var*=self.sign()
+        result=self.copy()
+        (result.var,result.vectors)=square(vectors=self.vectors,var=self.var)
         return result
 
     def sign(self):
@@ -291,7 +304,7 @@ class Mvar(object,Automath,Inplace):
             **kwargs
         )
         
-     ############ get methods/properties
+    ############ get methods/properties
 
     def getCov(self):
         """
@@ -315,7 +328,8 @@ class Mvar(object,Automath,Inplace):
     
     scaled = property(
         fget=lambda self:Matrix(numpy.diagflat(self.var**(0.5+0j)))*self.vectors,
-        doc="""
+        doc=
+        """
             get the vectors, scaled by the standard deviations. 
             Useful for transforming from unit-eigen-space, to data-space
             >>> assert A.vectors.H*A.scaled==A.transform
@@ -323,6 +337,15 @@ class Mvar(object,Automath,Inplace):
     )
 
     def getTransform(self,power=1):
+        """
+            >>> assert A.transform == A.getTransform(1)
+            >>> assert A.cov == A.transform*A.transform==A.getTransform(2)
+            >>> assert (A**N).transform == A.getTransform(N)
+            >>> #it's hit and miss for complex numbers, but real is fine
+            >>> assert (A**K1.real).transform == A.getTransform(K1.real) 
+            >>> assert A*B.transform == A*B  
+        """
+        power = complex(power)
         return (
             self.vectors.H*
             numpy.diagflat(self.var**(power/(2+0j)))*
@@ -331,7 +354,8 @@ class Mvar(object,Automath,Inplace):
    
     transform = property(
         fget=getTransform,
-        doc="""
+        doc=
+        """
             Useful for transforming from unit-data-space, to data-space
             >>> assert A.cov==A.transform*A.transform
             >>> assert A*B.transform == A*B
@@ -360,18 +384,18 @@ class Mvar(object,Automath,Inplace):
     )
 
     ########## Utilities
-    def copy(self,other=None,deep=True):
+    def copy(self,other=None,deep=False):
         """
         either return a copy of an Mvar, or copy another into the self
-        the default uses deepcopy.
-        >>> A2=A.copy()        
+        the default uses deep=False.
+        >>> A2=A.copy(deep=True)        
         >>> assert A2 == A
         >>> assert A2 is not A
         >>> assert A2.mean is not A.mean
         >>> assert A2.var is not A.var
         >>> assert A2.vectors is not A.vectors
 
-        >>> A.copy(B)
+        >>> A.copy(B,deep=True)
         >>> assert B == A
         >>> assert B is not A
         >>> assert A.mean is not B.mean
@@ -424,7 +448,7 @@ class Mvar(object,Automath,Inplace):
             **kwargs
         )
     
-    def sample(self,n=1):
+    def sample(self,n=1,cplx=False):
         """
         take samples from the distribution
         n is the number of samples, the default is 1
@@ -433,19 +457,50 @@ class Mvar(object,Automath,Inplace):
         a large number of samples will have the same mean and cov as the 
         Mvar being sampled
         """
-        data= Matrix(numpy.random.randn(n,self.shape[0]))*self.scaled.T
+        units = Matrix(
+            ascomplex(randn(n,self.ndim,2))/sqrt(2)
+            if cplx else 
+            randn(n,self.ndim)
+        )
+        return Matrix(numpy.array(units*self.scaled.T)+self.mean)
         
-        return Matrix(numpy.array(data)+self.mean)
     
+    def dist2(self,locations):
+        """
+        return the square of the mahalabois distance from the Mvar to each vector.
+        the vectors should be along the last dimension of the array.
+
+        >>> assert approx((A**0).dist2(numpy.zeros((1,ndim))),mag2((A**0).mean))
+        """
+        #make sure the mean is a flat numpy array
+        mean=numpy.array(self.mean).squeeze()
+        #and subtract it from the locations (vectors aligned to the last dimension)
+        locations=numpy.array(locations)-mean
+        #rotate each location to eigen-space
+        rotated=numpy.dot(locations,numpy.array(self.vectors.H))
+        #get the square of the magnitude of each component
+        squared=rotated.conjugate()*rotated
+        #su over the last dimension
+        return numpy.real_if_close(
+            numpy.sum(
+                squared*(self.var**-1),
+                locations.ndim-1
+            )
+        )
+
+    def given(self,indexes,values):
+        pass
+
     ############ Math
 
-    #### logical operations
     def __eq__(self,other):
         """
         >>> assert A==A.copy()
         >>> assert A is not A.copy()
+        >>> assert A != B
         
-        compares the means and covariances of the distributions
+        compares the means and covariances of the distributions, 
+        __ne__ is handled by the Automath class
         """
         return Matrix(self.mean)==Matrix(other.mean) and self.cov==other.cov
     
@@ -456,15 +511,10 @@ class Mvar(object,Automath,Inplace):
         >>> assert abs(A) == abs(~A)
         
         but does not touch the mean
-        >>> assert Matrix(A.mean) == Matrix(abs(A).mean)
-        
-        also squares up the vectors, so that the 'vectors' matrix is unitary 
-        (rotation matrix extended to complex numbers)
-        
-        >>> assert abs(A).vectors*abs(A).vectors.H==Matrix.eye
-        """
+        >>> assert Matrix((~A).mean) == Matrix(abs(~A).mean)
+                """
         result=self.copy()
-        (result.var,result.vectors)=square(result.scaled);
+        result.var=abs(self.var)
         return result
 
     def __pos__(self):
@@ -540,10 +590,11 @@ class Mvar(object,Automath,Inplace):
         
     __and__ = blend
 
-    ### operators
     def __pow__(self,power):
         """
         A**?
+
+        assert A**K1==A*A.getTransform(K1-1)
 
         This definition was developed to turn kalman blending into a standard 
         resistor-style 'paralell' operation
@@ -598,7 +649,12 @@ class Mvar(object,Automath,Inplace):
             >>> assert M*B==M*B.transform
             >>> assert A**2==A*A==A*A.transform
         """
-        return self*self.getTransform(power-1)
+        return Mvar(
+            mean=self.mean*self.getTransform(power-1),
+            vectors=self.vectors,
+            var=self.var**power,
+            square=False
+        )
         
     def __mul__(self,other):        
         """
@@ -606,19 +662,22 @@ class Mvar(object,Automath,Inplace):
         
         coercion notes:
             All non Mvar imputs will be converted to numpy arrays, then 
-            treated as constants if zero dimensional, or matrixes otherwise 
-            
-            Mvar always beats constant. Between Mvar and Matrix the left 
-            operand wins 
+            treated as constants if zero dimensional, or matrixes otherwise.
+
+            the resulting types for all currently supported multipications are listed below            
             
             >>> assert isinstance(A*B,Mvar)
             >>> assert isinstance(A*M,Mvar)
             >>> assert isinstance(M*A,Matrix) 
             >>> assert isinstance(A*K1,Mvar)
-            >>> assert isinstance(A*N,Mvar)
             >>> assert isinstance(K1*A,Mvar)
+
+            This can be explained as: 
+                When multiplying by a constant the result is always an Mvar.
+                When multiplying a mix of Mvars an Matrixes the result has the 
+                    sametype as the leftmost operand
             
-            whenever an mvar is found on the right it is replaced by a 
+            Whenever an mvar is found on the right of a Matrix or Mvar it is replaced by a 
             self.transform matrix and the multiplication is re-called.
             
         general properties:
@@ -629,11 +688,11 @@ class Mvar(object,Automath,Inplace):
             >>> assert (2*A.cov) == 2*A.cov
             
             and this is different from multiplication by a scale matrix
-            >>> assert (A*N**2).cov == (A*(N*E)).cov
+            >>> assert (A*(K1*E)).mean == K1*A.mean
+            >>> assert (A*(K1*E)).cov == K1.conjugate()*K1*A.cov
 
 
             constants still commute:          
-            >>> K1=abs(K1) #but only if the constant is positive
             >>> assert K1*A*M == A*K1*M 
             >>> assert K1*A*M == A*M*K1
 
@@ -667,64 +726,7 @@ class Mvar(object,Automath,Inplace):
             >>> A*(B+C)==A*B+A*C
             False
 
-        Mvar*Mvar
-            multiplying two Mvars together is defined to fit with power
-            
-            >>> assert A*A==A**2
-            >>> assert (A*B).mean == A.mean*B.transform
-            >>> assert A*(B**2) == A*(B.cov)
-            
-            Note that the result does not depend on the mean of the 
-            second mvar(!) (really any mvar after the leftmost mvar or matrix)
-
-        Mvar*constant == constant*Mvar
-            Matrix multiplication and scalar multiplication behave differently 
-            from eachother.  
-            
-            For this to be a properly defined vector space scalar 
-            multiplication must fit with addition, and addition here is 
-            defined so it can be used in the kalman noise addition step so: 
-            
-            >>> assert (A+A)==(2*A)
-            
-            >>> assert (A+A).mean==(2*A).mean
-            >>> assert (A+A).mean==2*A.mean
-            
-            >>> assert (A*K1).mean==K1*A.mean
-            >>> assert (A*K1).cov== (A.cov)*K1
-            
-
-            >>> assert sum(itertools.repeat(A,N-1),A) == A*(N)
-            
-            >>> assert (A*K1).cov==A.cov*K1
-            
-            be careful with negative constants because you will end up with 
-            imaginary numbers in your scaled matrix, as a direct result of:            
-            
-            assert (A*K1).scaled==(K1**0.5)*A.scaled
-            assert B+(-A) == B+(-1)*A == B-A and (B-A)+A==B
-            
-            if you want to scale the distribution linearily with the mean
-            then use matrix multiplication
-        
-        Mvar*matrix
-        
-            matrix multiplication transforms the mean and ellipse of the 
-            distribution. Defined this way to work with the kalman state 
-            update step.
-
-            >>> assert A*E==A
-            >>> assert (-A)*E==-A 
-            
-            simple scale is like this:
-            >>> assert (A*(E*K1)).mean==A.mean*K1
-            >>> assert (A*(E*K1)).cov ==(E*K1).H*A.cov*(E*K1)
-            
-            or more generally
-            >>> assert (A*M).cov==M.H*A.cov*M
-            >>> assert (A*M).mean==A.mean*M
-            
-            matrix multiplication is implemented as follows
+        for notes 
             
         given __mul__ and __pow__ it would be immoral to not overload divide 
         as well, the Automath class takes care of these details
@@ -743,12 +745,73 @@ class Mvar(object,Automath,Inplace):
         return self._multipliers[type(other)](self,other) 
     
     def _scalarMul(self,constant):
-        return Mvar.from_cov(
+        """
+        Mvar*constant == constant*Mvar
+
+            Matrix multiplication and scalar multiplication behave differently 
+            from eachother.  
+            
+            For this to be a properly defined vector space scalar 
+            multiplication must fit with addition, and addition here is 
+            defined so it can be used in the kalman noise addition step so: 
+            
+            >>> assert (A+A)==(2*A)
+            
+            >>> assert (A+A).mean==(2*A).mean
+            >>> assert (A+A).mean==2*A.mean
+            
+            >>> assert sum(itertools.repeat(A,N-1),A) == A*(N)
+
+            after that the only things you're really guranteed here are:
+            >>> assert (A*K1).mean==K1*A.mean
+            >>> assert (A*K1).cov== (A.cov)*K1
+                        
+            if you don't like imaginary numbes be careful with negative constants because you 
+            will end up with imaginary numbers in your ... stuf.            
+            
+            >>> assert B+(-A) == B+(-1)*A == B-A
+            >>> assert (B-A)+A==B
+            
+            if you want to scale the distribution linearily with the mean
+            then use matrix multiplication
+        """
+        return Mvar(
             mean= constant*self.mean,
-            cov = constant*self.cov,
+            var = constant*self.var,
+            vectors = self.vectors,
         )
 
     def _matrixMul(self,matrix):
+        """
+        Mvar*Mvar
+            multiplying two Mvars together is defined to fit with power
+            
+            >>> assert A*A==A**2
+            >>> assert (A*B).mean == A.mean*B.transform
+            >>> assert (A*B).cov == B.transform.H*A.cov*B.transform
+            >>> assert A*(B**2) == A*(B.cov)
+            
+            Note that the result does not depend on the mean of the 
+            second mvar(!) (really any mvar after the leftmost mvar or matrix)
+
+        Mvar*matrix
+        
+            matrix multiplication transforms the mean and ellipse of the 
+            distribution. Defined this way to work with the kalman state 
+            update step.
+
+            >>> assert A*E==A
+            >>> assert (-A)*E==-A 
+            
+            simple scale is like this:
+            >>> assert (A*(E*K1)).mean==A.mean*K1
+            >>> assert (A*(E*K1)).cov ==(E*K1).H*A.cov*(E*K1)
+            
+            or with a more general transform
+            >>> assert (A*M).cov==M.H*A.cov*M
+            >>> assert (A*M).mean==A.mean*M
+
+        """
         return Mvar(
             mean=self.mean*matrix,
             var=self.var,
@@ -756,7 +819,8 @@ class Mvar(object,Automath,Inplace):
         )
     
     @staticmethod
-    def _mulConvert(item,
+    def _mulConvert(
+        item,
         helper=lambda item: Matrix(item) if item.ndim else item
     ):
         return (
@@ -779,8 +843,7 @@ class Mvar(object,Automath,Inplace):
         """
         ?*A
         
-        multiplication order:
-            doesn't matter for constants
+        multiplication order doesn't matter for constants
         
             >>> assert K1*A == A*K1
         
@@ -1028,6 +1091,7 @@ def _makeTestObjects():
     return testObjects
 
 if __name__=='__main__':
+    
     #overwrite everything we just created with the copy that was 
     #created when we imported mvar, so ther's only one copy.
     from mvar import *
@@ -1059,6 +1123,8 @@ if __name__=='__main__':
         )
 
     print '\n'.join([
+        'import numpy',
+        'from mvar import Mvar',
         'import pickle',
         'locals().update(',
         '    pickle.load(open("'+pickle_name+'","r"))',
