@@ -32,7 +32,7 @@ def square(vectors=None,var=None):
 
     var = numpy.ones(shape[0]) if var is None else numpy.real_if_close(var)
 
-    eig = numpy.linalg.eigh if numpy.isreal(var).all() and (var >= 0).all() else numpy.linalg.eig
+    eig = numpy.linalg.eigh if Matrix(var) == abs(Matrix(var)) else numpy.linalg.eig
 
     var=var[:,numpy.newaxis]
 

@@ -12,13 +12,13 @@ wiki is just to demonstrate the equivalency between my blending algorithm,
     and the wikipedia version of it.
     (http://en.wikipedia.org/wiki/Kalman_filtering#Update)
 
-The docstrings are full of examples. The test objects are created by run_test.sh, 
-and stored in test_objects.pkl. You can get the most recent versions of them by 
-importing test_results.py, which will give you an dictionary of the objects used
+The docstrings are full of examples. The test objects are created by runTest.sh, 
+(or by calling mvar as __main___) and stored in test_objects.pkl. You can get the most recent versions of them by 
+importing testObjects.py, which will give you an dictionary of the objects used
 in the test objects
     A,B and C are instances of the Mvar class  
     K1 and K2 are random complex numbers
-    M and M2 are matrixes
+    M and M2 are complex valued matrixes
     E is an apropriately sized eye matrix
     N is an integer
 
@@ -133,7 +133,7 @@ class Mvar(object,Automath,Inplace):
             gets the vectors, scaled by one standard deviation
             (transforms from unit-eigen-space to data-space) 
         transform
-            >>> assert A.transform**2 == abs(A).cov 
+            >>> assert A.transform()**2 == abs(A).cov 
             
             this is just more efficient than square-rooting the covariance, 
             since it is stored de-composed
@@ -182,10 +182,10 @@ class Mvar(object,Automath,Inplace):
         mean: defaults to zeros
         
         square:
-            if true calls runs abs on the self before returning it. This sets the 
+            if true squares up the self before returning it. This sets the 
             vectors to orthogonal and unit length.
             
-        compress
+        compress:
             calls self.compress() on the result if true. To clear out any 
             low valued vectors. It uses the same defaults as numpy.allclose()
 
@@ -224,7 +224,7 @@ class Mvar(object,Automath,Inplace):
         squares up the vectors, so that the 'vectors' matrix is unitary 
         (rotation matrix extended to complex numbers)
         
-        >>> assert abs(A).vectors*abs(A).vectors.H==Matrix.eye
+        >>> assert A.vectors*A.vectors.H==Matrix.eye
         """ 
         result=self.copy()
         (result.var,result.vectors)=square(vectors=self.vectors,var=self.var)
@@ -252,12 +252,14 @@ class Mvar(object,Automath,Inplace):
             
     ############## alternate creation methods
     @staticmethod
-    def from_cov(cov,**kwargs):
+    def fromCov(cov,**kwargs):
         """
         everything in kwargs is passed directly to the constructor
         """
+        diag = Matrix(numpy.diag(cov))
+        eig = numpy.linalg.eigh if abs(diag) == diag else numpy.linalg.eig
         #get the variances and vectors.
-        (var,vectors) = numpy.linalg.eig(cov) if cov.size else (Matrix([]),Matrix([]))
+        (var,vectors) = eig(cov) if cov.size else (Matrix([]),Matrix([]))
         vectors=Matrix(vectors.H)     
 
         return Mvar(
@@ -298,7 +300,7 @@ class Mvar(object,Automath,Inplace):
         cov=(data.H*data)/N
         
         #create the mvar from the mean and covariance of the data
-        return Mvar.from_cov(
+        return Mvar.fromCov(
             cov = cov,
             mean= mean,
             **kwargs
@@ -319,7 +321,7 @@ class Mvar(object,Automath,Inplace):
     cov = property(
         fget=getCov, 
         fset=lambda self,cov:self.copy(
-            Mvar.from_cov(
+            Mvar.fromCov(
                 mean=self.mean,
                 cov=cov,
         )),
@@ -332,18 +334,18 @@ class Mvar(object,Automath,Inplace):
         """
             get the vectors, scaled by the standard deviations. 
             Useful for transforming from unit-eigen-space, to data-space
-            >>> assert A.vectors.H*A.scaled==A.transform
+            >>> assert A.vectors.H*A.scaled==A.transform()
         """
     )
 
-    def getTransform(self,power=1):
+    def transform(self,power=1):
         """
-            >>> assert A.transform == A.getTransform(1)
-            >>> assert A.cov == A.transform*A.transform==A.getTransform(2)
-            >>> assert (A**N).transform == A.getTransform(N)
+            >>> assert A.transform() == A.transform(1)
+            >>> assert A.cov == A.transform()*A.transform()==A.transform(2)
+            >>> assert (A**N).transform() == A.transform(N)
             >>> #it's hit and miss for complex numbers, but real is fine
-            >>> assert (A**K1.real).transform == A.getTransform(K1.real) 
-            >>> assert A*B.transform == A*B  
+            >>> assert (A**K1.real).transform() == A.transform(K1.real) 
+            >>> assert A*B.transform() == A*B  
         """
         power = complex(power)
         return (
@@ -351,16 +353,6 @@ class Mvar(object,Automath,Inplace):
             numpy.diagflat(self.var**(power/(2+0j)))*
             self.vectors
         )
-   
-    transform = property(
-        fget=getTransform,
-        doc=
-        """
-            Useful for transforming from unit-data-space, to data-space
-            >>> assert A.cov==A.transform*A.transform
-            >>> assert A*B.transform == A*B
-        """
-    )
     
     ndim=property(
         fget=lambda self:(self.mean.size),
@@ -519,7 +511,7 @@ class Mvar(object,Automath,Inplace):
 
     def __pos__(self):
         """
-        >>> assert A == +A
+        >>> assert A == +A == ++A
         >>> assert A is not +A
         """
         return self.copy()
@@ -594,7 +586,7 @@ class Mvar(object,Automath,Inplace):
         """
         A**?
 
-        assert A**K1==A*A.getTransform(K1-1)
+        assert A**K1==A*A.transform(K1-1)
 
         This definition was developed to turn kalman blending into a standard 
         resistor-style 'paralell' operation
@@ -640,17 +632,17 @@ class Mvar(object,Automath,Inplace):
             transform the ellipse to a sphere
               
             >>> assert Matrix((A**0).var) == numpy.ones
-            >>> assert (A**0).mean == A.mean*(A**-1).transform == A.mean*A.transform**(-1)
+            >>> assert (A**0).mean == A.mean*(A**-1).transform() == A.mean*A.transform()**(-1)
             
         derivation of multiplication from this is messy.just remember that 
         all Mvars on the right, in a multiply, can just be converted to matrix:
             
-            >>> assert A*B==A*B.transform
-            >>> assert M*B==M*B.transform
-            >>> assert A**2==A*A==A*A.transform
+            >>> assert A*B==A*B.transform()
+            >>> assert M*B==M*B.transform()
+            >>> assert A**2==A*A==A*A.transform()
         """
         return Mvar(
-            mean=self.mean*self.getTransform(power-1),
+            mean=self.mean*self.transform(power-1),
             vectors=self.vectors,
             var=self.var**power,
             square=False
@@ -678,58 +670,76 @@ class Mvar(object,Automath,Inplace):
                     sametype as the leftmost operand
             
             Whenever an mvar is found on the right of a Matrix or Mvar it is replaced by a 
-            self.transform matrix and the multiplication is re-called.
+            self.transform() matrix and the multiplication is re-called.
             
         general properties:
             
-            remember scalar multiplication fits with addition so:
-            >>> assert A+A == 2*A
-            >>> assert (2*A).mean==2*A.mean
-            >>> assert (2*A.cov) == 2*A.cov
+            Scalar multiplication fits with addition so:
+                >>> assert A+A == 2*A
+                >>> assert (2*A).mean==2*A.mean
+                >>> assert (2*A.cov) == 2*A.cov
             
-            and this is different from multiplication by a scale matrix
-            >>> assert (A*(K1*E)).mean == K1*A.mean
-            >>> assert (A*(K1*E)).cov == K1.conjugate()*K1*A.cov
-
+            This is different from multiplication by a scale matrix which gives
+                >>> assert (A*(K1*E)).mean == K1*A.mean
+                >>> assert (A*(K1*E)).cov == K1.conjugate()*K1*A.cov
 
             constants still commute:          
-            >>> assert K1*A*M == A*K1*M 
-            >>> assert K1*A*M == A*M*K1
+                >>> assert K1*A*M == A*K1*M 
+                >>> assert K1*A*M == A*M*K1
 
             constants are still asociative
-            >>> assert (K1*A)*K2 == K1*(A*K2)
+                >>> assert (K1*A)*K2 == K1*(A*K2)
 
-            so are matrixes if the Mvar is not in the middle 
-            >>> assert (A*M)*M2 == A*(M*M2)
-            >>> assert (M*M2)*A == M*(M2*A)
-            >>> (M*A)*M2 == M*(A*M2)
-            False
-            
-            and because of that, this also doesn't work:
-            >>> (A*B)*C == A*(B*C) if ndim > 1  else False
-            False
+            so are matrixes if the Mvar is not in the middle, because it's all matrix multiply.
+                >>> assert (A*M)*M2 == A*(M*M2)
+                >>> assert (M*M2)*A == M*(M2*A)
 
-            it's funny that it works in 1dimension. I suspect it would give the same ellipse...
-            I don't fully understand, but
-            I think the reason that those don't work boils down to:            
-            >>> (E*A.transform)*M==E*(A*M).transform
-            False
+            if you mix mvars with matrixes, it's two different types of multiplication, and 
+            so is not asociative
+                >>> (M*A)*M2 == M*(A*M2)
+                False
+                
+            and because of that, this also doesn't work, except in 1-dimension,
+                >>> (A*B)*C == A*(B*C) if ndim > 1  else False
+                False
 
-            but it works ok if you're explicit about multiplying by the 
-            transform, because this is just matrix multiplication
-            >>> assert (M*A.transform)*M2==M*(A.transform*M2)
-            
-            distributive for constants only, I don't entierly understan why.
-            >>> assert A*(K1+K2)==A*K1+A*K2
-            >>> A*(M+M2)==A*M+A*M2
-            False
-            >>> A*(B+C)==A*B+A*C
-            False
+            the reason that those don't work boils down to:            
+                >>> A.transform()*M == (A*M).transform()
+                False
+
+            if you work it out you'll find that the problem is unavoidable given:
+                >>> assert (A*M).cov == M.H*A.cov*M
+                >>> assert (A**2).transform() == A.cov
+
+            multiplication is distributive for constants only.
+                >>> assert A*(K1+K2)==A*K1+A*K2
+                >>> A*(M+M2)==A*M+A*M2
+                False
+                >>> A*(B+C)==A*B+A*C
+                False
+             
+                The reason is more clear if you consider the following:
+                >>> A*(E+E) == A*E+A*E
+                False
+
+                because the left side will do a matrix multiplication by 2, 
+                and the right will do a scalar multiplication by 2, the means will match but the cov's will not 
+                
+                The pure mvar case fails for slightly different reasons, visible below:
+                    >>> assert (B**0).transform() == Matrix.eye
+                    >>> assert A*B**0 == A
+                    >>> A*(B**0+B**0)==A*B**0+A*B**0
+                    False
+
+                    because
+                    >>> assert A*(B**0+B**0) == A*(2*B**0)   #here the mean is stretched to sqrt(2) times 
+                    >>> assert (2*B**0).transform() == 2**0.5*(B**0).transform()            
+                    >>> assert A*B**0 + A*B**0 == 2*A*B**0 == 2*A #here it is outright multiplied by 2
 
         for notes 
             
-        given __mul__ and __pow__ it would be immoral to not overload divide 
-        as well, the Automath class takes care of these details
+        given __mul__ and __pow__ it would be immoral to not overload divide as well, 
+        The Automath class takes care of these details
             A/?
             
             >>> assert A/B == A*(B**(-1))
@@ -787,10 +797,10 @@ class Mvar(object,Automath,Inplace):
             multiplying two Mvars together is defined to fit with power
             
             >>> assert A*A==A**2
-            >>> assert (A*B).mean == A.mean*B.transform
-            >>> assert (A*B).cov == B.transform.H*A.cov*B.transform
+            >>> assert (A*B).mean == A.mean*B.transform()
+            >>> assert (A*B).cov == B.transform().H*A.cov*B.transform()
             >>> assert A*(B**2) == A*(B.cov)
-            
+
             Note that the result does not depend on the mean of the 
             second mvar(!) (really any mvar after the leftmost mvar or matrix)
 
@@ -807,7 +817,7 @@ class Mvar(object,Automath,Inplace):
             >>> assert (A*(E*K1)).mean==A.mean*K1
             >>> assert (A*(E*K1)).cov ==(E*K1).H*A.cov*(E*K1)
             
-            or with a more general transform
+            or with a more general transform()
             >>> assert (A*M).cov==M.H*A.cov*M
             >>> assert (A*M).mean==A.mean*M
 
@@ -824,7 +834,7 @@ class Mvar(object,Automath,Inplace):
         helper=lambda item: Matrix(item) if item.ndim else item
     ):
         return (
-            item.transform if 
+            item.transform() if 
             isinstance(item,Mvar) else 
             helper(numpy.array(item))
         )
@@ -869,7 +879,7 @@ class Mvar(object,Automath,Inplace):
             multiplying two Mvars together fits with the definition of power
             
             >>> assert B*B == B**2
-            >>> assert A*B == A*B.transform
+            >>> assert A*B == A*B.transform()
             
             the second Mvar is automatically converted to a matrix, and the 
             result is handled by matrix multiply
@@ -878,7 +888,7 @@ class Mvar(object,Automath,Inplace):
             second mvar(!)
         
         martix*Mvar
-            >>> assert M*A==M*A.transform
+            >>> assert M*A==M*A.transform()
 
         Mvar*constant==constant*Mvar
             >>> assert A*K1 == K1*A
@@ -902,7 +912,7 @@ class Mvar(object,Automath,Inplace):
 
     def _rmulConvert(self,other,
         helper=lambda self,other:(
-            self.transform if other.ndim else self,
+            self.transform() if other.ndim else self,
             Matrix(other) if other.ndim else other,
         )
     ):
@@ -959,7 +969,7 @@ class Mvar(object,Automath,Inplace):
             
             but watchout you'll end up with complex... everything?
         """
-        return Mvar.from_cov(
+        return Mvar.fromCov(
             mean= (self.mean+other.mean),
             cov = (self.cov+other.cov),
         )
@@ -1031,7 +1041,7 @@ def wiki(P,M):
     Sk=P.cov+M.cov
     Kk=P.cov*Sk.I
     
-    return Mvar.from_cov(
+    return Mvar.fromCov(
         mean=(P.mean.H+dots(Kk,yk)).H,
         cov=(Matrix.eye(P.ndim)-Kk)*P.cov
     )
@@ -1045,7 +1055,7 @@ def _makeTestObjects():
     
     #create n random vectors, 
     #with a default length of 'ndim', 
-    #they can be made compley by setting cplx=True
+    #they can be made complex by setting cplx=True
     rvec=lambda n=1,m=ndim,cplx=True:Matrix(
         ascomplex(randn(n,m,2)) 
         if cplx else 
@@ -1058,7 +1068,7 @@ def _makeTestObjects():
         vectors=5*randn()*rvec(ndim)
     )
 
-    B=Mvar.from_cov(
+    B=Mvar.fromCov(
         mean=5*randn()*rvec(),
         cov=(lambda x:x.H*x)(5*randn()*rvec(2*ndim))
     )
