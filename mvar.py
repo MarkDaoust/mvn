@@ -13,16 +13,21 @@ wiki is just to demonstrate the equivalency between my blending algorithm,
     (http://en.wikipedia.org/wiki/Kalman_filtering#Update)
 
 The docstrings are full of examples. The test objects are created by runTest.sh, 
-(or by calling mvar as __main___) and stored in test_objects.pkl. You can get the most recent versions of them by 
-importing testObjects.py, which will give you an dictionary of the objects used
-in the test objects
+and stored in test_objects.pkl. You can get the most recent versions of them by 
+importing testObjects.py, which will give you a module containing the objects used
+in the tests
     A,B and C are instances of the Mvar class  
     K1 and K2 are random complex numbers
     M and M2 are complex valued matrixes
     E is an apropriately sized eye matrix
     N is an integer
 
-see their documention for more information.    
+remember: circular logic works because circluar logic works.
+    a lot of the examples are demonstrations of what the code is doing, or expected
+    invariants. they don't prove I'm right, but only that I'm being consistant
+ 
+
+see their individual documentions for more information.    
 """
 
 ##imports
@@ -71,13 +76,17 @@ def mag2(vectors):
 class Mvar(object,Automath,Inplace):
     """
     Multivariate normal distributions packaged to act like a vector 
-    (http://en.wikipedia.org/wiki/Vector_space)
+    (Ref: http://en.wikipedia.org/wiki/Vector_space)
     
     The class fully supports complex numbers.
     
     basic math operators (+,-,*,/,**,&) have been overloaded to work 'normally'
         for kalman filtering and common sense. But there are several surprising 
-        features in the math these things produce, so watchout.
+        features in the math these things produce, so watchout. 
+        
+        It basically boils down to the fact that there are differences between scalar, 
+        matrix, and mvar operations, and if re-aranging an equation changes which type of 
+        operation is called, the results will be different.
     
     This is perfect for kalman filtering, sensor fusion, or anything where you 
         need to track linked uncertianties across multiple variables 
@@ -647,6 +656,11 @@ class Mvar(object,Automath,Inplace):
             var=self.var**power,
             square=False
         )
+
+#!!!!!!!!!!!!!!!
+#consider changing mvar.multiply 
+#to multiply the mean by the transform
+#but the covariance by [A.v][B.cov][diag(A.var)][A.v]
         
     def __mul__(self,other):        
         """
@@ -669,7 +683,7 @@ class Mvar(object,Automath,Inplace):
                 When multiplying a mix of Mvars an Matrixes the result has the 
                     sametype as the leftmost operand
             
-            Whenever an mvar is found on the right of a Matrix or Mvar it is replaced by a 
+!!!!!!!!!!!!Whenever an mvar is found on the right of a Matrix or Mvar it is replaced by a 
             self.transform() matrix and the multiplication is re-called.
             
         general properties:
@@ -793,17 +807,6 @@ class Mvar(object,Automath,Inplace):
 
     def _matrixMul(self,matrix):
         """
-        Mvar*Mvar
-            multiplying two Mvars together is defined to fit with power
-            
-            >>> assert A*A==A**2
-            >>> assert (A*B).mean == A.mean*B.transform()
-            >>> assert (A*B).cov == B.transform().H*A.cov*B.transform()
-            >>> assert A*(B**2) == A*(B.cov)
-
-            Note that the result does not depend on the mean of the 
-            second mvar(!) (really any mvar after the leftmost mvar or matrix)
-
         Mvar*matrix
         
             matrix multiplication transforms the mean and ellipse of the 
@@ -827,24 +830,42 @@ class Mvar(object,Automath,Inplace):
             var=self.var,
             vectors=self.vectors*matrix,
         )
-    
+
+    def _mvarMul(self,other):
+        """
+        Mvar*Mvar
+            multiplying two Mvars together is defined to fit with power
+            
+            >>> assert A*A==A**2
+            >>> assert A*A==A*A.transform()
+            >>> assert A*B == A*B.transform()
+ 
+           >>> assert A*(B**2) == A*(B.cov)
+
+            Note that the result does not depend on the mean of the 
+            second mvar(!) (really any mvar after the leftmost mvar or matrix)
+        """
+        return self*other.transform()
+
+        #here's a failed attempt at an improvement
+        #std = numpy.diagflat(other.var**(0.5+0j))
+        #vectors = other.vectors
+        #return Mvar.fromCov(
+        #    mean = self.mean*vectors.H*std*vectors,
+        #    cov = vectors*std*vectors.H*self.cov*vectors.H*std*vectors,
+        #)
+
+
     @staticmethod
     def _mulConvert(
         item,
         helper=lambda item: Matrix(item) if item.ndim else item
     ):
         return (
-            item.transform() if 
+            item if 
             isinstance(item,Mvar) else 
             helper(numpy.array(item))
         )
-
-    _multipliers={
-        Matrix:_matrixMul,
-        numpy.ndarray:_scalarMul
-    }
-
-
 
     def __rmul__(
         self,
@@ -874,18 +895,6 @@ class Mvar(object,Automath,Inplace):
             and continue normally,this yields a matrix, not an Mvar.
             
             this conversion is not applied when multiplied by a constant.
-        
-        Mvar*Mvar
-            multiplying two Mvars together fits with the definition of power
-            
-            >>> assert B*B == B**2
-            >>> assert A*B == A*B.transform()
-            
-            the second Mvar is automatically converted to a matrix, and the 
-            result is handled by matrix multiply
-            
-            again note that the result does not depend on the mean of the 
-            second mvar(!)
         
         martix*Mvar
             >>> assert M*A==M*A.transform()
@@ -1026,6 +1035,12 @@ class Mvar(object,Automath,Inplace):
             **kwargs
         )
 
+Mvar._multipliers={
+    Mvar:Mvar._mvarMul,
+    Matrix:Mvar._matrixMul,
+    numpy.ndarray:Mvar._scalarMul
+}
+
 ## extras    
 
 def wiki(P,M):
@@ -1035,6 +1050,9 @@ def wiki(P,M):
     The quickest way to prove it's equivalent is by examining these:
         >>> assert A**-1 == A*A**-2
         >>> assert A & B == (A*A**-2+B*B**-2)**-1
+
+        >>> D = A*(A.cov)**(-1) + B*(B.cov)**(-1)
+        >>> assert A & B == D*(D.cov)**(-1)
         >>> assert A & B == wiki(A,B)
     """
     yk=M.mean.H-P.mean.H
