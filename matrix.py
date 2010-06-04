@@ -29,7 +29,7 @@ class Matrix(numpy.matrix):
             calls them with the matrixes size tuple as the only argument 
             
             >>> assert Matrix([[0,0],[0,0],[0,0]]) == numpy.zeros
-            >>> assert Matrix([[1,0],[0,1]]) == eye
+            >>> assert Matrix([[1,0],[0,1]]) == Matrix.eye
             
             awsome eh?
     """

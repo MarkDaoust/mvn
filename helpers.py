@@ -1,4 +1,6 @@
 import itertools
+import collections
+
 import numpy
 
 from matrix import Matrix
@@ -42,13 +44,13 @@ def autostack(rows,default=0):
     with no need to explicitly declare the size of and callables
     
     >>> autostack([ 
-    ...     [numpy.eye(3),numpy.zeros]
-    ...     [  numpy.ones,          1]
+    ...     [numpy.eye(3),numpy.zeros],
+    ...     [  numpy.ones,          1],
     ... ])
-    array([[ 1.,  0.,  0.,  0.],
-           [ 0.,  1.,  0.,  0.],
-           [ 0.,  0.,  1.,  0.],
-           [ 1.,  1.,  1.,  1.]])
+    matrix([[ 1.,  0.,  0.,  0.],
+            [ 0.,  1.,  0.,  0.],
+            [ 0.,  0.,  1.,  0.],
+            [ 1.,  1.,  1.,  1.]])
     
     Callables are called with a shape tuple as the only argument. 
     The 'default' parameter controls the size when a row of column contains 
@@ -58,28 +60,26 @@ def autostack(rows,default=0):
     ...     [[1,2,3]],
     ...     [numpy.ones]
     ... ],default=0)
-    array([[ 1.,  2.,  3.]])
+    matrix([[ 1.,  2.,  3.]])
     
     >>> autostack([
     ...     [[1,2,3]],
     ...     [numpy.ones]
     ... ],default=4)
-    array([[ 1.,  2.,  3.],
-           [ 1.,  1.,  1.],
-           [ 1.,  1.,  1.],
-           [ 1.,  1.,  1.],
-           [ 1.,  1.,  1.]])
+    matrix([[ 1.,  2.,  3.],
+            [ 1.,  1.,  1.],
+            [ 1.,  1.,  1.],
+            [ 1.,  1.,  1.],
+            [ 1.,  1.,  1.]])
 
     >>> autostack([
     ...     [   [1,2,3],1],
-    ...     [eye       ,[[1]
+    ...     [Matrix.eye,[[1]
     ...                , [1]]]
     ... ])
-    array([[ 1.,  2.,  3.,  1.],
-           [ 1.,  0.,  0.,  1],
-           [ 0.,  1.,  0.,  1]])
-
-
+    matrix([[ 1.,  2.,  3.,  1.],
+            [ 1.,  0.,  0.,  1.],
+            [ 0.,  1.,  0.,  1.]])
     """
     
     #convert the data items into an object array 

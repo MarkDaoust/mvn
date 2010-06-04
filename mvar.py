@@ -38,9 +38,6 @@ if __name__=='__main__':
     import sys
     import doctest
     import pickle
-    
-    #self!    
-    import mvar
 
 #builtins
 import itertools
@@ -57,21 +54,28 @@ from maybe import Ellipse
 from helpers import autostack,diagstack,ascomplex,paralell
 from helpers import approx,dots,rotation2d
 
-from square import square
+from square import square,mag2
 
 from automath import Automath
 from inplace import Inplace
 from matrix import Matrix,sign
 
-def mag2(vectors):
-    return numpy.real_if_close(
-        numpy.sum(
-            numpy.array(vectors)*numpy.array(vectors.conjugate()),
-            axis = vectors.ndim-1
-    ))
-
-
-
+if __name__ == "__main__":
+    import mvar #self!
+    import helpers
+    import square
+    import automath    
+    import inplace
+    import matrix
+    
+    localMods={
+        'mvar'    :mvar,
+        'helpers' :helpers,
+        'square'  :square,
+        'automath':automath,    
+        'inplace' :inplace,
+        'matrix'  :matrix,
+    }
 
 class Mvar(object,Automath,Inplace):
     """
@@ -116,9 +120,9 @@ class Mvar(object,Automath,Inplace):
         class, but other useful info in accessable through virtual attributes 
         (properties).
     
-        This system make compression (like principal component analysis) much 
+        This system makes compression (like principal component analysis) much 
         easier and more useful. Especially since, I can calculate the eigenvectors 
-        withoug necessarily calculating the 
+        without necessarily calculating the 
         covariance matrix
     
     actual attributes:
@@ -143,6 +147,9 @@ class Mvar(object,Automath,Inplace):
             (transforms from unit-eigen-space to data-space) 
         transform
             >>> assert A.transform()**2 == abs(A).cov 
+            >>> assert A.transform()**N == A.transform(N)
+
+            >>> assert A.transform(2) == abs(A).cov
             
             this is just more efficient than square-rooting the covariance, 
             since it is stored de-composed
@@ -177,7 +184,7 @@ class Mvar(object,Automath,Inplace):
         var=numpy.ones,
         mean=numpy.zeros,
         square=True,
-        compress=True,
+        squeeze=True,
         **kwargs
     ):
         """
@@ -194,12 +201,12 @@ class Mvar(object,Automath,Inplace):
             if true squares up the self before returning it. This sets the 
             vectors to orthogonal and unit length.
             
-        compress:
-            calls self.compress() on the result if true. To clear out any 
+        squeeze:
+            calls self.squeeze() on the result if true. To clear out any 
             low valued vectors. It uses the same defaults as numpy.allclose()
 
         **kwargs is only used to pass in non standard defaults to the call to 
-            compress, which is similar to numpy.allclose, 
+            squeeze, which is similar to numpy.allclose, 
             defaults are rtol=1e-5, atol=1e-8
         """
         #stack everything to check sizes and automatically inflate any 
@@ -222,8 +229,8 @@ class Mvar(object,Automath,Inplace):
         if square:
             self.copy(self.square())
         
-        if compress:
-            self.copy(self.compress(**kwargs))
+        if squeeze:
+            self.copy(self.squeeze(**kwargs))
             
         self.vectors=Matrix(self.vectors)
         self.mean = Matrix(self.mean)
@@ -242,7 +249,7 @@ class Mvar(object,Automath,Inplace):
     def sign(self):
         return sign(self.var)
 
-    def compress(self,**kwargs):
+    def squeeze(self,**kwargs):
         """
         drop any vector/variance pairs with sqrt(variance) under the tolerence 
         limits the defaults match numpy's for 'allclose'
@@ -341,9 +348,9 @@ class Mvar(object,Automath,Inplace):
         fget=lambda self:Matrix(numpy.diagflat(self.var**(0.5+0j)))*self.vectors,
         doc=
         """
-            get the vectors, scaled by the standard deviations. 
-            Useful for transforming from unit-eigen-space, to data-space
-            >>> assert A.vectors.H*A.scaled==A.transform()
+        get the vectors, scaled by the standard deviations. 
+        Useful for transforming from unit-eigen-space, to data-space
+        >>> assert A.vectors.H*A.scaled==A.transform()
         """
     )
 
@@ -471,7 +478,10 @@ class Mvar(object,Automath,Inplace):
         return the square of the mahalabois distance from the Mvar to each vector.
         the vectors should be along the last dimension of the array.
 
-        >>> assert approx((A**0).dist2(numpy.zeros((1,ndim))),mag2((A**0).mean))
+        >>> assert approx(
+        ...     (A**0).dist2(numpy.zeros((1,ndim))),
+        ...     mag2((A**0).mean)
+        ... )
         """
         #make sure the mean is a flat numpy array
         mean=numpy.array(self.mean).squeeze()
@@ -1069,7 +1079,7 @@ def _makeTestObjects():
     randn=numpy.random.randn
     randint=numpy.random.randint
 
-    ndim=randint(1,5)
+    ndim=3#randint(1,5)
     
     #create n random vectors, 
     #with a default length of 'ndim', 
@@ -1083,7 +1093,8 @@ def _makeTestObjects():
     #create random test objects
     A=Mvar(
         mean=5*randn()*rvec(),
-        vectors=5*randn()*rvec(ndim)
+        vectors=5*randn()*rvec(2),
+        #var=rand(2),
     )
 
     B=Mvar.fromCov(
@@ -1096,7 +1107,7 @@ def _makeTestObjects():
         rvec(5*ndim)*rvec(ndim)
     )
 
-    A,B,C=numpy.random.permutation([A,B,C])
+    #A,B,C=numpy.random.permutation([A,B,C])
     
     M=rvec(ndim)
     M2=rvec(ndim)
@@ -1159,8 +1170,12 @@ if __name__=='__main__':
         ')'
     ])
 
+    A=testObjects['A']
+    -1*A
+
     mvar.__dict__.update(testObjects)
 
-    doctest.testmod(mvar)
+    for name,mod in localMods.iteritems():
+        doctest.testmod(mod)
 
 

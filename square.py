@@ -20,50 +20,67 @@ from matrix import Matrix
 from operator import ge
 from helpers import ascomplex
 
+def mag2(vectors):
+    return numpy.real_if_close(
+        numpy.sum(
+            numpy.array(vectors)*numpy.array(vectors.conjugate()),
+            axis = vectors.ndim-1
+    ))
+
 def square(vectors=None,var=None):
     """
     given a series of vectors, this function calculates:
         (variances,vectors)=numpy.linalg.eigh(vectors.H*vectors)
     it's a seperate function because if there are less vectors 
     than dimensions the process can be accelerated, it just takes some dancing
+
+    it is based on this:
+
+    >>> vectors=Matrix(ascomplex(numpy.random.randn(
+    ...     numpy.random.randint(1,10),numpy.random.randint(1,10),2
+    ... )))
+    >>> cov = vectors.H*vectors
+    >>> Xcov = vectors*vectors.H 
+    >>> (Xval,Xvec) = numpy.linalg.eigh(Xcov)
+    >>> vec = Xvec.H*vectors
+    >>> assert vec.H*vec == cov
     """
     vectors=Matrix(vectors)
     shape=vectors.shape
 
-    var = numpy.ones(shape[0]) if var is None else numpy.real_if_close(var)
-
-    eig = numpy.linalg.eigh if Matrix(var) == abs(Matrix(var)) else numpy.linalg.eig
-
-    var=var[:,numpy.newaxis]
-
-    vectorsH=vectors.H
-    vectors=Matrix(var*numpy.array(vectors))
+    var =( 
+        numpy.ones(shape[0]) if 
+        var is None else 
+        numpy.real_if_close(var)
+    )
 
     if not numpy.all(shape):
-        var=numpy.zeros([0])
+        val=numpy.zeros([0])
         vec=numpy.zeros([0,shape[1]])
-    elif ge(*shape):
-        cov=vectorsH*vectors
-        (var,vec)=eig(vectorsH*vectors)
-        vec=vec.H
-    else:
-        Xcov=vectors*vectorsH
-        
-        (Xval,Xvec)=eig(Xcov)
-        
-        var=numpy.diag(Xcov)
-        
-        vec=(Xvec.H*vectors).T
-        vec=Matrix(((var**(-0.5+0j))*numpy.array(vec)).T)
-        
-    return (var,vec)
+        return (val,vec)
 
-if __name__=='__main__':
-    for n in xrange(1,20):
-        shape=(numpy.random.randint(1,10),numpy.random.randint(1,10),2)
-        vectors=Matrix(ascomplex(numpy.random.randn(*shape)))
+    var=var[:,numpy.newaxis]
+    
+    if ge(*shape):    
+        scaled=Matrix(var*numpy.array(vectors))
+        eig =(
+            numpy.linalg.eigh if
+            Matrix(var) == abs(Matrix(var)) else
+            numpy.linalg.eig
+        )
+        cov=vectors.H*scaled
+        (val,vec)=eig(cov)
+        return (val,vec.H)
+    else:    
+        scaled=Matrix(var**0.5*numpy.array(vectors))
+        Xcov=vectors*vectors.H
         
-        (var,vec)=square(vectors)
-        var=Matrix(numpy.diagflat(var))
+        ( _ ,Xvec)=numpy.linalg.eigh(Xcov)
         
-        assert vec.H*(var)*vec==vectors.H*vectors
+        Xscaled=(Xvec.H*scaled)
+        Xval=mag2(Xscaled)
+
+        Xvec=numpy.array(Xscaled)/Xval[:,numpy.newaxis]**0.5
+
+        return (Xval,Xvec)
+
