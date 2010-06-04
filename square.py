@@ -72,7 +72,7 @@ def square(vectors=None,var=None):
         (val,vec)=eig(cov)
         return (val,vec.H)
     else:    
-        scaled=Matrix(var**0.5*numpy.array(vectors))
+        scaled=Matrix(var**(0.5+0j)*numpy.array(vectors))
         Xcov=vectors*vectors.H
         
         ( _ ,Xvec)=numpy.linalg.eigh(Xcov)
@@ -80,7 +80,7 @@ def square(vectors=None,var=None):
         Xscaled=(Xvec.H*scaled)
         Xval=mag2(Xscaled)
 
-        Xvec=numpy.array(Xscaled)/Xval[:,numpy.newaxis]**0.5
+        Xvec=numpy.array(Xscaled)/Xval[:,numpy.newaxis]**(0.5+0j)
 
         return (Xval,Xvec)
 
