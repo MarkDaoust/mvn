@@ -39,11 +39,13 @@ class Matrix(numpy.matrix):
         return self
 
     def __eq__(self,other):
-        return (
-            numpy.allclose(self,other(self.shape)) 
-            if callable(other) 
-            else numpy.allclose(self,other)
-        )
+        if callable(other):
+            other=other(self.shape)
+
+        if self.size==other.size:
+            return numpy.allclose(self,other)
+        else:
+            raise ValueError('can only compare two matrixes with the same size')
 
     def __ne__(self,other):
         return not(self ==  other)

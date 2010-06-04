@@ -59,21 +59,25 @@ def square(vectors=None,var=None):
         vec=numpy.zeros([0,shape[1]])
         return (val,vec)
 
-    var=var[:,numpy.newaxis]
+    varT=var[:,numpy.newaxis]
     
     if ge(*shape):    
-        scaled=Matrix(var*numpy.array(vectors))
-        eig =(
+        scaled=Matrix(varT*numpy.array(vectors))
+        
+        eig = (
             numpy.linalg.eigh if
             Matrix(var) == abs(Matrix(var)) else
             numpy.linalg.eig
         )
+
         cov=vectors.H*scaled
         (val,vec)=eig(cov)
         return (val,vec.H)
     else:    
-        scaled=Matrix(var**(0.5+0j)*numpy.array(vectors))
+        scaled=Matrix(varT**(0.5+0j)*numpy.array(vectors))
         Xcov=vectors*vectors.H
+        if Xcov == Matrix.eye:
+            return (var,vectors)
         
         ( _ ,Xvec)=numpy.linalg.eigh(Xcov)
         

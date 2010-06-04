@@ -651,7 +651,8 @@ class Mvar(object,Automath,Inplace):
             transform the ellipse to a sphere
               
             >>> assert Matrix((A**0).var) == numpy.ones
-            >>> assert (A**0).mean == A.mean*(A**-1).transform() == A.mean*A.transform()**(-1)
+            >>> assert (A**0).mean == A.mean*(A**-1).transform()
+            >>> assert (A**0).mean == A.mean*A.transform()**(-1)
             
         derivation of multiplication from this is messy.just remember that 
         all Mvars on the right, in a multiply, can just be converted to matrix:
@@ -1079,7 +1080,7 @@ def _makeTestObjects():
     randn=numpy.random.randn
     randint=numpy.random.randint
 
-    ndim=3#randint(1,5)
+    ndim=randint(1,10)
     
     #create n random vectors, 
     #with a default length of 'ndim', 
@@ -1091,10 +1092,13 @@ def _makeTestObjects():
     )
 
     #create random test objects
+
+    num=randint(ndim)
+
     A=Mvar(
         mean=5*randn()*rvec(),
-        vectors=5*randn()*rvec(2),
-        #var=rand(2),
+        vectors=5*randn()*rvec(num),
+        #var=rand(num),
     )
 
     B=Mvar.fromCov(
