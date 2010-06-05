@@ -538,18 +538,32 @@ class Mvar(object,Automath,Inplace):
     def __invert__(self):
         """
         invert negates the covariance without negating the mean.
-        >>> assert (~A).mean == A.mean
-        >>> assert (~A).cov == (-A).cov 
-        >>> assert (~A).cov == -(A.cov)
-        >>> assert ~~A==A
-
-        with that Automath gives us these
-        >>> assert ~A&~B == ~(A|B)
-        >>> assert A^B == (A|B) & ~(A&B)
+            >>> assert (~A).mean == A.mean
+            >>> assert (~A).cov == (-A).cov 
+            >>> assert (~A).cov == -(A.cov)
+            >>> assert ~~A==A
 
         so hopefully;
+            >>> assert A & ~A == Mvar(mean=numpy.zeros((1,A.ndim)))
+            >>> assert A == A & B & ~B
 
-        >>>
+        with that Automath gives us these
+            >>> assert (A|B) == ~(~A & ~B)
+            >>> assert A^B == (A|B) & ~(A&B)
+            >>> assert A|B == B|A
+            >>> assert A^B == B^A
+        
+        and while they look promising, they are actually useless because:
+            >>> assert (~A & ~B) == ~(A & B)
+
+            so or becomes a copy of and:
+
+            >>> assert A|B == A&B
+
+            and xor becomes a blank:
+
+            >>> assert A^B == (A&B) & ~(A&B)
+            
         """
         result=self.copy()
         result.var=-(self.var)
@@ -1093,7 +1107,7 @@ def _makeTestObjects():
 
     #create random test objects
 
-    num=randint(ndim)
+    num= ndim #randint(ndim)
 
     A=Mvar(
         mean=5*randn()*rvec(),
@@ -1106,7 +1120,6 @@ def _makeTestObjects():
         cov=(lambda x:x.H*x)(5*randn()*rvec(2*ndim))
     )
 
-    
     C=Mvar.from_data(
         rvec(5*ndim)*rvec(ndim)
     )
