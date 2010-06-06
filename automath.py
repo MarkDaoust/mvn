@@ -17,76 +17,79 @@ class Automath():
     """
     def __radd__(self,other):
         """
-        assert A+B == B+A
+        >>> assert A+B == B+A
         """
         return self+other
     
     def __rmul__(self,other):
         """
-        assert A*B == B*A
+        >>> assert A*B == B*A
         """
         return self*other
     
     def __mul__(self,N):
         """
-        assert A+A+A == 3*A
+        >>> assert A+A+A == 3*A
         """
         return reduce(itertools.repeat(self,N),operator.add)
         
     def __pow__(self,N):
         """
-        assert A**2==A*A
+        >>> assert A**2==A*A
         """
         return reduce(itertools.repeat(self,N),operator.mul)
         
     def __pos__(self):
         """
-        assert +A == A
+        >>> assert +A == A
+        >>> assert +A is A
         """
+        return self
+
     def __neg__(self):
         """
-        assert -A == -1*A
+        >>> assert -A == -1*A
         """
         return (-1)*self
     
     def __sub__(self,other):
         """
-        assert A-B == A+(-B)
+        >>> assert A-B == A+(-B)
         """
         return self+(-other)
 
     def __rsub__(self,other):
         """
-        assert B-A == B+(-A)
+        >>> assert B-A == B+(-A)
         """
         return other+(-self)
     
     def __div__(self,other):
         """
-        assert A/B == A*B**(-1)
+        >>> assert A/B == A*B**(-1)
         """
         return self*other**(-1)
         
     def __rdiv__(self,other):
         """
-        assert B/A == B*A**(-1)
+        >>> assert B/A == B*A**(-1)
         """        
         return other*self**(-1)
     
     def __or__(self,other):
         """
-        assert ~(A|B) == (~A&~B)
+        >>> assert (A|B) == ~(~A&~B)
         """
         return ~(~self & ~other)
 
     def __xor__(self,other):
         """
-        assert A^B == (A|B) & ~(A&B)
+        >>> assert A^B == (A|B) & ~(A&B)
         """
         return (self|other) & ~(self & other)
 
     def __ne__(self,other):
         """
-        assert (not (A == B)) == (A != B)  
+        >>> assert (not (A == B)) == (A != B)  
         """
         return not (self == other)

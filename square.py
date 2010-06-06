@@ -69,7 +69,6 @@ def square(vectors=None,var=None):
             Matrix(var) == abs(Matrix(var)) else
             numpy.linalg.eig
         )
-
         cov=vectors.H*scaled
         (val,vec)=eig(cov)
         return (val,vec.H)

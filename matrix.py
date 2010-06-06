@@ -42,10 +42,8 @@ class Matrix(numpy.matrix):
         if callable(other):
             other=other(self.shape)
 
-        if self.size==other.size:
-            return numpy.allclose(self,other)
-        else:
-            raise ValueError('can only compare two matrixes with the same size')
+        assert self.size==other.size,('can only compare two matrixes with the same size')
+        return numpy.allclose(self,other)
 
     def __ne__(self,other):
         return not(self ==  other)

@@ -43,6 +43,7 @@ if __name__=='__main__':
 import itertools
 import collections 
 import copy
+import operator
 
 #3rd party
 import numpy
@@ -72,7 +73,7 @@ if __name__ == "__main__":
         'mvar'    :mvar,
         'helpers' :helpers,
         'square'  :square,
-        'automath':automath,    
+#       'automath':automath,    
         'inplace' :inplace,
         'matrix'  :matrix,
     }
@@ -214,7 +215,7 @@ class Mvar(object,Automath,Inplace):
         
         var= var if callable(var) else numpy.array(var).flatten()[:,numpy.newaxis]
         mean= mean if callable(mean) else numpy.array(mean).flatten()[numpy.newaxis,:]
-        vectors=vectors if callable(vectors) or vectors.size else Matrix(numpy.zeros((0,mean.size)))
+        vectors= vectors if callable(vectors) else Matrix(vectors)
         
         stack=Matrix(autostack([
             [var,vectors],
@@ -235,6 +236,30 @@ class Mvar(object,Automath,Inplace):
         self.vectors=Matrix(self.vectors)
         self.mean = Matrix(self.mean)
         
+    def inflate(self):
+        """
+        stacks zeros onto the vectors and variances so the object can be safely inverted
+        """
+        result = self.copy()
+
+        shape=self.shape        
+
+        present = shape[0]
+        missing = shape[1]-shape[0]
+
+        stack = numpy.vstack([
+            numpy.hstack([self.var[:,numpy.newaxis],self.vectors]),
+            numpy.hstack(
+                [numpy.ones((missing,1)),numpy.zeros((missing,shape[1]))]
+            ),
+        ])
+
+        result.var = stack[:,0].flatten()
+        result.vectors = Matrix(stack[:,1:])
+
+        return result.square()
+
+
     def square(self):
         """
         squares up the vectors, so that the 'vectors' matrix is unitary 
@@ -543,32 +568,32 @@ class Mvar(object,Automath,Inplace):
             >>> assert (~A).cov == -(A.cov)
             >>> assert ~~A==A
 
-        so hopefully;
+        so these work:
             >>> assert A & ~A == Mvar(mean=numpy.zeros((1,A.ndim)))
             >>> assert A == A & B & ~B
-
-        with that Automath gives us these
-            >>> assert (A|B) == ~(~A & ~B)
-            >>> assert A^B == (A|B) & ~(A&B)
-            >>> assert A|B == B|A
-            >>> assert A^B == B^A
         
-        and while they look promising, they are actually useless because:
+        the automath logic extensions are actually useless t Mvar because:
             >>> assert (~A & ~B) == ~(A & B)
 
-            so or becomes a copy of and:
-
-            >>> assert A|B == A&B
-
-            and xor becomes a blank:
-
-            >>> assert A^B == (A&B) & ~(A&B)
+            so 'or' would become a copy of 'and' and 'xor' would become a blank equavalent to the (A & ~A) above
             
+            there is no point in supporting operators, so I'm blocking them, unless something better comes up.
+
+#            >>> A|B
+#            >>> A^B
+
         """
         result=self.copy()
         result.var=-(self.var)
         return result
     
+    def __or__(self,other):
+        return NotImplemented
+
+    def __xor__(self,other):
+        return NotImplemented
+    
+
     def blend(*mvars):
         """
         A & ?
@@ -640,6 +665,7 @@ class Mvar(object,Automath,Inplace):
 
             >>> assert A==A**1
             >>> assert -A == (-A)**1
+            >>> assert A == (A**-1)**-1
     
             >>> assert A**0 == A**(-1)*A
             >>> assert A**0 == A*A**(-1)
@@ -666,7 +692,10 @@ class Mvar(object,Automath,Inplace):
               
             >>> assert Matrix((A**0).var) == numpy.ones
             >>> assert (A**0).mean == A.mean*(A**-1).transform()
-            >>> assert (A**0).mean == A.mean*A.transform()**(-1)
+
+            if there are missing dimensions the transform is irreversable so this stops working 
+            >>> if A.shape[0] == A.ndim:
+            ...     assert (A**0).mean == A.mean*A.transform()**(-1)
             
         derivation of multiplication from this is messy.just remember that 
         all Mvars on the right, in a multiply, can just be converted to matrix:
@@ -676,11 +705,11 @@ class Mvar(object,Automath,Inplace):
             >>> assert A**2==A*A==A*A.transform()
         """
         return Mvar(
-            mean=self.mean*self.transform(power-1),
-            vectors=self.vectors,
-            var=self.var**power,
-            square=False
-        )
+                mean=self.mean*self.transform(power-1),
+                vectors=self.vectors,
+                var=self.var**power,
+                square=False
+            )  
 
 #!!!!!!!!!!!!!!!
 #consider changing mvar.multiply 
@@ -966,8 +995,15 @@ class Mvar(object,Automath,Inplace):
         """
         A+?
         
+        Implementation:
+            >>> assert (A+B)==Mvar(
+            ...     mean=A.mean+B.mean,
+            ...     vectors=numpy.vstack([A.vectors,B.vectors]),
+            ...     var = numpy.concatenate([A.var,B.var]),
+            ... )
+
         When using addition keep in mind that rand()+rand() is not like scaling 
-        one random number by 2, it adds together two random numbers.
+        one random number by 2 (2*rand()), it adds together two random numbers.
 
         The add here is like rand()+rand()
         
@@ -1003,9 +1039,10 @@ class Mvar(object,Automath,Inplace):
             
             but watchout you'll end up with complex... everything?
         """
-        return Mvar.fromCov(
-            mean= (self.mean+other.mean),
-            cov = (self.cov+other.cov),
+        return Mvar(
+            mean=self.mean+other.mean,
+            vectors=numpy.vstack([self.vectors,other.vectors]),
+            var = numpy.concatenate([self.var,other.var]),
         )
         
     ################# Non-Math python internals
@@ -1080,26 +1117,53 @@ def wiki(P,M):
         >>> assert A & B == D*(D.cov)**(-1)
         >>> assert A & B == wiki(A,B)
     """
-    yk=M.mean.H-P.mean.H
+    yk=M.mean-P.mean
     Sk=P.cov+M.cov
     Kk=P.cov*Sk.I
     
     return Mvar.fromCov(
-        mean=(P.mean.H+dots(Kk,yk)).H,
+        mean=(P.mean + yk*Kk.H),
         cov=(Matrix.eye(P.ndim)-Kk)*P.cov
     )
 
+def newBlend(A,B):
+    """
+    cleaned up implementation of the wikipedia blending algorithm
+    
+        >>> assert newBlend(A,B) == wiki(A,B)
+    """
+    E=Matrix.eye(A.ndim)
+
+    totalCovI=(A.cov+B.cov)**-1
+
+    partA=A.cov*totalCovI
+    partB=B.cov*totalCovI
+
+    return Mvar.fromCov(
+        mean=A.mean*(E-partA) + B.mean*(E-partB),
+        cov=B.cov*A.cov*totalCovI
+    )
+
+
 def _makeTestObjects():   
+
     rand=numpy.random.rand
     randn=numpy.random.randn
     randint=numpy.random.randint
 
-    ndim=randint(1,10)
-    
+    if 'flat' in sys.argv:
+        ndim=2
+        num=1
+        cplx=False
+    else:
+        ndim=randint(1,10)
+        num=2*ndim
+        cplx=True
+ 
     #create n random vectors, 
     #with a default length of 'ndim', 
     #they can be made complex by setting cplx=True
-    rvec=lambda n=1,m=ndim,cplx=True:Matrix(
+    rvec=lambda n=1,m=ndim,cplx=cplx:Matrix(
         ascomplex(randn(n,m,2)) 
         if cplx else 
         randn(n,m)
@@ -1107,7 +1171,7 @@ def _makeTestObjects():
 
     #create random test objects
 
-    num= ndim #randint(ndim)
+   
 
     A=Mvar(
         mean=5*randn()*rvec(),
@@ -1187,10 +1251,11 @@ if __name__=='__main__':
         ')'
     ])
 
-    A=testObjects['A']
-    -1*A
-
     mvar.__dict__.update(testObjects)
+
+    A=mvar.A
+
+#add debugging code here    
 
     for name,mod in localMods.iteritems():
         doctest.testmod(mod)
