@@ -227,7 +227,7 @@ class Mvar(object,Automath,Inplace):
         self.vectors = stack[:-1,1:]
         
         if square:
-            self.copy(self.square())
+            self.copy(self.square(squeeze=squeeze))
                     
         self.vectors=Matrix(self.vectors)
         self.mean = Matrix(self.mean)
@@ -253,8 +253,13 @@ class Mvar(object,Automath,Inplace):
         result.var = stack[:,0].flatten()
         result.vectors = Matrix(stack[:,1:])
 
-        return result.square(squeeze=False)
+        result = result.square(squeeze=False)
 
+        zeros=helpers.approx(result.var)
+
+        result.var[zeros]=0
+
+        return result
 
     def square(self,squeeze=True):
         """
@@ -1340,11 +1345,8 @@ if __name__=='__main__':
 
     mvar.__dict__.update(testObjects)
 
-    A=mvar.A
-    B=mvar.B
-    A+B
-
-#add debugging code here    
+#!!!
+    Mvar(mean=numpy.zeros(7),var=numpy.inf*numpy.ones(7))  
 
     for name,mod in localMods.iteritems():
         doctest.testmod(mod)

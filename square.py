@@ -35,7 +35,7 @@ def square(vectors,var,doSqueeze=True):
 
         #take the finite variances and vectors
         var=var[~infinite]
-        vectors=vectors[infinite,:]
+        vectors=vectors[~infinite,:]
 
         assert isinstance(vectors,numpy.matrix)
         Ivectors=Matrix(Ivectors)
@@ -45,8 +45,8 @@ def square(vectors,var,doSqueeze=True):
         #revove the component paralell to each infinite vector
         vectors= vectors-(vectors*Ivectors.H)*Ivectors
 
-
-    (var,vectors) = _subSquare(vectors,var)
+    if var.size:
+        (var,vectors) = _subSquare(vectors,var)
 
     #if we want a real squeeze
     if doSqueeze:
@@ -55,7 +55,7 @@ def square(vectors,var,doSqueeze=True):
     elif Ivar.size:
         #sort the finite variances
         order=numpy.argsort(var)    
-        var=var(order)
+        var=var[order]
         vectors=vectors[order,:]
         
         #if there are more vectors than dimensions 
