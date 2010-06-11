@@ -599,8 +599,24 @@ class Mvar(object,Automath,Inplace):
         compares the means and covariances of the distributions, 
         __ne__ is handled by the Automath class
         """
-        return Matrix(self.mean)==Matrix(other.mean) and self.cov==other.cov
-    
+        if Matrix(self.mean)!=Matrix(other.mean):
+            return False
+
+        Sfinite=numpy.isfinite(self.var)
+        
+        if Sfinite.all():
+            return self.cov==other.cov
+
+        Ofinite=numpy.isfinite(self.var)
+        
+        H=lambda M:M.H*M
+
+        return (
+            Sfinite.sum() == Ofinite.sum() and 
+            self[Sfinite].cov == self[Ofinite].cov and
+            H(self[~Sfinite].vectors) == H(other[~Ofinite].vectors)
+        )
+        
     def __abs__(self):
         """
         sets all the variances to positive
@@ -630,10 +646,12 @@ class Mvar(object,Automath,Inplace):
             >>> assert ~~A==A
 
         so these work:
-            >>> assert A & ~A == Mvar(mean=numpy.zeros((1,A.ndim)))
-            >>> assert A == A & B & ~B
+            something and not itself provides zero precision; infinite variance
+            and so provides no information, having no effect when blended
+            >>> assert A == A & B & ~B 
+            >>> assert A & ~A == Mvar(mean=numpy.zeros(A.ndim))**-1
         
-        the automath logic extensions are actually useless t Mvar because:
+        the automath logic extensions are actually useless to Mvar because:
             >>> assert (~A & ~B) == ~(A & B)
 
             so 'or' would become a copy of 'and' and 'xor' would become a blank equavalent to the (A & ~A) above
@@ -689,8 +707,8 @@ class Mvar(object,Automath,Inplace):
         >>> assert (A & A).cov == A.cov/2
         >>> assert (A & A).mean == A.mean
         
-        >>> assert A &-A == Mvar(mean=numpy.zeros(ndim))
-        >>> assert A &~A == Mvar(mean=numpy.zeros(ndim))
+        >>> assert A &-A == Mvar(mean=numpy.zeros(ndim))**-1
+        >>> assert A &~A == Mvar(mean=numpy.zeros(ndim))**-1
 
         
         The proof that this is identical to the wikipedia definition of blend 
