@@ -627,22 +627,26 @@ class Mvar(object,Automath,Inplace):
             >>> assert (~A & ~B) == ~(A & B)
 
             so 'or' would become a copy of 'and' and 'xor' would become a blank equavalent to the (A & ~A) above
-            
-            there is no point in supporting operators, so I'm blocking them, unless something better comes up.
 
-#            >>> A|B
-#            >>> A^B
-
+            maybe the A|B = A+B - A&B  version will be good for something I'll put them in for now
         """
         result=self.copy()
         result.var=-(self.var)
         return result
     
     def __or__(self,other):
-        return NotImplemented
+        """
+        I don't  know what this means yet
+        """
+        return self+other-self&other
 
     def __xor__(self,other):
-        return NotImplemented
+        """
+        >>> assert A == A^B+A^(~B)
+
+        I don't  know what this means yet
+        """
+        return self+other-2*(self&other)
     
 
     def blend(*mvars):
@@ -1334,6 +1338,8 @@ if __name__=='__main__':
     mvar.__dict__.update(testObjects)
 
     A=mvar.A
+    B=mvar.B
+    A+B
 
 #add debugging code here    
 
