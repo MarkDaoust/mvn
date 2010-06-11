@@ -4,16 +4,7 @@ import itertools
 import functools
 import re
 
-def sign(self):
-    """
-    improved sign function:
-        returns a similar array of unit length (possibly complex) numbers pointing in the same 
-        direction as the input 
-    """
-    return numpy.divide(
-        self,
-        abs(self),
-    )
+from helpers import sign
 
 class Matrix(numpy.matrix):
     """
@@ -77,7 +68,6 @@ class Matrix(numpy.matrix):
         return numpy.array(self).squeeze()
 
     @staticmethod
-    @functools.wraps(numpy.eye)
     def eye(*args,**kwargs):
         """
         improved version of numpy.eye
@@ -85,7 +75,7 @@ class Matrix(numpy.matrix):
         behaves the same but will accept a shape tuple as a first 
         argument. 
         
-        >>> assert eye((2,2)) == eye(2,2) == eye(2)
+        >>> assert Matrix.eye((2,2)) == Matrix.eye(2,2) == Matrix.eye(2)
         """
         #if isinstance(args[0],collections.Iterable):
         if hasattr(args[0],'__iter__'):
@@ -93,13 +83,11 @@ class Matrix(numpy.matrix):
         return Matrix(numpy.eye(*args,**kwargs))
 
     @staticmethod
-    @functools.wraps(numpy.ones)
     def infs(*args,**kwargs):
         return numpy.inf*numpy.ones(*args,**kwargs)
 
 
     @staticmethod
-    @functools.wraps(numpy.ones)
     def nans(*args,**kwargs):
         return numpy.nan*numpy.ones(*args,**kwargs)
 

@@ -17,15 +17,8 @@ http://en.wikipedia.org/wiki/Unitary_matrix
 
 import numpy
 from matrix import Matrix
-from operator import ge
-from helpers import ascomplex
+from helpers import ascomplex,mag2
 
-def mag2(vectors):
-    return numpy.real_if_close(
-        numpy.sum(
-            numpy.array(vectors)*numpy.array(vectors.conjugate()),
-            axis = vectors.ndim-1
-    ))
 
 def square(vectors=None,var=None):
     """
@@ -61,7 +54,7 @@ def square(vectors=None,var=None):
 
     varT=var[:,numpy.newaxis]
     
-    if ge(*shape):    
+    if shape[0]>=shape[1]:    
         scaled=Matrix(varT*numpy.array(vectors))
         
         eig = (

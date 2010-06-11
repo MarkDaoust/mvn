@@ -52,14 +52,13 @@ import numpy
 from maybe import Ellipse
 
 #local
-from helpers import autostack,diagstack,ascomplex,paralell
-from helpers import approx,dots,rotation2d
+import helpers
 
-from square import square,mag2
+from square import square
 
 from automath import Automath
 from inplace import Inplace
-from matrix import Matrix,sign
+from matrix import Matrix
 
 if __name__ == "__main__":
     import mvar #self!
@@ -185,7 +184,6 @@ class Mvar(object,Automath,Inplace):
         var=numpy.ones,
         mean=numpy.zeros,
         square=True,
-        squeeze=True,
         **kwargs
     ):
         """
@@ -217,7 +215,7 @@ class Mvar(object,Automath,Inplace):
         mean= mean if callable(mean) else numpy.array(mean).flatten()[numpy.newaxis,:]
         vectors= vectors if callable(vectors) else Matrix(vectors)
         
-        stack=Matrix(autostack([
+        stack=Matrix(helpers.autostack([
             [var,vectors],
             [1  ,mean   ],
         ]))
@@ -229,10 +227,7 @@ class Mvar(object,Automath,Inplace):
         
         if square:
             self.copy(self.square())
-        
-        if squeeze:
-            self.copy(self.squeeze(**kwargs))
-            
+                    
         self.vectors=Matrix(self.vectors)
         self.mean = Matrix(self.mean)
         
@@ -280,14 +275,10 @@ class Mvar(object,Automath,Inplace):
         limits the defaults match numpy's for 'allclose'
         """
         result=self.copy()
-
-        #convert the variance to a column vector
-        std=abs(result.var)**0.5
-        
-        #find wihich elements are close to zero
-        C=approx(std,**kwargs)
-        result.var = result.var[~C]
-        result.vectors = result.vectors[~C,:] if C.size else result.vectors[:0,:]
+        (result.var,result.vectors)=helpers.squeeze(
+            vectors=result.vectors,
+            var=result.var
+        )
 
         return result
             
@@ -491,7 +482,7 @@ class Mvar(object,Automath,Inplace):
         Mvar being sampled
         """
         units = Matrix(
-            ascomplex(randn(n,self.ndim,2))/sqrt(2)
+            helpers.ascomplex(randn(n,self.ndim,2))/sqrt(2)
             if cplx else 
             randn(n,self.ndim)
         )
@@ -503,9 +494,9 @@ class Mvar(object,Automath,Inplace):
         return the square of the mahalabois distance from the Mvar to each vector.
         the vectors should be along the last dimension of the array.
 
-        >>> assert approx(
+        >>> assert helpers.approx(
         ...     (A**0).dist2(numpy.zeros((1,ndim))),
-        ...     mag2((A**0).mean)
+        ...     helpers.mag2((A**0).mean)
         ... )
         """
         #make sure the mean is a flat numpy array
@@ -524,8 +515,68 @@ class Mvar(object,Automath,Inplace):
             )
         )
 
+    def __setitem__(self,indexes,values):
+        """
+        interface to self.given 
+        """
+        self.copy(self.given(indexes,values))
+        
+        
     def given(self,indexes,values):
-        pass
+        """
+        return an mvar representing the conditional probability distribution, 
+        given the values, on the given indexes
+        ref: andrew moore/data mining/gussians/page 22
+        """
+        I=self.binindex(indexes)
+        values=Matrix(values)
+        
+        U=self[~I]
+        V=self[I]
+
+        V.mean-=values
+
+        VU=self.cov[I,~I]
+        
+        return U-V**(-1)*VU
+
+    def __getitem__(self,indexes):
+        """
+        return the marginal distribution in the indexed dimensions
+        """
+        return Mvar(
+            var =self.var,
+            mean=self.mean[:,indexes],
+            vectors=self.vectors[:,indexes], 
+        )
+    
+    def __delitem__(self,indexes):
+        """
+        just an in-place interface to self.knockout
+        """
+        self.copy(self.knockout(indexes))
+        
+    def binindex(self,indexes):
+        """
+        convert whatever format index, for this object, to binary 
+        """
+        if hasattr(indexes,'dtype') and indexes.dtype==bool:
+            return indexes
+        
+        binindexes=numpy.zeros(self.ndim,dtype=bool)
+        binindexes[indexes]=True
+
+        return binindexes
+
+
+
+    def knockout(self,indexes):
+        """
+        return an Mvar with the selected dimensions removed
+       """
+        keep=~self.binindex(indexes)
+        return self[keep]
+
 
     ############ Math
 
@@ -618,7 +669,7 @@ class Mvar(object,Automath,Inplace):
         >>> assert A & B == 1/(1/A+1/B)
         
         >>> abc=numpy.random.permutation([A,B,C])
-        >>> assert A & B & C == paralell(*abc)
+        >>> assert A & B & C == helpers.paralell(*abc)
         >>> assert A & B & C == Mvar.blend(*abc)== Mvar.__and__(*abc)
         
         >>> assert (A & B) & C == A & (B & C)
@@ -636,7 +687,7 @@ class Mvar(object,Automath,Inplace):
         
         >>> assert A & B == wiki(A,B)
         """
-        return paralell(*mvars)
+        return helpers.paralell(*mvars)
         
     __and__ = blend
 
@@ -704,12 +755,13 @@ class Mvar(object,Automath,Inplace):
             >>> assert M*B==M*B.transform()
             >>> assert A**2==A*A==A*A.transform()
         """
+        self=self.inflate()
         return Mvar(
-                mean=self.mean*self.transform(power-1),
-                vectors=self.vectors,
-                var=self.var**power,
-                square=False
-            )  
+            mean=self.mean*self.transform(power-1),
+            vectors=self.vectors,
+            var=self.var**power,
+            square=False
+        )  
 
 #!!!!!!!!!!!!!!!
 #consider changing mvar.multiply 
@@ -1047,8 +1099,19 @@ class Mvar(object,Automath,Inplace):
         
     ################# Non-Math python internals
     def __iter__(self):
-        scaled=self.scaled
-        return iter(numpy.vstack(scaled,-scaled))
+        raise ValueError("Mvars are not iterable")
+
+    def __call__(self,locations):
+         """
+         Returns the probability density in the specified locations, 
+         The vectors should be aligned onto the last dimension
+         That last dimension is squeezed out during the calculation
+ 
+         If spacial dimensions have been flattened out of the mvar the result is always 1/0
+         since the probablilities will have dimensions of hits/length**ndim 
+         """
+         return numpy.exp(self.dist2(self,locations))/2/numpy.pi/numpy.linalg.det(self.cov)**0.5
+
         
     def __repr__(self):
         return '\n'.join([
@@ -1063,7 +1126,7 @@ class Mvar(object,Automath,Inplace):
     __str__=__repr__
 
     ################ Art
-    def get_patch(self,nstd=3,**kwargs):
+    def get_patch(self,nstd=2,**kwargs):
         """
             get a matplotlib Ellipse patch representing the Mvar, 
             all **kwargs are passed on to the call to 
@@ -1091,7 +1154,7 @@ class Mvar(object,Automath,Inplace):
             width=width, height=height,
             #and rotation angle pulled from the vectors matrix
             angle=numpy.rad2deg(
-                numpy.angle(ascomplex(self.vectors)).flatten()[0]
+                numpy.angle(helpers.ascomplex(self.vectors)).flatten()[0]
             ),
             #while transmitting any kwargs.
             **kwargs
@@ -1144,6 +1207,26 @@ def newBlend(A,B):
         cov=B.cov*A.cov*totalCovI
     )
 
+def mooreGiven(UV,index,values):
+    """
+    direct implementation of the "given" algorithm in
+    Andrew moore's data-mining/gussian slides
+    
+    >>> Q=A.copy()
+    >>> Q[0]=1
+     
+    >>> assert mooreGiven(A,0,1)==A.given(0,1)
+    """
+    I=UV.binindex(index)
+    U=UV[~I]
+    V=UV[ I]
+ 
+    Euv=UV.cov[~I,I]
+ 
+    return Mvar.fromCov(
+        mean=U.mean+(values-V.mean)*(V**-1).cov*Euv,
+        cov=U.cov-Euv.H*(V**-1).cov*Euv,
+    )
 
 def _makeTestObjects():   
 
@@ -1164,15 +1247,12 @@ def _makeTestObjects():
     #with a default length of 'ndim', 
     #they can be made complex by setting cplx=True
     rvec=lambda n=1,m=ndim,cplx=cplx:Matrix(
-        ascomplex(randn(n,m,2)) 
+        helpers.ascomplex(randn(n,m,2)) 
         if cplx else 
         randn(n,m)
     )
 
     #create random test objects
-
-   
-
     A=Mvar(
         mean=5*randn()*rvec(),
         vectors=5*randn()*rvec(num),

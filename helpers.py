@@ -1,11 +1,37 @@
 import itertools
-import collections
 
 import numpy
 
-from matrix import Matrix
+def squeeze(vectors,var,**kwargs):
+    std=abs(var)**0.5
+    small=approx(std,**kwargs) & numpy.isfinite(std)
+    
+    if small.size:
+        var = var[~small]
+        vectors = vectors[~small,:]
+    
+    return var,vectors
 
+def mag2(vectors):
+    return numpy.real_if_close(
+        numpy.sum(
+            numpy.array(vectors)*numpy.array(vectors.conjugate()),
+            axis = vectors.ndim-1
+    )) 
 
+def sign(self):
+    """
+    improved sign function:
+        returns a similar array of unit length (possibly complex) numbers pointing in the same 
+        direction as the input 
+    """
+    return numpy.divide(
+        self,
+        abs(self),
+    )
+ 
+def unit(self):
+    return numpy.array(self)/mag2(self,squeeze=False)**0.5
 
 def ascomplex(self):
     """
@@ -75,9 +101,9 @@ def autostack(rows,default=0):
             [ 1.,  1.,  1.]])
 
     >>> autostack([
-    ...     [   [1,2,3],1],
-    ...     [Matrix.eye,[[1]
-    ...                , [1]]]
+    ...     [                       [1,2,3],   1],
+    ...     [lambda shape:numpy.eye(*shape),[[1]
+    ...                                    , [1]]]
     ... ])
     matrix([[ 1.,  2.,  3.,  1.],
             [ 1.,  0.,  0.,  1.],
@@ -197,57 +223,4 @@ def rotation2d(angle):
         [-numpy.sin(angle),numpy.cos(angle)],
     ])
 
-def issquare(A):
-    shape=A.shape
-    return A.ndim==2 and shape[0] == shape[1]
 
-def isrotation(A):
-    R=Matrix(A)
-    return (R*R.H == eye(R.shape[0])).all()
-
-def isdiag(A):
-    shape=A.shape
-    return A.ndim==2 and ((A != 0) == numpy.eye(shape[0],shape[1])).all()
-
-
-def isplit(sequence,fkey=bool): 
-    """
-        return a defaultdict (where the default is an empty list), 
-        where every value is a sub iterator produced from the sequence
-        where items are sent to iterators based on the value of fkey(item).
-        
-        >>> isodd = isplit(xrange(1,7),lambda item:bool(item%2))
-        >>> isodd[True]
-        [1, 3, 5]
-        >>> isodd[False]
-        [2, 4, 6]
-        
-        which gives the same results as
-        
-        >>> X=xrange(1,7)
-        >>> [item for item in X if bool(item%2)]
-        [1, 3, 5]
-        >>> [item for item in X if not bool(item%2)]
-        [2, 4, 6]
-        
-        or you could make a mess of maps and filter
-        but this is so smooth,and really shortens things 
-        when dealing with a lot of keys 
-        
-        >>> bytype = isplit([1,'a',True,"abc",5,7,False],type)
-        >>> bytype[int]
-        [1, 5, 7]
-        >>> bytype[str]
-        ['a', 'abc']
-        >>> bytype[bool]
-        [True, False]
-        >>> bytype[dict]
-        []
-    """
-    result = collections.defaultdict(list)
-    for key,iterator in itertools.groupby(sequence,fkey):
-        R = result[key]
-        R.extend(iterator)
-        result[key] = R
-        
-    return result
