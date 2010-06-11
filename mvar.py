@@ -72,8 +72,8 @@ if __name__ == "__main__":
         'mvar'    :mvar,
         'helpers' :helpers,
         'square'  :square,
-#       'automath':automath,    
-        'inplace' :inplace,
+#       'automath':automath,    #abstract base classes shouldn't be doc-tested directly
+#       'inplace' :inplace,
         'matrix'  :matrix,
     }
 
@@ -184,6 +184,7 @@ class Mvar(object,Automath,Inplace):
         var=numpy.ones,
         mean=numpy.zeros,
         square=True,
+        squeeze=True,
         **kwargs
     ):
         """
@@ -252,10 +253,10 @@ class Mvar(object,Automath,Inplace):
         result.var = stack[:,0].flatten()
         result.vectors = Matrix(stack[:,1:])
 
-        return result.square()
+        return result.square(squeeze=False)
 
 
-    def square(self):
+    def square(self,squeeze=True):
         """
         squares up the vectors, so that the 'vectors' matrix is unitary 
         (rotation matrix extended to complex numbers)
@@ -263,7 +264,11 @@ class Mvar(object,Automath,Inplace):
         >>> assert A.vectors*A.vectors.H==Matrix.eye
         """ 
         result=self.copy()
-        (result.var,result.vectors)=square(vectors=self.vectors,var=self.var)
+        (result.var,result.vectors)=square(
+            vectors=self.vectors,
+            var=self.var,
+            doSqueeze=squeeze,
+        )
         return result
 
     def sign(self):
@@ -642,8 +647,6 @@ class Mvar(object,Automath,Inplace):
 
     def __xor__(self,other):
         """
-        >>> assert A == A^B+A^(~B)
-
         I don't  know what this means yet
         """
         return self+other-2*(self&other)

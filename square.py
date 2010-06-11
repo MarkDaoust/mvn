@@ -17,10 +17,65 @@ http://en.wikipedia.org/wiki/Unitary_matrix
 
 import numpy
 from matrix import Matrix
-from helpers import ascomplex,mag2
+from helpers import ascomplex,mag2,autostack,squeeze,approx
+
+def square(vectors,var,doSqueeze=True):
+
+    #check the magnitudes of the variances
+    infinite = approx(1/var**0.5)
+
+    Ivar=numpy.array([])
+    Ivectors=Matrix(numpy.zeros((0,vectors.shape[1])))
+
+    if infinite.any():
+        #square up the infinite vectors
+        #Ivar is unused
+
+        (Ivar,Ivectors)=_subSquare(vectors=vectors[infinite,:])
+
+        #take the finite variances and vectors
+        var=var[~infinite]
+        vectors=vectors[infinite,:]
+
+        assert isinstance(vectors,numpy.matrix)
+        Ivectors=Matrix(Ivectors)
+
+        (Ivar,Ivectors)=squeeze(vectors=Ivectors,var=Ivar)
+
+        #revove the component paralell to each infinite vector
+        vectors= vectors-(vectors*Ivectors.H)*Ivectors
 
 
-def square(vectors=None,var=None):
+    (var,vectors) = _subSquare(vectors,var)
+
+    #if we want a real squeeze
+    if doSqueeze:
+        #do it
+        (var,vectors)=squeeze(vectors=vectors,var=var)
+    elif Ivar.size:
+        #sort the finite variances
+        order=numpy.argsort(var)    
+        var=var(order)
+        vectors=vectors[order,:]
+        
+        #if there are more vectors than dimensions 
+        kill=var.size+Ivar.size-vectors.shape[1]
+        if kill>0:
+            #squeeze the vectors with the smallest variances 
+            var=var[kill:]
+            vectors=vectors[kill:,:]
+    
+    assert (var.size+Ivar.size-vectors.shape[1] <= 0),"""
+        you should never have more vectors than dimensions
+    """
+
+    return (
+        numpy.concatenate((var,numpy.inf*numpy.ones_like(Ivar))),
+        numpy.vstack([vectors,Ivectors])
+    )
+    
+
+def _subSquare(vectors,var=None):
     """
     given a series of vectors, this function calculates:
         (variances,vectors)=numpy.linalg.eigh(vectors.H*vectors)
@@ -54,29 +109,31 @@ def square(vectors=None,var=None):
 
     varT=var[:,numpy.newaxis]
     
+    eig = (
+        numpy.linalg.eigh if
+        Matrix(var) == abs(Matrix(var)) else
+        numpy.linalg.eig
+    )
+
     if shape[0]>=shape[1]:    
         scaled=Matrix(varT*numpy.array(vectors))
         
-        eig = (
-            numpy.linalg.eigh if
-            Matrix(var) == abs(Matrix(var)) else
-            numpy.linalg.eig
-        )
         cov=vectors.H*scaled
         (val,vec)=eig(cov)
-        return (val,vec.H)
+        vec=vec.H
     else:    
         scaled=Matrix(varT**(0.5+0j)*numpy.array(vectors))
         Xcov=vectors*vectors.H
         if Xcov == Matrix.eye:
             return (var,vectors)
         
-        ( _ ,Xvec)=numpy.linalg.eigh(Xcov)
+        ( _ ,Xvec)=numpy.linalg.eig(Xcov)
         
         Xscaled=(Xvec.H*scaled)
-        Xval=mag2(Xscaled)
+        val=mag2(Xscaled)
 
-        Xvec=numpy.array(Xscaled)/Xval[:,numpy.newaxis]**(0.5+0j)
+        vec=numpy.array(Xscaled)/val[:,numpy.newaxis]**(0.5+0j)
 
-        return (Xval,Xvec)
+    
+    return (val,vec)
 
