@@ -19,7 +19,7 @@ import numpy
 from matrix import Matrix
 from helpers import ascomplex,mag2,autostack,squeeze,approx
 
-def square(vectors,var,doSqueeze=True):
+def square(vectors,var):
 
     #check the magnitudes of the variances
     infinite = approx(1/var**0.5)
@@ -48,11 +48,7 @@ def square(vectors,var,doSqueeze=True):
     if var.size:
         (var,vectors) = _subSquare(vectors,var)
 
-    #if we want a real squeeze
-    if doSqueeze:
-        #do it
-        (var,vectors)=squeeze(vectors=vectors,var=var)
-    elif Ivar.size:
+    if Ivar.size and var.size:
         #sort the finite variances
         order=numpy.argsort(var)    
         var=var[order]
@@ -65,10 +61,6 @@ def square(vectors,var,doSqueeze=True):
             var=var[kill:]
             vectors=vectors[kill:,:]
     
-    assert (var.size+Ivar.size-vectors.shape[1] <= 0),"""
-        you should never have more vectors than dimensions
-    """
-
     return (
         numpy.concatenate((var,numpy.inf*numpy.ones_like(Ivar))),
         numpy.vstack([vectors,Ivectors])

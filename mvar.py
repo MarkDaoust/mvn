@@ -227,7 +227,10 @@ class Mvar(object,Automath,Inplace):
         self.vectors = stack[:-1,1:]
         
         if square:
-            self.copy(self.square(squeeze=squeeze))
+            self.copy(self.square())
+
+        if squeeze:
+            self.copy(self.squeeze(**kwargs))
                     
         self.vectors=Matrix(self.vectors)
         self.mean = Matrix(self.mean)
@@ -246,7 +249,7 @@ class Mvar(object,Automath,Inplace):
         vectors=self.vectors[finite]
 
         if finite.any():
-            (var,vectors)=helpers.squeeze(var=var,vectors=vectors)        
+            (var,vectors)=helpers.squeeze(var=var,vectors=vectors,**kwargs)        
 
         if finite.all():
             result.var=var
@@ -281,7 +284,7 @@ class Mvar(object,Automath,Inplace):
         result.var = stack[:,0].flatten()
         result.vectors = Matrix(stack[:,1:])
 
-        result = result.square(squeeze=False)
+        result = result.square()
 
         zeros=helpers.approx(result.var)
 
@@ -289,7 +292,7 @@ class Mvar(object,Automath,Inplace):
 
         return result
 
-    def square(self,squeeze=True):
+    def square(self):
         """
         squares up the vectors, so that the 'vectors' matrix is unitary 
         (rotation matrix extended to complex numbers)
@@ -300,7 +303,6 @@ class Mvar(object,Automath,Inplace):
         (result.var,result.vectors)=square(
             vectors=self.vectors,
             var=self.var,
-            doSqueeze=squeeze,
         )
         return result
 
