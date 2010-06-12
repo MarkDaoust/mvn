@@ -180,16 +180,9 @@ def paralell(*items):
     inverted=[item**(-1) for item in items]
     return sum(inverted[1:],inverted[0])**(-1)
 
-def approx(a,other = None,atol=1e-5,rtol=1e-8):
+def approx(a,other = None,atol=1e-5):
     """
-    like numpy.allclose, and numpy.real_if_close but returns a bool array
-    
-    a     -is the array of interest
-    other -if None     delta=abs(a)
-           if callable delta=abs(a-other(a.shape))
-           else        delta=abs(a-other)
-        
-    returns True where delta<atol or delta/max(delta)<rtol 
+    returns True where delta<atol 
     """
     if other is None :
         delta = numpy.abs(a)
@@ -198,14 +191,7 @@ def approx(a,other = None,atol=1e-5,rtol=1e-8):
             other=other(a.shape)
         delta = numpy.abs(a-other)
 
-    
-    MAX = numpy.max(delta) if delta.size else 0
-    #if the largest element is less than the absolute tolerence
-    #then everythng is approx=
-    if MAX<atol:
-        return numpy.ones(delta.shape,dtype=bool)
-    
-    return (delta<atol) | (delta/MAX<rtol) if MAX else (delta<atol)
+    return (delta<atol)
 
 def dots(*args):
     """

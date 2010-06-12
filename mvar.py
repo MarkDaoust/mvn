@@ -235,37 +235,18 @@ class Mvar(object,Automath,Inplace):
         self.vectors=Matrix(self.vectors)
         self.mean = Matrix(self.mean)
 
-    def squeeze(self):
-        """
-        squeeze out the flat dimensions, while preserving the structure
-        it is the opposite of inflate
-        assert A.suqeeze() == A
-        """
-        result=self.copy()
-
-        finite=numpy.isfinite(self.var)
-
-        var=self.var[finite]
-        vectors=self.vectors[finite]
-
-        if finite.any():
-            (var,vectors)=helpers.squeeze(var=var,vectors=vectors,**kwargs)        
-
-        if finite.all():
-            result.var=var
-            result.vectors=vectors
-            return result
-
-        Ivar=self.var[~finite]
-        Ivectors=self.vectors[~finite]
-
-        result.var=numpy.concatenate(var,Ivar)
-        result.vectors=numpy.concatenate(vectors,Ivectors)
-        
-
     def inflate(self):
         """
-        stacks zeros onto the vectors and variances so the object can be safely inverted
+        add the zero length direction vectors so no information is lost during transforms
+
+        >>> if A.shape[0] == A.shape[1]:
+        ...     assert A*A.vectors.H*A.vectors==A
+        
+        >>> if A.shape[0] != A.shape[1]:
+        ...     assert A*A.vectors.H*A.vectors!=A
+
+        >>> A=A.inflate()
+        >>> assert A*A.vectors.H*A.vectors==A        
         """
         result = self.copy()
 
@@ -1392,9 +1373,6 @@ if __name__=='__main__':
     ])
 
     mvar.__dict__.update(testObjects)
-
-#!!!
-    Mvar(mean=numpy.zeros(7),var=numpy.inf*numpy.ones(7))  
 
     for name,mod in localMods.iteritems():
         doctest.testmod(mod)
