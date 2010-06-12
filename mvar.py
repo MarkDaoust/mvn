@@ -231,7 +231,35 @@ class Mvar(object,Automath,Inplace):
                     
         self.vectors=Matrix(self.vectors)
         self.mean = Matrix(self.mean)
+
+    def squeeze(self):
+        """
+        squeeze out the flat dimensions, while preserving the structure
+        it is the opposite of inflate
+        assert A.suqeeze() == A
+        """
+        result=self.copy()
+
+        finite=numpy.isfinite(self.var)
+
+        var=self.var[finite]
+        vectors=self.vectors[finite]
+
+        if finite.any():
+            (var,vectors)=helpers.squeeze(var=var,vectors=vectors)        
+
+        if finite.all():
+            result.var=var
+            result.vectors=vectors
+            return result
+
+        Ivar=self.var[~finite]
+        Ivectors=self.vectors[~finite]
+
+        result.var=numpy.concatenate(var,Ivar)
+        result.vectors=numpy.concatenate(vectors,Ivectors)
         
+
     def inflate(self):
         """
         stacks zeros onto the vectors and variances so the object can be safely inverted
