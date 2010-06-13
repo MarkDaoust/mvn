@@ -737,7 +737,7 @@ class Mvar(object,Automath,Inplace):
         
         >>> abc=numpy.random.permutation([A,B,C])
         >>> assert A & B & C == helpers.paralell(*abc)
-        >>> assert A & B & C == Mvar.blend(*abc)== Mvar.__and__(*abc)
+        >>> assert A & B & C == Mvar.blend(*abc)
         
         >>> assert (A & B) & C == A & (B & C)
         
@@ -756,7 +756,52 @@ class Mvar(object,Automath,Inplace):
         """
         return helpers.paralell(*mvars)
         
-    __and__ = blend
+    def __and__(self,other):
+        #check if the 'other' fills the space
+        if other.var.size == other.mean.size:
+            #check if 'self' fills the space 
+            if self.var.size == self.mean.size:
+                #if yes: the answer is easy
+                return helpers.paralell(self,other) 
+            else:
+                #if not, switch places
+                self,other=other,self
+            
+        #inflate the degenerate, so the transform is reversable
+        Iother=other.inflate()
+
+        #rotate both mvars into the degenerate's eigenspace
+        rself=self*Iother.vectors.H
+        rother=other*Iother.vectors.H
+
+        #check which directions are flat
+        flat = helpers.approx(rother.vectors.sum(0)).flatten()
+        
+        #find self given the plane of the other
+        rself=rself.given(flat,rother.mean[:,flat])
+
+        #eliminate the flat dimensions
+        fself=rself.knockout(flat).square().squeeze()
+        fother=rother.knockout(flat).square().squeeze()
+
+        result = fself & fother
+        
+        mean=Matrix.zeros((1,self.mean.size))
+        #fill in the means for the flat dimensions
+        mean[:,flat]=rother.mean[:,flat]
+        #and the non-flat dimensions 
+        mean[:,~flat]=result.mean
+        
+        #make the vectors
+        vectors=Matrix.zeros((result.vectors.shape[0],self.mean.size))
+        #the flat components are zero,the non-flat are in the result
+        vectors[:,~flat]=result.vectors
+        
+        result.vectors=vectors
+        result.mean=mean
+        
+        #rotate back to the origional space
+        return result*Iother.vectors
 
     def __pow__(self,power):
         """
@@ -1390,56 +1435,5 @@ if __name__=='__main__':
         doctest.testmod(mod)
 
 
-def intersect(self,other):
 
-    assert (
-        self.square().squeeze().vectors == self.vectors and 
-        other.square().squeeze().vectors == other.vectors
-    ),"This won't work with objects that aren't square and squeezed"
-
-    #check if the 'other' fills the space
-    if other.var.size == other.mean.size:
-        #check if 'self' fills the space 
-        if self.var.size == self.mean.size:
-            #if yes: the answer is easy
-            return helpers.paralell(self,other) 
-        else:
-            #if not, switch places
-            self,other=other,self
-        
-    #inflate the degenerate, so the transform is reversable
-    Iother=other.inflate()
-
-    #rotate both mvars into the degenerate's eigenspace
-    rself=self*Iother.vectors.H
-    rother=other*Iother.vectors.H
-
-    #check which directions are flat
-    flat = helpers.approx(rother.vectors.sum(0)).flatten()
-    
-    #find self given the plane of the other
-    rself=rself.given(flat,rother.mean[:,flat])
-
-    #eliminate the flat dimensions
-    fself=rself.knockout(flat).square().squeeze()
-    fother=rother.knockout(flat).square().squeeze()
-
-    result = intersect(fself,fother)
-    
-    mean=Matrix.zeros((1,self.mean.size))
-    #fill in the means for the flat dimensions
-    mean[:,flat]=rother.mean[:,flat]
-    #and the non-flat dimensions 
-    mean[:,~flat]=result.mean
-    
-    #make the vectors
-    vectors=Matrix.zeros((result.vectors.shape[0],self.mean.size))
-    #the flat components are zero,the non-flat are in the result
-    vectors[:,~flat]=result.vectors
-    
-    result.vectors=vectors
-    result.mean=mean
-    
-    #rotate back to the origional space
-    return result*Iother.vectors
 
