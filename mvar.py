@@ -557,12 +557,12 @@ class Mvar(object,Automath,Inplace):
         Iu=numpy.where(~I)[0]
         Iv=numpy.where( I)[0]
      
-        U=self[Iu]
-        V=self[Iv]
+        U=self[Iu].knockout(Iv)
+        V=self[Iv].knockout(Iu)
 
         vu=V.vectors.H*numpy.diagflat(self.var)*U.vectors
 
-        result= Mvar.fromCov(
+        return Mvar.fromCov(
             mean=U.mean+(value-V.mean)*(V**-1).cov*vu,
             cov=U.cov-vu.H*(V**-1).cov*vu,
         )
@@ -595,16 +595,23 @@ class Mvar(object,Automath,Inplace):
     def marginal(self,index):
         """
         return the marginal distribution in the only the indexed dimensions
+        return the marginal distribution,
+        flattened in the indexed dimensions,
+        unused mean components get replaced with nan's
+        no dimensions are removed, be explicit, use knockout(index), or del()
+
+        >>> flat = A[0].square().squeeze()
+        >>> assert A[0].knockout(range(1,A.ndim)) == flat*flat.vectors.H
         """
         assert ~isinstance(index,tuple)
- 
-        return Mvar(
-            var =self.var,
-            mean=self.mean[:,index],
-            vectors=self.vectors[:,index],
-            square=False,
-            squeeze=False,
-        )
+
+        index=self.binindex(index)
+
+        result=self.copy(deep=True)
+        result.mean[:,~index]=0
+        result.vectors[:,~index]=0
+
+        return result
 
     def __getitem__(self,index):
         """
@@ -636,9 +643,15 @@ class Mvar(object,Automath,Inplace):
     def knockout(self,index):
         """
         return an Mvar with the selected dimensions removed
-       """
+        """
         keep=~self.binindex(index)
-        return self[keep]
+        return Mvar(
+            mean=self.mean[:,keep],
+            vectors=self.vectors[:,keep],
+            var=self.var,
+            square=False,
+            squeeze=False,
+        )
 
 
     ############ Math
@@ -1290,7 +1303,7 @@ def mooreGiven(self,index,value):
     direct implementation of the "given" algorithm in
     Andrew moore's data-mining/gussian slides
      
-    >>> assert mooreGiven(A,0,1)==A.given(0,1)
+    >>> assert mooreGiven(A,0,0).knockout(0)==A.given(0,0)
     """
     I=self.binindex(index)
     Iu=numpy.where(~I)[0]
@@ -1301,20 +1314,10 @@ def mooreGiven(self,index,value):
 
     vu=V.vectors.H*numpy.diagflat(self.var)*U.vectors
 
-    result= Mvar.fromCov(
+    return Mvar.fromCov(
         mean=U.mean+(value-V.mean)*(V**-1).cov*vu,
         cov=U.cov-vu.H*(V**-1).cov*vu,
     )
-    
-    mean=Matrix(numpy.zeros_like(self.mean))
-    mean[:,Iu]=result.mean
-    mean[:,Iv]=value
-
-    vectors=Matrix.zeros((result.vectors.shape[0],self.vectors.shape[1]))
-    vectors[:,Iu]=result.vectors    
-    result.vectors[:,Iv]=0
-
-    return result
 
 def _makeTestObjects():   
 
