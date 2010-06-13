@@ -1325,6 +1325,56 @@ def mooreGiven(self,index,value):
         mean=U.mean+(value-V.mean)*(V**-1).cov*vu,
         cov=U.cov-vu.H*(V**-1).cov*vu,
     )
+    
+def intersect(self,other):
+    """
+    assert A&B == intersect(A,B)
+    """
+    #check if the 'other' fills the space
+    if other.var.size == other.mean.size:
+        #check if 'self' fills the space 
+        if self.var.size == self.mean.size:
+            #if yes: the answer is easy
+            return helpers.paralell(self,other) 
+        else:
+            #if not, switch places
+            self,other=other,self
+        
+    #inflate the degenerate, so the transform is reversable
+    Iother=other.inflate()
+
+    #rotate both mvars into the degenerate's eigenspace
+    rself=self*Iother.vectors.H
+    rother=other*Iother.vectors.H
+
+    #check which directions are flat
+    flat = helpers.approx(rother.vectors.sum(0)).flatten()
+    
+    #find self given the plane of the other
+    rself=rself.given(flat,rother.mean[:,flat])
+
+    #eliminate the flat dimensions
+    fself=rself.knockout(flat).square().squeeze()
+    fother=rother.knockout(flat).square().squeeze()
+
+    result = intersect(fself,fother)
+    
+    mean=Matrix.zeros((1,self.mean.size))
+    #fill in the means for the flat dimensions
+    mean[:,flat]=rother.mean[:,flat]
+    #and the non-flat dimensions 
+    mean[:,~flat]=result.mean
+    
+    #make the vectors
+    vectors=Matrix.zeros((result.vectors.shape[0],self.mean.size))
+    #the flat components are zero,the non-flat are in the result
+    vectors[:,~flat]=result.vectors
+    
+    result.vectors=vectors
+    result.mean=mean
+    
+    #rotate back to the origional space
+    return result*Iother.vectors
 
 def _makeTestObjects():   
 
@@ -1435,5 +1485,5 @@ if __name__=='__main__':
         doctest.testmod(mod)
 
 
-
+    
 
