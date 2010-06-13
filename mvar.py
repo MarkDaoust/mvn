@@ -573,8 +573,6 @@ class Mvar(object,Automath,Inplace):
 
         vectors=Matrix.zeros((result.vectors.shape[0],self.vectors.shape[1]))
         vectors[:,Iu]=result.vectors    
-
-        result.mean[:,Iv]=value
         result.vectors[:,Iv]=0
 
         return result
@@ -1307,8 +1305,6 @@ def mooreGiven(self,index,value):
 
     vectors=Matrix.zeros((result.vectors.shape[0],self.vectors.shape[1]))
     vectors[:,Iu]=result.vectors    
-
-    result.mean[:,Iv]=value
     result.vectors[:,Iv]=0
 
     return result
