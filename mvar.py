@@ -540,11 +540,11 @@ class Mvar(object,Automath,Inplace):
             )
         )
 
-    def __setitem__(self,indexes,values):
+    def __setitem__(self,index,value):
         """
         interface to self.given 
         """
-        self.copy(self.given(indexes,values))
+        self.copy(self.given(index,value))
         
         
     def given(self,index,value):
@@ -578,7 +578,7 @@ class Mvar(object,Automath,Inplace):
         return result
 
 
-        I=self.binindex(indexes)
+        I=self.binindex(index)
 
         Iu=numpy.where(~I)[0]
         Iv=numpy.where(I)[0]
@@ -592,45 +592,52 @@ class Mvar(object,Automath,Inplace):
         
         return U-V**(-1)*VU
 
-    def __getitem__(self,indexes):
+    def marginal(self,index):
         """
         return the marginal distribution in the only the indexed dimensions
         """
-        assert ~isinstance(indexes,tuple)
+        assert ~isinstance(index,tuple)
  
         return Mvar(
             var =self.var,
-            mean=self.mean[:,indexes],
-            vectors=self.vectors[:,indexes],
+            mean=self.mean[:,index],
+            vectors=self.vectors[:,index],
             square=False,
             squeeze=False,
         )
+
+    def __getitem__(self,index):
+        """
+        operator interface to self.marginal
+        """
+        return self.marginal(index)
+
     
-    def __delitem__(self,indexes):
+    def __delitem__(self,index):
         """
         just an in-place interface to self.knockout
         """
-        self.copy(self.knockout(indexes))
+        self.copy(self.knockout(index))
         
-    def binindex(self,indexes):
+    def binindex(self,index):
         """
         convert whatever format index, for this object, to binary 
         """
-        if hasattr(indexes,'dtype') and indexes.dtype==bool:
-            return indexes
+        if hasattr(index,'dtype') and index.dtype==bool:
+            return index
         
-        binindexes=numpy.zeros(self.ndim,dtype=bool)
-        binindexes[indexes]=True
+        binindex=numpy.zeros(self.ndim,dtype=bool)
+        binindex[index]=True
 
-        return binindexes
+        return binindex
 
 
 
-    def knockout(self,indexes):
+    def knockout(self,index):
         """
         return an Mvar with the selected dimensions removed
        """
-        keep=~self.binindex(indexes)
+        keep=~self.binindex(index)
         return self[keep]
 
 
