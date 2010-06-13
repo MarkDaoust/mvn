@@ -542,7 +542,7 @@ class Mvar(object,Automath,Inplace):
 
     def __setitem__(self,index,value):
         """
-        interface to self.given 
+        opertor interface to self.given 
         """
         self.copy(self.given(index,value))
         
@@ -554,31 +554,6 @@ class Mvar(object,Automath,Inplace):
         ref: andrew moore/data mining/gussians/page 22
         """
         I=self.binindex(index)
-        Iu=numpy.where(~I)[0]
-        Iv=numpy.where( I)[0]
-     
-        U=self[Iu].knockout(Iv)
-        V=self[Iv].knockout(Iu)
-
-        vu=V.vectors.H*numpy.diagflat(self.var)*U.vectors
-
-        return Mvar.fromCov(
-            mean=U.mean+(value-V.mean)*(V**-1).cov*vu,
-            cov=U.cov-vu.H*(V**-1).cov*vu,
-        )
-        
-        mean=Matrix(numpy.zeros_like(self.mean))
-        mean[:,Iu]=result.mean
-        mean[:,Iv]=value
-
-        vectors=Matrix.zeros((result.vectors.shape[0],self.vectors.shape[1]))
-        vectors[:,Iu]=result.vectors    
-        result.vectors[:,Iv]=0
-
-        return result
-
-
-        I=self.binindex(index)
 
         Iu=numpy.where(~I)[0]
         Iv=numpy.where(I)[0]
@@ -586,10 +561,10 @@ class Mvar(object,Automath,Inplace):
         U=self[Iu]
         V=self[Iv]
 
-        V.mean-=values
+        V.mean[:,Iv]-=value
 
-        VU=self.cov[Iv,Iu]
-        
+        VU=V.vectors.H*numpy.diagflat(self.var)*U.vectors
+
         return U-V**(-1)*VU
 
     def marginal(self,index):
@@ -1303,7 +1278,7 @@ def mooreGiven(self,index,value):
     direct implementation of the "given" algorithm in
     Andrew moore's data-mining/gussian slides
      
-    >>> assert mooreGiven(A,0,0).knockout(0)==A.given(0,0)
+    >>> assert mooreGiven(A,0,0)==A.given(0,0)
     """
     I=self.binindex(index)
     Iu=numpy.where(~I)[0]
