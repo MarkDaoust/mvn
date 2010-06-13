@@ -45,6 +45,15 @@ class Matrix(numpy.matrix):
     def __rdiv__(self,other):
         return other*self**(-1)
 
+    def __add__(self,other):
+        if isinstance(other,numpy.matrix):
+            assert self.shape == other.shape,'can only add matrixes with the same shape'
+            return numpy.matrix.__add__(self,other)
+        
+        return numpy.matrix.__add__(self,other)
+
+            
+
     def __repr__(self):
         result='M'+numpy.matrix.__repr__(self)[1:]
         result=result.replace('[], shape=(','numpy.zeros(')
@@ -83,12 +92,20 @@ class Matrix(numpy.matrix):
         return Matrix(numpy.eye(*args,**kwargs))
 
     @staticmethod
+    def ones(*args,**kwargs):
+        return Matrix(numpy.ones(*args,**kwargs))
+
+    @staticmethod
+    def zeros(*args,**kwargs):
+        return Matrix(numpy.zeros(*args,**kwargs))
+
+    @staticmethod
     def infs(*args,**kwargs):
-        return numpy.inf*numpy.ones(*args,**kwargs)
+        return numpy.inf*Matrix.ones(*args,**kwargs)
 
 
     @staticmethod
     def nans(*args,**kwargs):
-        return numpy.nan*numpy.ones(*args,**kwargs)
+        return numpy.nan*Matrix.ones(*args,**kwargs)
 
 Matrix.sign=sign

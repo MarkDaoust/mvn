@@ -232,8 +232,8 @@ class Mvar(object,Automath,Inplace):
         if squeeze:
             self.copy(self.squeeze(**kwargs))
                     
-        self.vectors=Matrix(self.vectors)
-        self.mean = Matrix(self.mean)
+        self.vectors=Matrix(numpy.real_if_close(self.vectors))
+        self.mean = Matrix(numpy.real_if_close(self.mean))
 
     def inflate(self):
         """
@@ -254,6 +254,10 @@ class Mvar(object,Automath,Inplace):
 
         present = shape[0]
         missing = shape[1]-shape[0]
+
+        if missing<0:
+            result=result.square()
+            return result
 
         stack = numpy.vstack([
             numpy.hstack([self.var[:,numpy.newaxis],self.vectors]),
@@ -403,7 +407,7 @@ class Mvar(object,Automath,Inplace):
         power = complex(power)
         return (
             self.vectors.H*
-            numpy.diagflat(self.var**(power/(2+0j)))*
+            numpy.real_if_close(numpy.diagflat(self.var**(power/(2+0j))))*
             self.vectors
         )
     
@@ -543,32 +547,65 @@ class Mvar(object,Automath,Inplace):
         self.copy(self.given(indexes,values))
         
         
-    def given(self,indexes,values):
+    def given(self,index,value):
         """
         return an mvar representing the conditional probability distribution, 
         given the values, on the given indexes
         ref: andrew moore/data mining/gussians/page 22
         """
-        I=self.binindex(indexes)
-        values=Matrix(values)
+        I=self.binindex(index)
+        Iu=numpy.where(~I)[0]
+        Iv=numpy.where( I)[0]
+     
+        U=self[Iu]
+        V=self[Iv]
+
+        vu=V.vectors.H*numpy.diagflat(self.var)*U.vectors
+
+        result= Mvar.fromCov(
+            mean=U.mean+(value-V.mean)*(V**-1).cov*vu,
+            cov=U.cov-vu.H*(V**-1).cov*vu,
+        )
         
-        U=self[~I]
-        V=self[I]
+        mean=Matrix(numpy.zeros_like(self.mean))
+        mean[:,Iu]=result.mean
+        mean[:,Iv]=value
+
+        vectors=Matrix.zeros((result.vectors.shape[0],self.vectors.shape[1]))
+        vectors[:,Iu]=result.vectors    
+
+        result.mean[:,Iv]=value
+        result.vectors[:,Iv]=0
+
+        return result
+
+
+        I=self.binindex(indexes)
+
+        Iu=numpy.where(~I)[0]
+        Iv=numpy.where(I)[0]
+        
+        U=self[Iu]
+        V=self[Iv]
 
         V.mean-=values
 
-        VU=self.cov[I,~I]
+        VU=self.cov[Iv,Iu]
         
         return U-V**(-1)*VU
 
     def __getitem__(self,indexes):
         """
-        return the marginal distribution in the indexed dimensions
+        return the marginal distribution in the only the indexed dimensions
         """
+        assert ~isinstance(indexes,tuple)
+ 
         return Mvar(
             var =self.var,
             mean=self.mean[:,indexes],
-            vectors=self.vectors[:,indexes], 
+            vectors=self.vectors[:,indexes],
+            square=False,
+            squeeze=False,
         )
     
     def __delitem__(self,indexes):
@@ -796,18 +833,13 @@ class Mvar(object,Automath,Inplace):
             >>> assert M*B==M*B.transform()
             >>> assert A**2==A*A==A*A.transform()
         """
-        self=self.inflate()
+        result=self.inflate()
         return Mvar(
-            mean=self.mean*self.transform(power-1),
-            vectors=self.vectors,
-            var=self.var**power,
+            mean=result.mean*result.transform(power-1),
+            vectors=result.vectors,
+            var=result.var**power,
             square=False
         )  
-
-#!!!!!!!!!!!!!!!
-#consider changing mvar.multiply 
-#to multiply the mean by the transform
-#but the covariance by [A.v][B.cov][diag(A.var)][A.v]
         
     def __mul__(self,other):        
         """
@@ -1248,26 +1280,38 @@ def newBlend(A,B):
         cov=B.cov*A.cov*totalCovI
     )
 
-def mooreGiven(UV,index,values):
+def mooreGiven(self,index,value):
     """
     direct implementation of the "given" algorithm in
     Andrew moore's data-mining/gussian slides
-    
-    >>> Q=A.copy()
-    >>> Q[0]=1
      
     >>> assert mooreGiven(A,0,1)==A.given(0,1)
     """
-    I=UV.binindex(index)
-    U=UV[~I]
-    V=UV[ I]
+    I=self.binindex(index)
+    Iu=numpy.where(~I)[0]
+    Iv=numpy.where( I)[0]
  
-    Euv=UV.cov[~I,I]
- 
-    return Mvar.fromCov(
-        mean=U.mean+(values-V.mean)*(V**-1).cov*Euv,
-        cov=U.cov-Euv.H*(V**-1).cov*Euv,
+    U=self[Iu]
+    V=self[Iv]
+
+    vu=V.vectors.H*numpy.diagflat(self.var)*U.vectors
+
+    result= Mvar.fromCov(
+        mean=U.mean+(value-V.mean)*(V**-1).cov*vu,
+        cov=U.cov-vu.H*(V**-1).cov*vu,
     )
+    
+    mean=Matrix(numpy.zeros_like(self.mean))
+    mean[:,Iu]=result.mean
+    mean[:,Iv]=value
+
+    vectors=Matrix.zeros((result.vectors.shape[0],self.vectors.shape[1]))
+    vectors[:,Iu]=result.vectors    
+
+    result.mean[:,Iv]=value
+    result.vectors[:,Iv]=0
+
+    return result
 
 def _makeTestObjects():   
 
