@@ -754,7 +754,7 @@ class Mvar(object,Automath,Inplace):
         
         >>> assert A & B == wiki(A,B)
         """
-        return helpers.paralell(*mvars)
+        return reduce(operator.and_,mvars)
         
     def __and__(self,other):
         #check if the 'other' fills the space
