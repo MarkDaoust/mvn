@@ -19,7 +19,13 @@ import numpy
 from matrix import Matrix
 from helpers import ascomplex,mag2,autostack,squeeze,approx
 
-def square(vectors,var):
+def square(vectors,var=None):
+    
+    var =( 
+        numpy.ones(vectors.shape[0]) if 
+        var is None else 
+        numpy.real_if_close(var)
+    )
 
     #check the magnitudes of the variances
     infinite = approx(1/var**0.5)
@@ -31,7 +37,7 @@ def square(vectors,var):
         #square up the infinite vectors
         #Ivar is unused
 
-        (Ivar,Ivectors)=_subSquare(vectors=vectors[infinite,:])
+        (Ivar,Ivectors)=_subSquare(vectors=vectors[infinite,:],var=var[infinite])
 
         #take the finite variances and vectors
         var=var[~infinite]
@@ -67,7 +73,7 @@ def square(vectors,var):
     )
     
 
-def _subSquare(vectors,var=None):
+def _subSquare(vectors,var):
     """
     given a series of vectors, this function calculates:
         (variances,vectors)=numpy.linalg.eigh(vectors.H*vectors)
@@ -87,12 +93,6 @@ def _subSquare(vectors,var=None):
     """
     vectors=Matrix(vectors)
     shape=vectors.shape
-
-    var =( 
-        numpy.ones(shape[0]) if 
-        var is None else 
-        numpy.real_if_close(var)
-    )
 
     if not numpy.all(shape):
         val=numpy.zeros([0])

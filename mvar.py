@@ -55,7 +55,6 @@ from maybe import Ellipse
 import helpers
 
 from square import square
-
 from automath import Automath
 from inplace import Inplace
 from matrix import Matrix
@@ -397,6 +396,7 @@ class Mvar(object,Automath,Inplace):
             >>> assert A.transform() == A.transform(1)
             >>> assert A.cov == A.transform()*A.transform()==A.transform(2)
             >>> assert (A**N).transform() == A.transform(N)
+            >>> assert A.transform()**K1 == A.transform(K1)
             >>> #it's hit and miss for complex numbers, but real is fine
             >>> assert (A**K1.real).transform() == A.transform(K1.real) 
             >>> assert A*B.transform() == A*B  
@@ -556,22 +556,38 @@ class Mvar(object,Automath,Inplace):
         given the values, on the given indexes
         ref: andrew moore/data mining/gussians/page 22
         """
-        I=self.binindex(index)
-
-        Iu=numpy.where(~I)[0]
-        Iv=numpy.where(I)[0]
+        index=self.binindex(index)
         
-        U=self[Iu]
-        V=self[Iv]
-
-        V.mean[:,Iv]-=value
-
-        VU=V.vectors.H*numpy.diagflat(self.var)*U.vectors
-
-        result= U-V**(-1)*VU
+        self=self.inflate()
         
-        result.mean[:,Iv]=value
-        return result
+        transform=(
+            self.vectors[:,index].H*numpy.diagflat(self.var**-1)*self.vectors[:,index]*
+            self.vectors[:,index].H*numpy.diagflat(self.var)*self.vectors[:,~index]
+        )
+        
+        transform2=(
+            self.vectors[:,index].H*self.vectors[:,~index]
+        )
+        
+        mean=Matrix(numpy.zeros_like(self.mean))
+        mean[:,index]=value
+        mean[:,~index]= self.mean[:,~index]-(self.mean[:,index]-value)*transform2
+        
+        vectors= Matrix(numpy.zeros_like(self.vectors))
+        vectors[:,index] = 0
+        vectors[:,~index] = self.vectors[:,~index]-(self.vectors[:,index])*transform2
+
+        return Mvar(
+            mean = mean,
+            vectors = vectors,
+            var = self.var,
+        )
+    
+
+    def slice(self,plane):
+        return slice(self,plane)
+        
+        
 
     def __setitem__(self,index,value):
         """
@@ -579,9 +595,9 @@ class Mvar(object,Automath,Inplace):
         """
         self.copy(self.given(index,value))
 
-    def marginal(self,index):
+    def marginal(self,index,squeeze=True, square=True):
         """
-        return the marginal distribution in the only the indexed dimensions
+        return the marginal distribution in only the indexed dimensions
         return the marginal distribution,
         flattened in the indexed dimensions,
         unused mean components get replaced with nan's
@@ -597,6 +613,12 @@ class Mvar(object,Automath,Inplace):
         result=self.copy(deep=True)
         result.mean[:,~index]=0
         result.vectors[:,~index]=0
+
+        if square:
+            result=result.square()
+
+        if squeeze:
+            result=result.squeeze()
 
         return result
 
@@ -615,8 +637,6 @@ class Mvar(object,Automath,Inplace):
             mean=self.mean[:,keep],
             vectors=self.vectors[:,keep],
             var=self.var,
-            square=False,
-            squeeze=False,
         )
 
     def __delitem__(self,index):
@@ -746,7 +766,6 @@ class Mvar(object,Automath,Inplace):
         
         >>> assert A &-A == Mvar(mean=numpy.zeros(ndim))**-1
         >>> assert A &~A == Mvar(mean=numpy.zeros(ndim))**-1
-
         
         The proof that this is identical to the wikipedia definition of blend 
         is a little too involved to write here. Just try it (see the "wiki "
@@ -757,57 +776,32 @@ class Mvar(object,Automath,Inplace):
         return reduce(operator.and_,mvars)
         
     def __and__(self,other):
-        #check if the 'other' fills the space
-        if other.var.size == other.mean.size:
-            #check if 'self' fills the space 
-            if self.var.size == self.mean.size:
-                #if yes: the answer is easy
-                return helpers.paralell(self,other) 
-            else:
-                #if not, switch places
-                self,other=other,self
-            
-        #inflate the degenerate, so the transform is reversable
-        Iother=other.inflate()
-
-        #rotate both mvars into the degenerate's eigenspace
-        rself=self*Iother.vectors.H
-        rother=other*Iother.vectors.H
-
-        #check which directions are flat
-        flat = helpers.approx(rother.vectors.sum(0)).flatten()
+        if (
+            self.shape[0] == self.shape[1] and 
+            other.shape[0]==other.shape[1]
+        ):
+            return helpers.paralell(self,other) 
         
-        #find self given the plane of the other
-        rself=rself.given(flat,rother.mean[:,flat])
+        vectors=self.vectors
 
-        #eliminate the flat dimensions
-        fself=rself.knockout(flat).square().squeeze()
-        fother=rother.knockout(flat).square().squeeze()
+        #get the out of plane component of the mean
+        extra = self.mean - self.mean*vectors*vectors.H
 
-        result = fself & fother
-        
-        mean=Matrix.zeros((1,self.mean.size))
-        #fill in the means for the flat dimensions
-        mean[:,flat]=rother.mean[:,flat]
-        #and the non-flat dimensions 
-        mean[:,~flat]=result.mean
-        
-        #make the vectors
-        vectors=Matrix.zeros((result.vectors.shape[0],self.mean.size))
-        #the flat components are zero,the non-flat are in the result
-        vectors[:,~flat]=result.vectors
-        
-        result.vectors=vectors
-        result.mean=mean
-        
-        #rotate back to the origional space
-        return result*Iother.vectors
+        #turn the self into a sphere
+        #while transforming the plane the same way
+        transform=vectors.H*numpy.diagflat(self.var**-0.5)
+        Tself=self*transform
+        Tother=plane*transform
 
+        return (Tother & Tself)*numpy.diagflat(self.var**0.5)*vectors+extra
+    
+    
+        
     def __pow__(self,power):
         """
         A**?
 
-        assert A**K1==A*A.transform(K1-1)
+        >>> assert A**K1.real==A*A.transform(K1.real-1)
 
         This definition was developed to turn kalman blending into a standard 
         resistor-style 'paralell' operation
@@ -858,7 +852,7 @@ class Mvar(object,Automath,Inplace):
 
             if there are missing dimensions the transform is irreversable so this stops working 
             >>> if A.shape[0] == A.ndim:
-            ...     assert (A**0).mean == A.mean*A.transform()**(-1)
+            ...     assert (A**0).mean == A.mean*A.transform(-1)
             
         derivation of multiplication from this is messy.just remember that 
         all Mvars on the right, in a multiply, can just be converted to matrix:
@@ -868,12 +862,14 @@ class Mvar(object,Automath,Inplace):
             >>> assert A**2==A*A==A*A.transform()
         """
         result=self.inflate()
+        
         return Mvar(
             mean=result.mean*result.transform(power-1),
             vectors=result.vectors,
             var=result.var**power,
             square=False
         )  
+
         
     def __mul__(self,other):        
         """
@@ -1189,6 +1185,7 @@ class Mvar(object,Automath,Inplace):
             
             but watchout you'll end up with complex... everything?
         """
+        other = other if isinstance(other,Mvar) else Mvar(mean=other)
         return Mvar(
             mean=self.mean+other.mean,
             vectors=numpy.vstack([self.vectors,other.vectors]),
@@ -1383,9 +1380,9 @@ def _makeTestObjects():
     randint=numpy.random.randint
 
     if 'flat' in sys.argv:
-        ndim=2
-        num=1
-        cplx=False
+        ndim=3
+        num=2
+        cplx=True
     else:
         ndim=randint(1,10)
         num=2*ndim
@@ -1409,23 +1406,22 @@ def _makeTestObjects():
 
     B=Mvar.fromCov(
         mean=5*randn()*rvec(),
-        cov=(lambda x:x.H*x)(5*randn()*rvec(2*ndim))
+        cov=(lambda x:x.H*x)(5*randn()*rvec(num))
     )
 
     C=Mvar.from_data(
-        rvec(5*ndim)*rvec(ndim)
+        rvec(num+1)
     )
 
-    #A,B,C=numpy.random.permutation([A,B,C])
+    A,B,C=numpy.random.permutation([A,B,C])
     
     M=rvec(ndim)
     M2=rvec(ndim)
     E=Matrix.eye(ndim)
     
     K1=randn()+randn()*1j
-    
     K2=randn()+randn()*1j
-        
+
     N=randint(1,10)
 
     testObjects={
@@ -1433,7 +1429,7 @@ def _makeTestObjects():
         'A':A,'B':B,'C':C,
         'M':M,'M2':M2,'E':E,
         'K1':K1,'K2':K2,
-        'N':N
+        'N':N,
     }
 
     return testObjects
