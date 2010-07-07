@@ -4,7 +4,7 @@ import numpy
 
 def squeeze(vectors,var,**kwargs):
     std=abs(var)**0.5
-    small=approx(std,**kwargs) & numpy.isfinite(std)
+    small=approx(std,**kwargs)
     
     if small.size:
         var = var[~small]

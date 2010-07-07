@@ -16,10 +16,11 @@ http://en.wikipedia.org/wiki/Unitary_matrix
 """
 
 import numpy
-from matrix import Matrix
-from helpers import ascomplex,mag2,autostack,squeeze,approx
 
-def square(vectors,var=None):
+import helpers
+from matrix import Matrix
+
+def square(vectors,var=None,full=False):
     
     var =( 
         numpy.ones(vectors.shape[0]) if 
@@ -28,7 +29,7 @@ def square(vectors,var=None):
     )
 
     #check the magnitudes of the variances
-    infinite = approx(1/var**0.5)
+    infinite = helpers.approx(1/var**0.5)
 
     Ivar=numpy.array([])
     Ivectors=Matrix(numpy.zeros((0,vectors.shape[1])))
@@ -37,20 +38,32 @@ def square(vectors,var=None):
         #square up the infinite vectors
         #Ivar is unused
 
-        (Ivar,Ivectors)=_subSquare(vectors=vectors[infinite,:],var=var[infinite])
+        (Ivar,Ivectors)=_subSquare(vectors=vectors[infinite,:],var=numpy.ones_like(var[infinite]),full=True)
+        Ivectors=Matrix(Ivectors)
 
         #take the finite variances and vectors
         var=var[~infinite]
         vectors=vectors[~infinite,:]
 
-        assert isinstance(vectors,numpy.matrix)
-        Ivectors=Matrix(Ivectors)
+        Istd=abs(Ivar)**0.5
+        
+        small=helpers.approx(Istd)
+        
+        Ivar = Ivar[~small]
 
-        (Ivar,Ivectors)=squeeze(vectors=Ivectors,var=Ivar)
+        SIvectors = Ivectors[~small,:]
 
-        #revove the component paralell to each infinite vector
-        vectors= vectors-(vectors*Ivectors.H)*Ivectors
+        if vectors.any():
+            #revove the component paralell to each infinite vector
+            vectors= vectors-(vectors*SIvectors.H)*SIvectors            
+        elif var.size :
+            num= helpers.approx(var).sum()
+            #gab the extra vectors here, because if the vectors are all zeros eig will fail
+            vectors=Ivectors[small,:]
+            vectors=vectors[:num,:]
 
+        Ivectors=SIvectors
+        
     if var.size:
         (var,vectors) = _subSquare(vectors,var)
 
@@ -73,7 +86,7 @@ def square(vectors,var=None):
     )
     
 
-def _subSquare(vectors,var):
+def _subSquare(vectors,var,full=False):
     """
     given a series of vectors, this function calculates:
         (variances,vectors)=numpy.linalg.eigh(vectors.H*vectors)
@@ -82,7 +95,7 @@ def _subSquare(vectors,var):
 
     it is based on this:
 
-    >>> vectors=Matrix(ascomplex(numpy.random.randn(
+    >>> vectors=Matrix(helpers.ascomplex(numpy.random.randn(
     ...     numpy.random.randint(1,10),numpy.random.randint(1,10),2
     ... )))
     >>> cov = vectors.H*vectors
@@ -98,23 +111,28 @@ def _subSquare(vectors,var):
         val=numpy.zeros([0])
         vec=numpy.zeros([0,shape[1]])
         return (val,vec)
-
-    varT=var[:,numpy.newaxis]
     
     eig = (
         numpy.linalg.eigh if
-        Matrix(var) == abs(Matrix(var)) else
+        numpy.isreal(var).all() else
         numpy.linalg.eig
     )
 
-    if shape[0]>=shape[1]:    
-        scaled=Matrix(varT*numpy.array(vectors))
+    if shape[0]>=shape[1] or full or not vectors.any():
+        scaled=Matrix(numpy.diagflat(var))*vectors
         
         cov=vectors.H*scaled
         (val,vec)=eig(cov)
         vec=vec.H
-    else:    
-        scaled=Matrix(varT**(0.5+0j)*numpy.array(vectors))
+
+    elif not var.any():
+        cov=vectors.H*vectors
+        (_,vec)=eig(cov)
+        vec=vec.H
+        val=numpy.zeros(vec.shape[0])    
+
+    else:
+        scaled=Matrix(numpy.diagflat(var**(0.5+0j)))*vectors
         Xcov=vectors*vectors.H
         if Xcov == Matrix.eye:
             return (var,vectors)
@@ -122,7 +140,7 @@ def _subSquare(vectors,var):
         ( _ ,Xvec)=numpy.linalg.eig(Xcov)
         
         Xscaled=(Xvec.H*scaled)
-        val=mag2(Xscaled)
+        val=helpers.mag2(Xscaled)
 
         vec=numpy.array(Xscaled)/val[:,numpy.newaxis]**(0.5+0j)
 

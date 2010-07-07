@@ -32,7 +32,8 @@ class Matrix(numpy.matrix):
     def __eq__(self,other):
         if callable(other):
             other=other(self.shape)
-
+        
+        other=Matrix(other)
         assert self.size==other.size,('can only compare two matrixes with the same size')
         return numpy.allclose(self,other)
 

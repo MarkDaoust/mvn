@@ -41,10 +41,10 @@ class Automath():
         
     def __pos__(self):
         """
-        >>> assert +A == A
-        >>> assert +A is A
+        >>> assert A == +A == ++A
+        >>> assert A is not +A
         """
-        return self
+        return self.copy()
 
     def __neg__(self):
         """

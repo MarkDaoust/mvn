@@ -233,7 +233,8 @@ class Mvar(object,Automath,Inplace):
     
     def inflate(self):
         """
-        add the zero length direction vectors so no information is lost during transforms
+        add the zero length direction vectors so no information is lost during 
+        rotations
 
         >>> if A.shape[0] == A.shape[1]:
         ...     assert A*A.vectors.H*A.vectors==A
@@ -248,22 +249,19 @@ class Mvar(object,Automath,Inplace):
 
         shape=self.shape        
 
-        present = shape[0]
         missing = shape[1]-shape[0]
 
-        if missing<0:
-            result=result.square()
+        if missing == 0:
             return result
+        elif missing<0:
+            return result.square()
 
-        stack = numpy.vstack([
-            numpy.hstack([self.var[:,numpy.newaxis],self.vectors]),
-            numpy.hstack(
-                [numpy.ones((missing,1)),numpy.zeros((missing,shape[1]))]
-            ),
-        ])
 
-        result.var = stack[:,0].flatten()
-        result.vectors = Matrix(stack[:,1:])
+        result.var = numpy.concatenate([result.var,numpy.zeros(missing)])
+        
+        result.vectors = numpy.vstack(
+            [self.vectors,numpy.zeros((missing,shape[1]))]
+        )
 
         result = result.square()
 
@@ -394,20 +392,44 @@ class Mvar(object,Automath,Inplace):
     def transform(self,power=1):
         """
             >>> assert A.transform() == A.transform(1)
-            >>> assert A.cov == A.transform()*A.transform()==A.transform(2)
-            >>> assert (A**N).transform() == A.transform(N)
-            >>> assert A.transform()**K1 == A.transform(K1)
+            
+            >>> assert A.cov == (A**2).transform()
+            >>> assert A.cov == A.transform()*A.transform()
+            >>> assert A.cov == A.transform()**2
+            >>> assert A.cov == A.transform(2)
+            
+            >>> assert A.transform(N)== (A**N).transform()
+            >>> assert A.transform(N)== A.transform()**N  
             >>> #it's hit and miss for complex numbers, but real is fine
             >>> assert (A**K1.real).transform() == A.transform(K1.real) 
             >>> assert A*B.transform() == A*B  
         """
-        power = complex(power)
+        if not numpy.isreal(self.var).all() or not(self.var>0).all():
+            power = complex(power)
+
+        if helpers.approx(power):
+            self=self.inflate()
+            vectors=self.vectors
+            varP=numpy.ones_like(self.var)
+            keep=slice(None)
+        else:
+            if numpy.real(power)<0:
+                self=self.inflate()
+                keep=~helpers.approx(self.var**(-1))
+            else:                    
+                keep=~helpers.approx(self.var)
+
+            #don't involve the variances that will be infinite
+            #(the power's already been divided by 2 above) 
+            varP=self.var[keep]**(power/2.0)
+            vectors=self.vectors[keep,:]
+
         return (
-            self.vectors.H*
-            numpy.real_if_close(numpy.diagflat(self.var**(power/(2+0j))))*
-            self.vectors
+            vectors.H*
+            numpy.real_if_close(numpy.diagflat(varP))*
+            vectors
         )
-    
+
     ndim=property(
         fget=lambda self:(self.mean.size),
         doc="""
@@ -509,7 +531,37 @@ class Mvar(object,Automath,Inplace):
             randn(n,self.ndim)
         )
         return Matrix(numpy.array(units*self.scaled.T)+self.mean)
+
+    def det(self):
+        """
+        returns the determinant of the covariance matrix. 
+        this method is supplied because the determinant can be calculated 
+        easily from the variances in the object
         
+        >>> assert Matrix(A.det())== numpy.linalg.det(A.cov)
+        >>> assert Matrix(A.det()) == (
+        ...     0 if 
+        ...     A.shape[0]!=A.shape[1] else 
+        ...     numpy.prod(A.var)
+        ... )
+        """
+        shape=A.shape
+        return (
+            0 if 
+            shape[0]!=shape[1] else 
+            numpy.prod(A.var)
+        )
+        
+    def trace(self):
+        """
+        returns the trace of the covariance matrix.
+        this method is supplied because the trace can be calculated 
+        easily from the variances in the object
+        
+        >>> assert Matrix(A.trace()) == numpy.trace(A.cov)
+        >>> assert Matrix(A.trace()) == numpy.sum(A.var)
+        """
+        return numpy.sum(A.var)
     
     def dist2(self,locations):
         """
@@ -556,37 +608,8 @@ class Mvar(object,Automath,Inplace):
         given the values, on the given indexes
         ref: andrew moore/data mining/gussians/page 22
         """
-        index=self.binindex(index)
-        
-        self=self.inflate()
-        
-        transform=(
-            self.vectors[:,index].H*numpy.diagflat(self.var**-1)*self.vectors[:,index]*
-            self.vectors[:,index].H*numpy.diagflat(self.var)*self.vectors[:,~index]
-        )
-        
-        transform2=(
-            self.vectors[:,index].H*self.vectors[:,~index]
-        )
-        
-        mean=Matrix(numpy.zeros_like(self.mean))
-        mean[:,index]=value
-        mean[:,~index]= self.mean[:,~index]-(self.mean[:,index]-value)*transform2
-        
-        vectors= Matrix(numpy.zeros_like(self.vectors))
-        vectors[:,index] = 0
-        vectors[:,~index] = self.vectors[:,~index]-(self.vectors[:,index])*transform2
-
-        return Mvar(
-            mean = mean,
-            vectors = vectors,
-            var = self.var,
-        )
-    
-
-    def slice(self,plane):
-        return slice(self,plane)
-        
+        #todo: impliment given from blend
+        assert 1==0        
         
 
     def __setitem__(self,index,value):
@@ -614,7 +637,9 @@ class Mvar(object,Automath,Inplace):
         result.mean[:,~index]=0
         result.vectors[:,~index]=0
 
-        if square:
+        if (~index).all():
+            result.var[:]=0
+        elif square:
             result=result.square()
 
         if squeeze:
@@ -664,13 +689,12 @@ class Mvar(object,Automath,Inplace):
         if Sfinite.all():
             return self.cov==other.cov
 
-        Ofinite=numpy.isfinite(self.var)
+        Ofinite=numpy.isfinite(other.var)
         
         H=lambda M:M.H*M
 
         return (
-            Sfinite.sum() == Ofinite.sum() and 
-            self[Sfinite].cov == self[Ofinite].cov and
+            self[Sfinite].cov == other[Ofinite].cov and
             H(self[~Sfinite].vectors) == H(other[~Ofinite].vectors)
         )
         
@@ -686,13 +710,6 @@ class Mvar(object,Automath,Inplace):
         result=self.copy()
         result.var=abs(self.var)
         return result
-
-    def __pos__(self):
-        """
-        >>> assert A == +A == ++A
-        >>> assert A is not +A
-        """
-        return self.copy()
     
     def __invert__(self):
         """
@@ -723,6 +740,7 @@ class Mvar(object,Automath,Inplace):
         """
         I don't  know what this means yet
         """
+        #todo: create a 'GMM' class so that | has real meaning
         return self+other-self&other
 
     def __xor__(self,other):
@@ -772,31 +790,79 @@ class Mvar(object,Automath,Inplace):
         function)
         
         >>> assert A & B == wiki(A,B)
+
+        this algorithm is also, at the same time, solving linear equations
+        where zero variances corespond to 
+
+        >>> L1=Mvar(mean=[1,0],vectors=[0,1],var=numpy.inf)
+        >>> L2=Mvar(mean=[0,1],vectors=[1,0],var=numpy.inf) 
+        >>> assert (L1&L2).mean==[1,1]
+        >>> assert (L1&L2).var.size==0
         """
         return reduce(operator.and_,mvars)
         
     def __and__(self,other):
+        #assuming the mvars are squared and squeezed 
+        #if they both fill the space        
         if (
             self.shape[0] == self.shape[1] and 
             other.shape[0]==other.shape[1]
         ):
-            return helpers.paralell(self,other) 
+            #then this is a standard paralell operation
+            return (self**(-1)+other**(-1))**(-1) 
         
-        vectors=self.vectors
-
-        #get the out of plane component of the mean
-        extra = self.mean - self.mean*vectors*vectors.H
-
-        #turn the self into a sphere
-        #while transforming the plane the same way
-        transform=vectors.H*numpy.diagflat(self.var**-0.5)
-        Tself=self*transform
-        Tother=plane*transform
-
-        return (Tother & Tself)*numpy.diagflat(self.var**0.5)*vectors+extra
-    
-    
+        #otherwise there is more work to do
         
+        #invert each object        
+        Iself=self**-1
+        Iother=other**-1
+
+        Fself=numpy.isfinite(Iself.var)
+        Fother=numpy.isfinite(Iother.var)
+
+        #the object's null vectors will show up as having infinite 
+        #variances in the inverted objects
+        Nself=Iself.vectors[~Fself,:]
+        Nother=Iother.vectors[~Fother,:] 
+
+        #get length of the component of the means along each null vector
+        Mself=Nself*self.mean.H
+        Mother=Nother*other.mean.H
+
+        #stack
+        augNull = helpers.autostack([
+            [Nself,Mself],
+            [Nother,Mother],
+        ])
+
+        (var,vec)=square(vectors=augNull)   
+
+        vec=Matrix(numpy.diagflat(var**0.5))*vec 
+
+        #square the stack
+        (_ , augNull) = helpers.squeeze(vectors=vec,var=var)
+        
+        #unstack it
+        Nnew=augNull[:,:-1]
+        Mnew=augNull[:,-1]
+
+        #the null vectors are handled above,
+        #so we only need to add the finite variances and vectors
+        Iself.var=Iself.var[Fself]
+        Iother.var=Iother.var[Fother]
+
+        Iself.vectors=Iself.vectors[Fself,:]
+        Iother.vectors=Iother.vectors[Fother,:]
+
+        #add the finite parts together 
+        new=(Iself+Iother+Mvar(vectors=Nnew,var=Matrix.infs))**(-1)
+
+        #add in the components of the means along each null vector
+        new.mean=new.mean+Mnew.H*Nnew
+
+        return new
+        
+
     def __pow__(self,power):
         """
         A**?
@@ -861,12 +927,12 @@ class Mvar(object,Automath,Inplace):
             >>> assert M*B==M*B.transform()
             >>> assert A**2==A*A==A*A.transform()
         """
-        result=self.inflate()
+        self=self.inflate() if numpy.real(power)<=0 else self
         
         return Mvar(
-            mean=result.mean*result.transform(power-1),
-            vectors=result.vectors,
-            var=result.var**power,
+            mean=self.mean*self.transform(power-1),
+            vectors=self.vectors,
+            var=self.var**power,
             square=False
         )  
 
@@ -892,7 +958,7 @@ class Mvar(object,Automath,Inplace):
                 When multiplying a mix of Mvars an Matrixes the result has the 
                     sametype as the leftmost operand
             
-!!!!!!!!!!!!Whenever an mvar is found on the right of a Matrix or Mvar it is replaced by a 
+       Whenever an mvar is found on the right of a Matrix or Mvar it is replaced by a 
             self.transform() matrix and the multiplication is re-called.
             
         general properties:
@@ -1205,7 +1271,7 @@ class Mvar(object,Automath,Inplace):
          If spacial dimensions have been flattened out of the mvar the result is always 1/0
          since the probablilities will have dimensions of hits/length**ndim 
          """
-         return numpy.exp(self.dist2(self,locations))/2/numpy.pi/numpy.linalg.det(self.cov)**0.5
+         return numpy.exp(self.dist2(self,locations))/2/numpy.pi/self.det(self)**0.5
 
         
     def __repr__(self):
@@ -1306,8 +1372,9 @@ def mooreGiven(self,index,value):
     """
     direct implementation of the "given" algorithm in
     Andrew moore's data-mining/gussian slides
-     
-    >>> assert mooreGiven(A,0,0)==A.given(0,0)
+
+    todo: impliment given     
+    >>> #assert mooreGiven(A,0,0)==A.given(0,0)
     """
     I=self.binindex(index)
     Iu=numpy.where(~I)[0]
@@ -1322,56 +1389,6 @@ def mooreGiven(self,index,value):
         mean=U.mean+(value-V.mean)*(V**-1).cov*vu,
         cov=U.cov-vu.H*(V**-1).cov*vu,
     )
-    
-def intersect(self,other):
-    """
-    assert A&B == intersect(A,B)
-    """
-    #check if the 'other' fills the space
-    if other.var.size == other.mean.size:
-        #check if 'self' fills the space 
-        if self.var.size == self.mean.size:
-            #if yes: the answer is easy
-            return helpers.paralell(self,other) 
-        else:
-            #if not, switch places
-            self,other=other,self
-        
-    #inflate the degenerate, so the transform is reversable
-    Iother=other.inflate()
-
-    #rotate both mvars into the degenerate's eigenspace
-    rself=self*Iother.vectors.H
-    rother=other*Iother.vectors.H
-
-    #check which directions are flat
-    flat = helpers.approx(rother.vectors.sum(0)).flatten()
-    
-    #find self given the plane of the other
-    rself=rself.given(flat,rother.mean[:,flat])
-
-    #eliminate the flat dimensions
-    fself=rself.knockout(flat).square().squeeze()
-    fother=rother.knockout(flat).square().squeeze()
-
-    result = intersect(fself,fother)
-    
-    mean=Matrix.zeros((1,self.mean.size))
-    #fill in the means for the flat dimensions
-    mean[:,flat]=rother.mean[:,flat]
-    #and the non-flat dimensions 
-    mean[:,~flat]=result.mean
-    
-    #make the vectors
-    vectors=Matrix.zeros((result.vectors.shape[0],self.mean.size))
-    #the flat components are zero,the non-flat are in the result
-    vectors[:,~flat]=result.vectors
-    
-    result.vectors=vectors
-    result.mean=mean
-    
-    #rotate back to the origional space
-    return result*Iother.vectors
 
 def _makeTestObjects():   
 
@@ -1477,9 +1494,13 @@ if __name__=='__main__':
 
     mvar.__dict__.update(testObjects)
 
+    a=mvar.A
+
+    a.cov
+    a.transform()
+    a.transform()*a.transform()
+
     for name,mod in localMods.iteritems():
         doctest.testmod(mod)
 
-
-    
 
