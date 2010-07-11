@@ -187,6 +187,8 @@ class Mvar(object,Automath,Inplace):
         **kwargs
     ):
         """
+        self(**attributes)
+
         Create an Mvar from available attributes.
         
         vectors: defaults to zeros
@@ -614,6 +616,8 @@ class Mvar(object,Automath,Inplace):
 
     def __setitem__(self,index,value):
         """
+        self[index]=value
+
         opertor interface to self.given 
         """
         self.copy(self.given(index,value))
@@ -649,6 +653,7 @@ class Mvar(object,Automath,Inplace):
 
     def __getitem__(self,index):
         """
+        self[index]
         operator interface to self.marginal
         """
         return self.marginal(index)
@@ -666,6 +671,7 @@ class Mvar(object,Automath,Inplace):
 
     def __delitem__(self,index):
         """
+        del(self[index])
         just an in-place interface to self.knockout
         """
         self.copy(self.knockout(index))
@@ -674,6 +680,8 @@ class Mvar(object,Automath,Inplace):
 
     def __eq__(self,other):
         """
+        self == other
+
         >>> assert A==A.copy()
         >>> assert A is not A.copy()
         >>> assert A != B
@@ -681,6 +689,9 @@ class Mvar(object,Automath,Inplace):
         compares the means and covariances of the distributions, 
         __ne__ is handled by the Automath class
         """
+        #todo: check the finite-ness first 
+        #and before comparing the means remove the component of the mean along any infinite vectors
+
         if Matrix(self.mean)!=Matrix(other.mean):
             return False
 
@@ -700,24 +711,45 @@ class Mvar(object,Automath,Inplace):
         
     def __abs__(self):
         """
+        abs(self)
+
         sets all the variances to positive
         >>> assert (A.var>=0).all()
         >>> assert abs(A) == abs(~A)
         
         but does not touch the mean
         >>> assert Matrix((~A).mean) == Matrix(abs(~A).mean)
-                """
+        """
         result=self.copy()
         result.var=abs(self.var)
         return result
     
     def __invert__(self):
         """
-        invert negates the covariance without negating the mean.
+        ~self
+
+        todo: signed inf's
+        
+        implementation:        
+            >>> IA=A.copy(deep=True)
+            >>> IA.var*=-1
+            >>> assert IA == ~A
+            
+        so:
             >>> assert (~A).mean == A.mean
+
+            >>> assert Matrix((~A).var) == (-A).var 
+            >>> assert Matrix((~A).var) == -(A.var)
+
+            >>> assert (~A).vectors==A.vectors
+
             >>> assert (~A).cov == (-A).cov 
             >>> assert (~A).cov == -(A.cov)
+
             >>> assert ~~A==A
+            
+        something and not itself provides zero precision; infinite variance
+        and so provides no information, having a no effect when blended
 
         so these work:
             something and not itself provides zero precision; infinite variance
@@ -730,7 +762,7 @@ class Mvar(object,Automath,Inplace):
 
             so 'or' would become a copy of 'and' and 'xor' would become a blank equavalent to the (A & ~A) above
 
-            maybe the A|B = A+B - A&B  version will be good for something I'll put them in for now
+            maybe A|B = A+B - A&B  version will be good for something I'll put them in for now
         """
         result=self.copy()
         result.var=-(self.var)
@@ -738,6 +770,7 @@ class Mvar(object,Automath,Inplace):
     
     def __or__(self,other):
         """
+        self | other
         I don't  know what this means yet
         """
         #todo: create a 'GMM' class so that | has real meaning
@@ -751,9 +784,7 @@ class Mvar(object,Automath,Inplace):
     
 
     def blend(*mvars):
-        """
-        A & ?
-        
+        """        
         This is awsome.
         
         optimally blend together any number of mvars, this is done with the 
@@ -802,6 +833,9 @@ class Mvar(object,Automath,Inplace):
         return reduce(operator.and_,mvars)
         
     def __and__(self,other):
+        """
+        self & other
+        """
         #assuming the mvars are squared and squeezed 
         #if they both fill the space        
         if (
@@ -865,7 +899,7 @@ class Mvar(object,Automath,Inplace):
 
     def __pow__(self,power):
         """
-        A**?
+        self**power
 
         >>> assert A**K1.real==A*A.transform(K1.real-1)
 
@@ -939,7 +973,7 @@ class Mvar(object,Automath,Inplace):
         
     def __mul__(self,other):        
         """
-        A*?
+        self*other
         
         coercion notes:
             All non Mvar imputs will be converted to numpy arrays, then 
@@ -1043,9 +1077,11 @@ class Mvar(object,Automath,Inplace):
         other=self._mulConvert(other)
         return self._multipliers[type(other)](self,other) 
     
-    def _scalarMul(self,constant):
+    def _scalarMul(self,scalar):
         """
-        Mvar*constant == constant*Mvar
+        self*scalar
+
+        >>> assert A*K1 == K1*A
 
             Matrix multiplication and scalar multiplication behave differently 
             from eachother.  
@@ -1075,14 +1111,16 @@ class Mvar(object,Automath,Inplace):
             then use matrix multiplication
         """
         return Mvar(
-            mean= constant*self.mean,
-            var = constant*self.var,
+            mean= scalar*self.mean,
+            var = scalar*self.var,
             vectors = self.vectors,
+            square = False,
+            squeeze = False,
         )
 
     def _matrixMul(self,matrix):
         """
-        Mvar*matrix
+        self*matrix
         
             matrix multiplication transforms the mean and ellipse of the 
             distribution. Defined this way to work with the kalman state 
@@ -1106,21 +1144,22 @@ class Mvar(object,Automath,Inplace):
             vectors=self.vectors*matrix,
         )
 
-    def _mvarMul(self,other):
+    def _mvarMul(self,mvar):
         """
-        Mvar*Mvar
-            multiplying two Mvars together is defined to fit with power
-            
-            >>> assert A*A==A**2
-            >>> assert A*A==A*A.transform()
-            >>> assert A*B == A*B.transform()
- 
-           >>> assert A*(B**2) == A*(B.cov)
+        self*mvar
 
-            Note that the result does not depend on the mean of the 
-            second mvar(!) (really any mvar after the leftmost mvar or matrix)
+        multiplying two Mvars together is defined to fit with power
+        
+        >>> assert A*A==A**2
+        >>> assert A*A==A*A.transform()
+        >>> assert A*B == A*B.transform()
+
+       >>> assert A*(B**2) == A*(B.cov)
+
+        Note that the result does not depend on the mean of the 
+        second mvar(!) (really any mvar after the leftmost mvar or matrix)
         """
-        return self*other.transform()
+        return self*mvar.transform()
 
     @staticmethod
     def _mulConvert(
@@ -1138,7 +1177,7 @@ class Mvar(object,Automath,Inplace):
         other,
     ):
         """
-        ?*A
+        other*self
         
         multiplication order doesn't matter for constants
         
@@ -1205,7 +1244,7 @@ class Mvar(object,Automath,Inplace):
     
     def __add__(self,other):
         """
-        A+?
+        self+other
         
         Implementation:
             >>> assert (A+B)==Mvar(
@@ -1251,6 +1290,8 @@ class Mvar(object,Automath,Inplace):
             
             but watchout you'll end up with complex... everything?
         """
+        #todo: fix the crash generated, for flat objects by: 1/A-1/A (inf-inf == nan)
+
         other = other if isinstance(other,Mvar) else Mvar(mean=other)
         return Mvar(
             mean=self.mean+other.mean,
@@ -1260,10 +1301,12 @@ class Mvar(object,Automath,Inplace):
         
     ################# Non-Math python internals
     def __iter__(self):
-        raise ValueError("Mvars are not iterable")
+        raise ValueError("Mvars are not iterable... for now?")
 
     def __call__(self,locations):
          """
+        self(locations)
+
          Returns the probability density in the specified locations, 
          The vectors should be aligned onto the last dimension
          That last dimension is squeezed out during the calculation
@@ -1275,6 +1318,9 @@ class Mvar(object,Automath,Inplace):
 
         
     def __repr__(self):
+        """
+        print self
+        """
         return '\n'.join([
             'Mvar(',
             '    mean=',8*' '+self.mean.__repr__().replace('\n','\n'+8*' ')+',',
@@ -1287,7 +1333,7 @@ class Mvar(object,Automath,Inplace):
     __str__=__repr__
 
     ################ Art
-    def get_patch(self,nstd=2,**kwargs):
+    def getPatch(self,nstd=2,**kwargs):
         """
             get a matplotlib Ellipse patch representing the Mvar, 
             all **kwargs are passed on to the call to 
@@ -1390,20 +1436,18 @@ def mooreGiven(self,index,value):
         cov=U.cov-vu.H*(V**-1).cov*vu,
     )
 
-def _makeTestObjects():   
+def _makeTestObjects(cplx=False,flat=False):   
 
     rand=numpy.random.rand
     randn=numpy.random.randn
     randint=numpy.random.randint
 
-    if 'flat' in sys.argv:
+    if flat:
         ndim=3
         num=2
-        cplx=True
     else:
         ndim=randint(1,10)
         num=2*ndim
-        cplx=True
  
     #create n random vectors, 
     #with a default length of 'ndim', 
@@ -1447,6 +1491,7 @@ def _makeTestObjects():
         'M':M,'M2':M2,'E':E,
         'K1':K1,'K2':K2,
         'N':N,
+        'flat':False    
     }
 
     return testObjects
@@ -1462,6 +1507,11 @@ if __name__=='__main__':
     testObjects={}
 
     if '-r' in sys.argv:
+        assert (
+            'flat' not in sys.argv,
+            "you can't flatten and reload at the same time"
+        )
+
         print "#attempting to load pickle"        
         try:
             testObjects = pickle.load(open(pickle_name,'r'))
@@ -1476,7 +1526,10 @@ if __name__=='__main__':
 
     if not testObjects:
         print "#creating new test objects"
-        testObjects=_makeTestObjects()
+        testObjects=_makeTestObjects(
+            cplx=True,
+            flat='flat' in sys.argv        
+        )
         print "#dumping new pickle"
         pickle.dump(
             testObjects,
@@ -1495,10 +1548,7 @@ if __name__=='__main__':
     mvar.__dict__.update(testObjects)
 
     a=mvar.A
-
-    a.cov
-    a.transform()
-    a.transform()*a.transform()
+    b=mvar.B
 
     for name,mod in localMods.iteritems():
         doctest.testmod(mod)
