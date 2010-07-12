@@ -747,22 +747,31 @@ class Mvar(object,Automath,Inplace):
             >>> assert (~A).cov == -(A.cov)
 
             >>> assert ~~A==A
-            
+ 
         something and not itself provides zero precision; infinite variance
         and so provides no information, having a no effect when blended
 
-        so these work:
-            something and not itself provides zero precision; infinite variance
-            and so provides no information, having no effect when blended
-            >>> assert A == A & B & ~B 
-            >>> assert A & ~A == Mvar(mean=numpy.zeros(A.ndim))**-1
-        
+        >>> assert A & ~A == Mvar(mean=numpy.zeros(A.ndim))**-1 or flat
+        >>> assert A == (A & B & ~B) or flat
+
+        but if the mvar is flat that the flattness is preserved 
+        (because zeros get squeezed, so positive and negative zeros are indistinguishable)
+
+        so blending something with it's inverse is equivalend to replacing all 
+        it's non-zero variances with inf's
+
+        >>> assert not numpy.isfinite((A & ~A).var).any()
+
+        >>> P=A.copy()
+        >>> P.var=P.var/0.0
+        >>> assert P==(A & ~A)       
+
         the automath logic extensions are actually useless to Mvar because:
             >>> assert (~A & ~B) == ~(A & B)
 
             so 'or' would become a copy of 'and' and 'xor' would become a blank equavalent to the (A & ~A) above
 
-            maybe A|B = A+B - A&B  version will be good for something I'll put them in for now
+            maybe the A|B = A+B - A&B  version will be good for something I'll put them in for now
         """
         result=self.copy()
         result.var=-(self.var)
