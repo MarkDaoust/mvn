@@ -565,6 +565,14 @@ class Mvar(object,Automath,Inplace):
         """
         return numpy.sum(A.var)
     
+    def quad(self,matrix):
+        """
+        place holder for quadratic forum
+        http://en.wikipedia.org/wiki/Quadratic_form_(statistics)
+        """
+        assert 1==0
+
+
     def dist2(self,locations):
         """
         return the square of the mahalabois distance from the Mvar to each vector.
@@ -689,21 +697,44 @@ class Mvar(object,Automath,Inplace):
         compares the means and covariances of the distributions, 
         __ne__ is handled by the Automath class
         """
-        #todo: check the finite-ness first 
-        #and before comparing the means remove the component of the mean along any infinite vectors
 
-        if Matrix(self.mean)!=Matrix(other.mean):
+        #check the number of dimensions of the space
+        assert (
+            self.ndim == other.ndim,
+            """if the objects have different numbers of dimensions, you're doing something wrong"""
+        )
+
+        Sshape=self.shape
+        Oshape=other.shape
+
+        #check the number of flat dimensions in each object
+        if Sshape[0]-Sshape[1] != Oshape[0] - Oshape[1]:
             return False
 
+        
         Sfinite=numpy.isfinite(self.var)
-        
-        if Sfinite.all():
-            return self.cov==other.cov
-
         Ofinite=numpy.isfinite(other.var)
-        
+
+        if Sfinite.sum() != Ofinite.sum():
+            return False
+
+        if Sfinite.all():
+            return self.mean==other.mean and self.cov == other.cov
+    
+        #remove the infinite directions from the means
+        SIvectors=self.vectors[~Sfinite]
+        Smean=self.mean - self.mean*SIvectors.H*SIvectors 
+
+        OIvectors=other.vectors[~Ofinite]
+        Omean=other.mean - other.mean*OIvectors.H*OIvectors
+
+        #compare what's left of the means   
+        if Smean != Omean:
+            return False
+   
         H=lambda M:M.H*M
 
+        #compare the finite and infinite covariances 
         return (
             self[Sfinite].cov == other[Ofinite].cov and
             H(self[~Sfinite].vectors) == H(other[~Ofinite].vectors)
@@ -1124,7 +1155,6 @@ class Mvar(object,Automath,Inplace):
             var = scalar*self.var,
             vectors = self.vectors,
             square = False,
-            squeeze = False,
         )
 
     def _matrixMul(self,matrix):
@@ -1556,8 +1586,12 @@ if __name__=='__main__':
 
     mvar.__dict__.update(testObjects)
 
-    a=mvar.A
-    b=mvar.B
+    A=mvar.A
+    
+    P=A.copy()
+    P.var=P.var/0.0
+    
+    P==(A & ~A)  
 
     for name,mod in localMods.iteritems():
         doctest.testmod(mod)

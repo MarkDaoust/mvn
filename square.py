@@ -55,7 +55,7 @@ def square(vectors,var=None,full=False):
 
         if vectors.any():
             #revove the component paralell to each infinite vector
-            vectors= vectors-(vectors*SIvectors.H)*SIvectors            
+            vectors= vectors-vectors*SIvectors.H*SIvectors            
         elif var.size :
             num= helpers.approx(var).sum()
             #gab the extra vectors here, because if the vectors are all zeros eig will fail
