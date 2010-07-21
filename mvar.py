@@ -617,9 +617,39 @@ class Mvar(object,Automath,Inplace):
         return an mvar representing the conditional probability distribution, 
         given the values, on the given indexes
         ref: andrew moore/data mining/gussians/page 22
+
+        >>> assert A.given(0,0).mean[0,0]==0
+        >>> assert A.given(0,0).vectors[:,0]==numpy.zeros
         """
-        #todo: impliment given from blend
-        assert 1==0        
+        #convert the indexes
+        index=self.binindex(index)
+        
+        #get the dimensions we'll need
+        ndim=self.ndim
+
+        #create the mean, 
+        mean=numpy.zeros([1,ndim])
+        #and set the values of interest
+        mean[0,index]=value
+
+        #invert the indexes
+        nindex=~index
+        #find the number of infinite vectors we need
+        nvec=nindex.sum()
+
+        vectors=numpy.zeros([nvec,ndim])
+        where=numpy.argwhere(nindex)
+        N=numpy.arange(nvec)[:,numpy.newaxis]
+
+        vectors[N,where]=1
+
+        var=numpy.inf*numpy.ones(nvec)
+
+        return self & Mvar(
+            mean=mean,
+            vectors=vectors,
+        ) 
+        
         
 
     def __setitem__(self,index,value):
@@ -690,12 +720,29 @@ class Mvar(object,Automath,Inplace):
         """
         self == other
 
+        mostly it does what you would expect
+
         >>> assert A==A.copy()
         >>> assert A is not A.copy()
         >>> assert A != B
+
+        but there are always surpriese.
+
+        You'll get an Error if the mvars have different numbers of dimensions. 
         
-        compares the means and covariances of the distributions, 
+        Infinite, and zero variances are handled correctly.
+        
+        Note that the component of the mean along a direction with infinite variance is ignored:
+
+            >>> assert (
+            ...     Mvar(mean=[1,0,0], vectors=[1,0,0], var=numpy.inf)==
+            ...     Mvar(mean=[0,0,0], vectors=[1,0,0], var=numpy.inf)
+            ... )
+
         __ne__ is handled by the Automath class
+
+            >>> assert A != B
+
         """
 
         #check the number of dimensions of the space
@@ -761,7 +808,8 @@ class Mvar(object,Automath,Inplace):
 
         todo: signed inf's
         
-        implementation:        
+        implementation:     
+   
             >>> IA=A.copy(deep=True)
             >>> IA.var*=-1
             >>> assert IA == ~A
@@ -780,13 +828,20 @@ class Mvar(object,Automath,Inplace):
             >>> assert ~~A==A
  
         something and not itself provides zero precision; infinite variance
-        and so provides no information, having a no effect when blended
+        except if the mvar is flat; that flattness is preserved 
+        (because zeros get squeezed, positive and negative zeros are indistinguishable)
 
-        >>> assert A & ~A == Mvar(mean=numpy.zeros(A.ndim))**-1 or flat
+        >>> assert (A & ~A) == Mvar(mean=numpy.zeros(A.ndim))**-1 or flat
+        >>> assert (A & ~A) == Mvar(mean=A.mean, vectors=A.vectors, var=Matrix.infs)
+
+        infinite variances provide no information, having a no effect when blended
+
         >>> assert A == (A & B & ~B) or flat
+        
+        if the mvar is flat, you're taking a slice in the plane of the other
 
-        but if the mvar is flat that the flattness is preserved 
-        (because zeros get squeezed, so positive and negative zeros are indistinguishable)
+        >>> assert (A & B & ~B) == A & Mvar(mean=B.mean, vectors=B.vectors, var=Matrix.infs)
+
 
         so blending something with it's inverse is equivalend to replacing all 
         it's non-zero variances with inf's
@@ -802,7 +857,7 @@ class Mvar(object,Automath,Inplace):
 
             so 'or' would become a copy of 'and' and 'xor' would become a blank equavalent to the (A & ~A) above
 
-            maybe the A|B = A+B - A&B  version will be good for something I'll put them in for now
+            maybe the A|B = A+B - A&B  version will be good for something; I'll put them in for now
         """
         result=self.copy()
         result.var=-(self.var)
@@ -909,30 +964,22 @@ class Mvar(object,Automath,Inplace):
             [Nother,Mother],
         ])
 
+        #square the stack
         (var,vec)=square(vectors=augNull)   
 
-        vec=Matrix(numpy.diagflat(var**0.5))*vec 
-
-        #square the stack
-        (_ , augNull) = helpers.squeeze(vectors=vec,var=var)
+        #squeeze the stack
+        (var,augNull) = helpers.squeeze(vectors=vec,var=var)
         
         #unstack it
         Nnew=augNull[:,:-1]
         Mnew=augNull[:,-1]
 
-        #the null vectors are handled above,
-        #so we only need to add the finite variances and vectors
-        Iself.var=Iself.var[Fself]
-        Iother.var=Iother.var[Fother]
+        Dmean=Mnew.H*numpy.diagflat(helpers.mag2(Nnew)**-1)*Nnew
 
-        Iself.vectors=Iself.vectors[Fself,:]
-        Iother.vectors=Iother.vectors[Fother,:]
-
-        #add the finite parts together 
         new=(Iself+Iother+Mvar(vectors=Nnew,var=Matrix.infs))**(-1)
 
         #add in the components of the means along each null vector
-        new.mean=new.mean+Mnew.H*Nnew
+        new.mean=new.mean+Dmean
 
         return new
         
@@ -1530,7 +1577,7 @@ def _makeTestObjects(cplx=False,flat=False):
         'M':M,'M2':M2,'E':E,
         'K1':K1,'K2':K2,
         'N':N,
-        'flat':False    
+        'flat':flat    
     }
 
     return testObjects
@@ -1585,13 +1632,6 @@ if __name__=='__main__':
     ])
 
     mvar.__dict__.update(testObjects)
-
-    A=mvar.A
-    
-    P=A.copy()
-    P.var=P.var/0.0
-    
-    P==(A & ~A)  
 
     for name,mod in localMods.iteritems():
         doctest.testmod(mod)
