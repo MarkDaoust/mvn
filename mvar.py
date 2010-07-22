@@ -10,7 +10,7 @@ Mvar is the main idea of the package: Multivariate normal distributions
 
 wiki is just to demonstrate the equivalency between my blending algorithm, 
     and the wikipedia version of it.
-    (http://en.wikipedia.org/wiki/Kalman_filtering#Update)
+   (http://en.wikipedia.org/wiki/Kalman_filtering#Update)
 
 The docstrings are full of examples. The test objects are created by runTest.sh, 
 and stored in test_objects.pkl. You can get the most recent versions of them by 
@@ -561,9 +561,9 @@ class Mvar(object,Automath,Inplace):
         easily from the variances in the object
         
         >>> assert Matrix(A.trace()) == numpy.trace(A.cov)
-        >>> assert Matrix(A.trace()) == numpy.sum(A.var)
+        >>> assert Matrix(A.trace()) == A.var.sum()
         """
-        return numpy.sum(A.var)
+        return self.var.sum()
     
     def quad(self,matrix):
         """
@@ -592,11 +592,9 @@ class Mvar(object,Automath,Inplace):
         #get the square of the magnitude of each component
         squared=rotated.conjugate()*rotated
         #su over the last dimension
-        return numpy.real_if_close(
-            numpy.sum(
-                squared*(self.var**-1),
-                locations.ndim-1
-            )
+        return numpy.real_if_close((
+                squared*(self.var**-1)
+            ).sum(axis = locations.ndim-1)
         )
         
     def binindex(self,index):
@@ -1505,7 +1503,8 @@ def mooreGiven(self,index,value):
     direct implementation of the "given" algorithm in
     Andrew moore's data-mining/gussian slides
 
-    todo: impliment given     
+    todo: figure out why tthis doesn't work
+ 
     >>> #assert mooreGiven(A,0,0)==A.given(0,0)
     """
     I=self.binindex(index)
@@ -1632,6 +1631,9 @@ if __name__=='__main__':
     ])
 
     mvar.__dict__.update(testObjects)
+
+    a=mvar.A
+    assert a**-1==a*a**-2
 
     for name,mod in localMods.iteritems():
         doctest.testmod(mod)

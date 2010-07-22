@@ -106,7 +106,7 @@ def _subSquare(vectors,var,full=False):
     vectors=Matrix(vectors)
     shape=vectors.shape
 
-    if not numpy.all(shape):
+    if not all(shape):
         val=numpy.zeros([0])
         vec=numpy.zeros([0,shape[1]])
         return (val,vec)

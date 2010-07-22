@@ -14,10 +14,10 @@ def squeeze(vectors,var,**kwargs):
 
 def mag2(vectors):
     return numpy.real_if_close(
-        numpy.sum(
-            numpy.array(vectors)*numpy.array(vectors.conjugate()),
-            axis = vectors.ndim-1
-    )) 
+        (
+            numpy.array(vectors)*numpy.array(vectors.conjugate())
+        ).sum(axis = vectors.ndim-1)
+    )
 
 def sign(self):
     """
@@ -180,7 +180,7 @@ def paralell(*items):
     inverted=[item**(-1) for item in items]
     return sum(inverted[1:],inverted[0])**(-1)
 
-def approx(a,other = None,atol=1e-5):
+def approx(a,other = None,atol=1e-7):
     """
     returns True where delta<atol 
     """
