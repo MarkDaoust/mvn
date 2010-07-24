@@ -3,8 +3,7 @@ import itertools
 import numpy
 
 def squeeze(vectors,var,**kwargs):
-    std=abs(var)**0.5
-    small=approx(std,**kwargs)
+    small=approx(var,**kwargs)
     
     if small.size:
         var = var[~small]
@@ -180,7 +179,7 @@ def paralell(*items):
     inverted=[item**(-1) for item in items]
     return sum(inverted[1:],inverted[0])**(-1)
 
-def approx(a,other = None,atol=1e-7):
+def approx(a,other = None,atol=1e-12):
     """
     returns True where delta<atol 
     """

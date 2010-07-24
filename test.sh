@@ -3,7 +3,7 @@ echo '#starting'
 
 mkfifo pipe
 
-./doctest.py $1 &> pipe & < pipe tee testResults.txt
+./test.py $1 &> pipe & < pipe tee testResults.txt
 
 rm pipe
 

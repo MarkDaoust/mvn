@@ -31,7 +31,8 @@ localMods={
     'matrix'  :matrix,
 }
 
-
+pickleName='testObjects.pkl'
+moduleName='testObjects.py'
 
 def makeTestObjects(cplx=False,flat=False):   
 
@@ -102,7 +103,7 @@ def loadTestObjects():
 
     print "#attempting to load pickle"        
     try:
-        testObjects = pickle.load(open(pickle_name,'r'))
+        testObjects = pickle.load(open(pickleName,'r'))
     except IOError:
         print "#    IOError"
     except  EOFError:
@@ -116,11 +117,8 @@ def loadTestObjects():
     
 
 def saveTestObjects(testObjects):
-    #initialize the pickle file name, and the dictionry of test objects
-    pickleName='testObjects.pkl'
-
     pickleFile=open(pickleName,'w')
-    moduleFile=open('testObjects.py','w')
+    moduleFile=open(moduleName,'w')
 
     print "#dumping new pickle"
     pickle.dump(
@@ -128,27 +126,29 @@ def saveTestObjects(testObjects):
         pickleFile,
     )
 
-    print '\n'.join([
-        'import numpy',
-        'from mvar import Mvar',
-        'import pickle',
-        'locals().update(',
-        '    pickle.load(open("'+pickleName+'","r"))',
-        ')'
-    ])
+    moduleFile.write( 
+        '\n'.join([
+            'import numpy',
+            'from mvar import Mvar',
+            'from matrix import Matrix',
+            'import pickle',
+            'locals().update(',
+            '    pickle.load(open("'+pickleName+'","r"))',
+            ')'
+        ])
+    )
 
 
 
 
 if '-r' in sys.argv:
-    testObjects=loadTestObjects
+    testObjects=loadTestObjects()
 else:
     testObjects={}
 
 if not testObjects:
-    testObjects=makeTestObjects(cplx=False,flat='flat' in sys.argv)
-
-saveTestObjects(testObjects)
+    testObjects=makeTestObjects(cplx=False, flat='flat' in sys.argv)
+    saveTestObjects(testObjects)
 
 mvar.__dict__.update(testObjects)
 
