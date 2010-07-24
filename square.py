@@ -38,15 +38,12 @@ def square(vectors,var=None,full=False):
         #Ivar is unused
 
         (Ivar,Ivectors)=_subSquare(vectors=vectors[infinite,:],var=numpy.ones_like(var[infinite]),full=True)
-        Ivectors=Matrix(Ivectors)
 
         #take the finite variances and vectors
         var=var[~infinite]
         vectors=vectors[~infinite,:]
-
-        Istd=abs(Ivar)**0.5
         
-        small=helpers.approx(Istd)
+        small=helpers.approx(Ivar)
         
         Ivar = Ivar[~small]
 

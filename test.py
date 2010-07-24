@@ -157,11 +157,3 @@ for name,mod in localMods.iteritems():
     mod.__dict__.update(testObjects)
     doctest.testmod(mod)
 
-
-###########
-mvar.__dict__.update(testObjects)
-
-a=mvar.A
-
-print a&~a
-###########
