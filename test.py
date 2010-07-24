@@ -152,16 +152,16 @@ else:
 if not testObjects:
     testObjects=makeTestObjects(cplx=False, flat='flat' in sys.argv)
     saveTestObjects(testObjects)
-###########
-mvar.__dict__.update(testObjects)
 
-a=mvar.A
-
-a&~a
-###########
 for name,mod in localMods.iteritems():
     mod.__dict__.update(testObjects)
     doctest.testmod(mod)
 
 
+###########
+mvar.__dict__.update(testObjects)
 
+a=mvar.A
+
+print a&~a
+###########
