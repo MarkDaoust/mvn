@@ -12,21 +12,13 @@ class Automath():
     if you define multiply for negative integers (A*-N) you get neg (-A) 
     if you define add and neg you get sub (A-B)
     if you define power for negative integers (A**-N) you get div (A/B)
-    if you define and (A & B) and invert (~A) you get or
-    if you define or (A|B) and sub (A-B) you get xor 
-    """
-    def __radd__(self,other):
-        """
-        >>> assert A+B == B+A
-        """
-        return self+other
-    
-    def __rmul__(self,other):
-        """
-        >>> assert A*B == B*A
-        """
-        return self*other
-    
+    if you define div and floordiv (A//B) you get divmod (A%B)
+    if you define and (A & B) and invert (~A) you get or (A|B)
+    if you define or (A|B) and sub (A-B) you get xor (A^B) 
+    if you define eq (A=B) and gt (A>B)  you'll get lt (A<B), le (A<=B) ,ne (A!=b) and bool (A!=0)
+    if you define rshift you get lshift    
+
+    """    
     def __mul__(self,N):
         """
         >>> assert A+A+A == 3*A
@@ -58,23 +50,17 @@ class Automath():
         """
         return self+(-other)
 
-    def __rsub__(self,other):
-        """
-        >>> assert B-A == B+(-A)
-        """
-        return other+(-self)
-    
     def __div__(self,other):
         """
         >>> assert A/B == A*B**(-1)
         """
         return self*other**(-1)
-        
-    def __rdiv__(self,other):
-        """
-        >>> assert B/A == B*A**(-1)
+
+    def __divmod__(self,other):
         """        
-        return other*self**(-1)
+        >>> assert A%B == A/B - A//B
+        """
+        return self/other-self//other
     
     def __or__(self,other):
         """
@@ -91,5 +77,29 @@ class Automath():
     def __ne__(self,other):
         """
         >>> assert (not (A == B)) == (A != B)  
+        >>> assert bool(A) == (A!=0)
         """
         return not (self == other)
+
+    def __ge__(self,other):
+        """
+        >>> assert (A>=B) == (A==B or A>B)
+        """
+        return self==other or self>other
+
+    def __lt__(self,other):
+        """
+        >>> assert (A<B) == not A>=B
+        """
+
+    def __le__(self,other):
+        """
+        >>> assert (A>=B) == (A==B or A>B)
+        """
+        return self==other or self<other
+
+    def __lshift__(self,other):
+        """
+        >>> assert (A << B) == (A >> -B)
+        """
+        return A >> -B

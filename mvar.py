@@ -54,10 +54,11 @@ import helpers
 
 from square import square
 from automath import Automath
+from right import Right
 from inplace import Inplace
 from matrix import Matrix
 
-class Mvar(object,Automath,Inplace):
+class Mvar(object,Automath,Right,Inplace):
     """
     Multivariate normal distributions packaged to act like a vector 
     (Ref: http://en.wikipedia.org/wiki/Vector_space)
@@ -1484,7 +1485,7 @@ def mooreGiven(self,index,value):
     direct implementation of the "given" algorithm in
     Andrew moore's data-mining/gussian slides
 
-    todo: figure out why tthis doesn't work
+    todo: figure out why this doesn't work
  
     >>> #assert mooreGiven(A,0,0)==A.given(0,0)
     """
@@ -1503,8 +1504,8 @@ def mooreGiven(self,index,value):
     )
 
 
-
 if __name__=='__main__':    
     #overwrite everything we just created with the copy that was 
     #created when we imported mvar, so there's only one copy.
     from mvar import *
+

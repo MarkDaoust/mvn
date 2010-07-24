@@ -14,20 +14,23 @@ import mvar
 import helpers
 import square
 import automath    
+import right
 import inplace
 import matrix
 
 
 from matrix import Matrix
 from mvar import Mvar
+from right import Right
 
 #make a dictionary of the local modules
 localMods={
     'mvar'    :mvar,
     'helpers' :helpers,
     'square'  :square,
-    'automath':automath,    
-    'inplace' :inplace,
+#    'automath':automath,
+#    'right'   :right,
+#    'inplace' :inplace,
     'matrix'  :matrix,
 }
 
@@ -149,9 +152,13 @@ else:
 if not testObjects:
     testObjects=makeTestObjects(cplx=False, flat='flat' in sys.argv)
     saveTestObjects(testObjects)
-
+###########
 mvar.__dict__.update(testObjects)
 
+a=mvar.A
+
+a&~a
+###########
 for name,mod in localMods.iteritems():
     mod.__dict__.update(testObjects)
     doctest.testmod(mod)
