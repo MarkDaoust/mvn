@@ -4,7 +4,7 @@
 import os
 import sys
 import doctest
-import pickle
+import cPickle
 
 #3rd party
 import numpy
@@ -106,12 +106,12 @@ def loadTestObjects():
 
     print "#attempting to load pickle"        
     try:
-        testObjects = pickle.load(open(pickleName,'r'))
+        testObjects = cPickle.load(open(pickleName,'r'))
     except IOError:
         print "#    IOError"
     except  EOFError:
         print "#    EOFError"
-    except pickle.UnpicklingError:
+    except cPickle.UnpicklingError:
         print "#    UnpicklingError"
     else:
         print "#loaded"
@@ -124,7 +124,7 @@ def saveTestObjects(testObjects):
     moduleFile=open(moduleName,'w')
 
     print "#dumping new pickle"
-    pickle.dump(
+    cPickle.dump(
         testObjects,
         pickleFile,
     )
@@ -134,9 +134,9 @@ def saveTestObjects(testObjects):
             'import numpy',
             'from mvar import Mvar',
             'from matrix import Matrix',
-            'import pickle',
+            'import cPickle',
             'locals().update(',
-            '    pickle.load(open("'+pickleName+'","r"))',
+            '    cPickle.load(open("'+pickleName+'","r"))',
             ')'
         ])
     )

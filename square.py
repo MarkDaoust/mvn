@@ -133,7 +133,7 @@ def _subSquare(vectors,var,full=False):
         if Xcov == Matrix.eye:
             return (var,vectors)
         
-        ( _ ,Xvec)=numpy.linalg.eig(Xcov)
+        ( _ ,Xvec)=numpy.linalg.eigh(Xcov)
         
         Xscaled=(Xvec.H*scaled)
         val=helpers.mag2(Xscaled)
