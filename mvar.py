@@ -761,10 +761,18 @@ class Mvar(object,Automath,Right,Inplace):
    
         H=lambda M:M.H*M
 
+        SFvectors=self.vectors[Sfinite]
+        SFvar=self.var[Sfinite]
+
+        OFvectors = other.vectors[Ofinite]
+        OFvar = other.var[Ofinite]
+
+        cov=lambda vectors,var: vectors.H*numpy.diagflat(var)*vectors
+
         #compare the finite and infinite covariances 
         return (
-            self[Sfinite].cov == other[Ofinite].cov and
-            H(self[~Sfinite].vectors) == H(other[~Ofinite].vectors)
+            cov(SFvectors,SFvar) == cov(OFvectors,SFvar) and
+            SIvectors.H*SIvectors == OIvectors.H*OIvectors
         )
         
     def __abs__(self):

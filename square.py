@@ -28,7 +28,7 @@ def square(vectors,var=None,full=False):
         numpy.real_if_close(var)
     )
 
-    infinite=helpers.approx(1/var**0.5)
+    infinite=helpers.approx(1/var**0.5) | ~numpy.isfinite(var)
 
     Ivar=numpy.array([])
     Ivectors=Matrix(numpy.zeros((0,vectors.shape[1])))
