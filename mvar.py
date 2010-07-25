@@ -386,25 +386,20 @@ class Mvar(object,Automath,Right,Inplace):
             >>> assert A.transform(N)== A.transform()**N  
             >>> #it's hit and miss for complex numbers, but real is fine
             >>> assert (A**K1.real).transform() == A.transform(K1.real) 
-            >>> assert A*B.transform() == A*B  
+            >>> assert A*B.transform() == A*B 
+
+            >>> assert numpy.trace(A.transform(0)) == A.shape[0] 
         """
         if not numpy.isreal(self.var).all() or not(self.var>0).all():
             power = complex(power)
 
         if helpers.approx(power):
-            self=self.inflate()
+            #self=self.inflate()
             vectors=self.vectors
             varP=numpy.ones_like(self.var)
-            keep=slice(None)
         else:
-            if numpy.real(power)<0:
-                self=self.inflate()
-                keep=~helpers.approx(self.var**(-1))
-            else:                    
-                keep=~helpers.approx(self.var)
+            keep= ~helpers.approx(self.var**(-1))
 
-            #don't involve the variances that will be infinite
-            #(the power's already been divided by 2 above) 
             varP=self.var[keep]**(power/2.0)
             vectors=self.vectors[keep,:]
 
@@ -1023,10 +1018,8 @@ class Mvar(object,Automath,Right,Inplace):
             False
 
             those only work if the k's are real            
-            >>> K1=K1.real
-            >>> K2=K2.real
-            >>> assert (A**K1)*(A**K2)==A**(K1+K2)
-            >>> assert A**K1/A**K2==A**(K1-K2)
+            >>> assert (A**K1.real)*(A**K2.real)==A**(K1.real+K2.real)
+            >>> assert A**K1.real/A**K2.real==A**(K1.real-K2.real)
             
         Zero power has some interesting properties: 
             
@@ -1048,7 +1041,7 @@ class Mvar(object,Automath,Right,Inplace):
             >>> assert M*B==M*B.transform()
             >>> assert A**2==A*A==A*A.transform()
         """
-        self=self.inflate() if numpy.real(power)<=0 else self
+        self=self.inflate() if numpy.real(power) < 0 else self
         
         return Mvar(
             mean=self.mean*self.transform(power-1),
@@ -1160,6 +1153,8 @@ class Mvar(object,Automath,Right,Inplace):
             
             >>> assert K1/A == K1*(A**(-1))
             >>> assert M/A==M*(A**(-1))
+
+        assert (A**0.0).trace() == A.shape[0]
         """
         other=self._mulConvert(other)
         return self._multipliers[type(other)](self,other) 
