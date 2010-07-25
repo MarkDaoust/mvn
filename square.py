@@ -65,7 +65,7 @@ def square(vectors,var=None,full=False):
 
     if Ivar.size and var.size:
         #sort the finite variances
-        order=numpy.argsort(var)    
+        order=numpy.argsort(abs(var))    
         var=var[order]
         vectors=vectors[order,:]
         

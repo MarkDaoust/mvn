@@ -806,6 +806,8 @@ class Mvar(object,Automath,Right,Inplace):
             >>> assert (~A).cov == -(A.cov)
 
             >>> assert ~~A==A
+
+            >>> assert ~(~A&~B) == A & B 
  
         something and not itself provides zero precision; infinite variance
         except if the mvar is flat; that flattness is preserved 
@@ -816,12 +818,22 @@ class Mvar(object,Automath,Right,Inplace):
 
         infinite variances provide no information, having a no effect when blended
 
-        >>> assert A == (A & B & ~B) or flat
+        >>> assert A == A & (B & ~B) or flat
         
-        if the mvar is flat, you're taking a slice in the plane of the other
+        if the mvar is flat, things are a little different:
+            like this you're taking a slice of A in the plane of B
+            >>> assert  A &(B & ~B) == A & Mvar(mean=B.mean, vectors=B.vectors, var=Matrix.infs)
+   
+            but watch out:
+            >>> assert (A&~B) & B == (A&B) & ~B
+            >>> (A&B) & ~B == A & (B&~B) and flat
+            False
 
-        >>> assert (A & B & ~B) == A & Mvar(mean=B.mean, vectors=B.vectors, var=Matrix.infs)
-
+            todo: investigate why this doesn't match, 
+                I don't have a sense-physique for negative variances,
+                so I don't have a good explaination right now, it's probably related 
+                to the fact that (B&~B) removes all information about he variance of B  
+                but some seems to be preserved in the 2 stage operation
 
         so blending something with it's inverse is equivalend to replacing all 
         it's non-zero variances with inf's
@@ -1071,7 +1083,7 @@ class Mvar(object,Automath,Right,Inplace):
             
             This is different from multiplication by a scale matrix which gives
                 >>> assert (A*(K1*E)).mean == K1*A.mean
-                >>> assert (A*(K1*E)).cov == K1.conjugate()*K1*A.cov
+                >>> assert (A*(K1*E)).cov == A.cov*abs(K1)**2
 
             constants still commute:          
                 >>> assert K1*A*M == A*K1*M 
