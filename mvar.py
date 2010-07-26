@@ -388,18 +388,19 @@ class Mvar(object,Automath,Right,Inplace):
             >>> assert (A**K1.real).transform() == A.transform(K1.real) 
             >>> assert A*B.transform() == A*B 
 
-            >>> assert numpy.trace(A.transform(0)) == A.shape[0] 
+            >>> assert Matrix(numpy.trace(A.transform(0))) == A.shape[0] 
         """
         if not numpy.isreal(self.var).all() or not(self.var>0).all():
             power = complex(power)
 
         if helpers.approx(power):
-            #self=self.inflate()
             vectors=self.vectors
             varP=numpy.ones_like(self.var)
         else:
-            keep= ~helpers.approx(self.var**(-1))
-
+            #the null vectors are automatically being ignored,
+            #ignore the infinite ones as well
+            keep=~helpers.approx(self.var**(-1))
+            
             varP=self.var[keep]**(power/2.0)
             vectors=self.vectors[keep,:]
 
@@ -633,18 +634,26 @@ class Mvar(object,Automath,Right,Inplace):
 
         opertor interface to self.given 
         """
-        self.copy(self.given(index,value))
+        #todo: figure out what to do with i0        
+        if isinstance(index,tuple):
+            i0=index[0]
+            i1=index[1]
+        else:
+            i0=index
+            i1=slice(None)
+
+        assert i0==slice(None)
+        self.copy(self.given(i1,value))
 
     def marginal(self,index,squeeze=True, square=True):
         """
-        return the marginal distribution in only the indexed dimensions
         return the marginal distribution,
         flattened in the indexed dimensions,
         unused mean components get replaced with nan's
         no dimensions are removed, be explicit, use knockout(index), or del()
 
-        >>> flat = A[0].square().squeeze()
-        >>> assert A[0].knockout(range(1,A.ndim)) == flat*flat.vectors.H
+        >>> a = A[:,0].square().squeeze()
+        >>> assert A[:,0].knockout(range(1,A.ndim)) == a*a.vectors.H
         """
         assert ~isinstance(index,tuple)
 
@@ -669,8 +678,24 @@ class Mvar(object,Automath,Right,Inplace):
         self[index]
         operator interface to self.marginal
         """
-        return self.marginal(index)
+        result=self.copy()
+        
+        if isinstance(index,tuple):
+            i0=index[0]
+            i1=index[1]
+        else:
+            i0=index
+            i1=slice(None)
 
+        if i0 != slice(None):
+            result.vectors=result.vectors[i0,:]
+            result.var = result.var[i0]
+     
+        if i1 != slice(None):
+            result=result.marginal(i1)
+
+        return result
+        
     def knockout(self,index):
         """
         return an Mvar with the selected dimensions removed
@@ -1154,7 +1179,7 @@ class Mvar(object,Automath,Right,Inplace):
             >>> assert K1/A == K1*(A**(-1))
             >>> assert M/A==M*(A**(-1))
 
-        assert (A**0.0).trace() == A.shape[0]
+        assert Matrix((A**0.0).trace()) == A.shape[0]
         """
         other=self._mulConvert(other)
         return self._multipliers[type(other)](self,other) 
