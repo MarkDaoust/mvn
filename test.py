@@ -84,7 +84,7 @@ def makeTestObjects(cplx=False,flat=False):
     K1=randn()+randn()*1j
     K2=randn()+randn()*1j
 
-    N=randint(1,10)
+    N=randint(-5,5)
 
     testObjects={
         'ndim':ndim,

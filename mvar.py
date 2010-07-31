@@ -128,7 +128,8 @@ class Mvar(object,Automath,Right,Inplace):
             (transforms from unit-eigen-space to data-space) 
         transform
             >>> assert A.transform()**2 == abs(A).cov 
-            >>> assert A.transform()**N == A.transform(N)
+            >>> if not(flat and N<0):
+            ...     assert A.transform()**N == A.transform(N)
 
             >>> assert A.transform(2) == abs(A).cov
             
@@ -548,6 +549,7 @@ class Mvar(object,Automath,Right,Inplace):
         place holder for quadratic forum
         http://en.wikipedia.org/wiki/Quadratic_form_(statistics)
         """
+        #todo: implement quadratic forms
         assert 1==0
 
 
@@ -1008,7 +1010,7 @@ class Mvar(object,Automath,Right,Inplace):
         """
         self**power
 
-        >>> assert A**K1.real==A*A.transform(K1.real-1)
+        >>> assert A**K1.real == A*A.transform(K1.real-1) + Mvar(mean=A.mean-A.mean*A.transform(0))
 
         This definition was developed to turn kalman blending into a standard 
         resistor-style 'paralell' operation
@@ -1029,6 +1031,7 @@ class Mvar(object,Automath,Right,Inplace):
 
             >>> assert A==A**1
             >>> assert -A == (-A)**1
+
             >>> assert A == (A**-1)**-1
     
             >>> assert A**0 == A**(-1)*A
@@ -1067,9 +1070,12 @@ class Mvar(object,Automath,Right,Inplace):
             >>> assert A**2==A*A==A*A.transform()
         """
         self=self.inflate() if numpy.real(power) < 0 else self
+
+        #V=self.vectors[numpy.isfinite(self.var),:]
+        #dmean=self.mean-self.mean*V.H*V
         
         return Mvar(
-            mean=self.mean*self.transform(power-1),
+            mean=self.mean*self.transform(power-1),#+dmean,
             vectors=self.vectors,
             var=self.var**power,
             square=False
@@ -1153,16 +1159,13 @@ class Mvar(object,Automath,Right,Inplace):
                 because the left side will do a matrix multiplication by 2, 
                 and the right will do a scalar multiplication by 2, the means will match but the cov's will not 
                 
-                The pure mvar case fails for slightly different reasons, visible below:
-                    >>> assert (B**0).transform() == Matrix.eye
-                    >>> assert A*B**0 == A
-                    >>> A*(B**0+B**0)==A*B**0+A*B**0
-                    False
-
-                    because
+                The pure mvar case fails for slightly different reasons:
                     >>> assert A*(B**0+B**0) == A*(2*B**0)   #here the mean is stretched to sqrt(2) times 
-                    >>> assert (2*B**0).transform() == 2**0.5*(B**0).transform()            
-                    >>> assert A*B**0 + A*B**0 == 2*A*B**0 == 2*A #here it is outright multiplied by 2
+                    >>> assert (2*B**0).transform() == 2**0.5*(B**0).transform()    
+        
+                    >>> assert A*B**0 + A*B**0 == 2*A*B**0 
+                    >>> if not flat:
+                    ...     assert 2*A*B**0 == 2*A #here the mean is outright multiplied by 2
 
         for notes 
             
@@ -1202,7 +1205,7 @@ class Mvar(object,Automath,Right,Inplace):
             >>> assert (A+A).mean==(2*A).mean
             >>> assert (A+A).mean==2*A.mean
             
-            >>> assert sum(itertools.repeat(A,N-1),A) == A*(N)
+            >>> assert sum(itertools.repeat(A,N-1),A) == A*(N) or N<0
 
             after that the only things you're really guranteed here are:
             >>> assert (A*K1).mean==K1*A.mean
@@ -1216,12 +1219,14 @@ class Mvar(object,Automath,Right,Inplace):
             
             if you want to scale the distribution linearily with the mean
             then use matrix multiplication
+
+            >>> assert 1j*A*1j==-A
         """
         return Mvar(
             mean= scalar*self.mean,
             var = scalar*self.var,
             vectors = self.vectors,
-            square = False,
+            square = not numpy.isreal(scalar),
         )
 
     def _matrixMul(self,matrix):

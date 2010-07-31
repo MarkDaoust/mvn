@@ -114,7 +114,7 @@ def _subSquare(vectors,var,full=False):
         numpy.linalg.eig
     )
 
-    if shape[0]>=shape[1] or full or not vectors.any():
+    if shape[0]>=shape[1] or full or not vectors.any() or not numpy.isreal(var).all():
         scaled=Matrix(numpy.diagflat(var))*vectors
         
         cov=vectors.H*scaled
