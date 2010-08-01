@@ -746,12 +746,14 @@ class Mvar(object,Automath,Right,Inplace):
             >>> assert A != B
 
         """
-
         #check the number of dimensions of the space
         assert (
             self.ndim == other.ndim,
             """if the objects have different numbers of dimensions, you're doing something wrong"""
         )
+
+        self=self.squeeze()
+        other=other.squeeze()
 
         Sshape=self.shape
         Oshape=other.shape
@@ -1032,7 +1034,10 @@ class Mvar(object,Automath,Right,Inplace):
             >>> assert A==A**1
             >>> assert -A == (-A)**1
 
-            >>> assert A == (A**-1)**-1
+            >>> #this doesn't work for flat objects because information about 
+            >>> #the mean is lost after the first inversion, because of the infinite variance.
+            >>> assert A == (A**-1)**-1 or flat
+            >>> assert A.mean*A.transform(0) == ((A**-1)**-1).mean
     
             >>> assert A**0 == A**(-1)*A
             >>> assert A**0 == A*A**(-1)
@@ -1067,15 +1072,17 @@ class Mvar(object,Automath,Right,Inplace):
             
             >>> assert A*B==A*B.transform()
             >>> assert M*B==M*B.transform()
-            >>> assert A**2==A*A==A*A.transform()
+            >>> assert A**2==A*A
+            >>> assert A**2==A*A.transform()
         """
-        self=self.inflate() if numpy.real(power) < 0 else self
-
-        #V=self.vectors[numpy.isfinite(self.var),:]
-        #dmean=self.mean-self.mean*V.H*V
+        if numpy.real(power)<0: 
+            self=self.inflate()
+        
+        V=self.vectors            
+        dmean=self.mean-self.mean*V.H*V        
         
         return Mvar(
-            mean=self.mean*self.transform(power-1),#+dmean,
+            mean=self.mean*self.transform(power-1)+dmean,
             vectors=self.vectors,
             var=self.var**power,
             square=False
@@ -1205,7 +1212,7 @@ class Mvar(object,Automath,Right,Inplace):
             >>> assert (A+A).mean==(2*A).mean
             >>> assert (A+A).mean==2*A.mean
             
-            >>> assert sum(itertools.repeat(A,N-1),A) == A*(N) or N<0
+            >>> assert sum(itertools.repeat(A,N-1),A) == A*(N) or N<=0
 
             after that the only things you're really guranteed here are:
             >>> assert (A*K1).mean==K1*A.mean
@@ -1221,6 +1228,7 @@ class Mvar(object,Automath,Right,Inplace):
             then use matrix multiplication
 
             >>> assert 1j*A*1j==-A
+            >>> assert (2*A)*(2*A)=4*A
         """
         return Mvar(
             mean= scalar*self.mean,
@@ -1270,7 +1278,14 @@ class Mvar(object,Automath,Right,Inplace):
         Note that the result does not depend on the mean of the 
         second mvar(!) (really any mvar after the leftmost mvar or matrix)
         """
-        return self*mvar.transform()
+        result = (self*mvar.transform()+mvar*self.transform())
+        
+        result.mean += (
+            self.mean-self.mean*mvar.transform(0)+
+            mvar.mean-mvar.mean*self.transform(0)
+        )
+
+        return result/2
 
     @staticmethod
     def _mulConvert(
