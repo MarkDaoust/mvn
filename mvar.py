@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 
 """
-This module contains only two things: the "Mvar" class, and the "wiki" 
+This module contains only two things: the "Mvar" class, and the "wfiki" 
 function.
 
 Mvar is the main idea of the package: Multivariate normal distributions 
@@ -157,7 +157,7 @@ class Mvar(object,Automath,Right,Inplace):
         passing around 'NotImplemented's 
         
     No work has been done to make things fast, because until they work at all 
-    speed is not worth working on. 
+    speed is not worth working on.  
     """
     
     ############## Creation
@@ -387,7 +387,8 @@ class Mvar(object,Automath,Right,Inplace):
             >>> assert A.transform(N)== A.transform()**N  
             >>> #it's hit and miss for complex numbers, but real is fine
             >>> assert (A**K1.real).transform() == A.transform(K1.real) 
-            >>> assert A*B.transform() == A*B 
+
+            >>> assert (A*B.transform() + B*A.transform()).cov/2 == (A*B).cov
 
             >>> assert Matrix(numpy.trace(A.transform(0))) == A.shape[0] 
         """
@@ -1070,10 +1071,16 @@ class Mvar(object,Automath,Right,Inplace):
         derivation of multiplication from this is messy.just remember that 
         all Mvars on the right, in a multiply, can just be converted to matrix:
             
-            >>> assert A*B==A*B.transform()
+            >>> assert (A*B).cov == (A*B.transform()+B*A.transform()).cov/2
+
+            >>> assert (A*B).mean == (A*B.transform()+B*A.transform()).mean/2 + (
+            ...     A.mean-A.mean*B.transform(0)+
+            ...     B.mean-B.mean*A.transform(0)
+            ... )
+
             >>> assert M*B==M*B.transform()
             >>> assert A**2==A*A
-            >>> assert A**2==A*A.transform()
+            >>> assert A**2==A*A.transform() or flat
         """
         if numpy.real(power)<0: 
             self=self.inflate()
@@ -1170,9 +1177,9 @@ class Mvar(object,Automath,Right,Inplace):
                     >>> assert A*(B**0+B**0) == A*(2*B**0)   #here the mean is stretched to sqrt(2) times 
                     >>> assert (2*B**0).transform() == 2**0.5*(B**0).transform()    
         
-                    >>> assert A*B**0 + A*B**0 == 2*A*B**0 
-                    >>> if not flat:
-                    ...     assert 2*A*B**0 == 2*A #here the mean is outright multiplied by 2
+                    >>> assert (A*B**0 + A*B**0).cov == (2*A*B**0).cov 
+                    >>> (A*B**0 + A*B**0).mean == (2*A*B**0).mean
+                    False
 
         for notes 
             
@@ -1228,7 +1235,6 @@ class Mvar(object,Automath,Right,Inplace):
             then use matrix multiplication
 
             >>> assert 1j*A*1j==-A
-            >>> assert (2*A)*(2*A)=4*A
         """
         return Mvar(
             mean= scalar*self.mean,
@@ -1270,13 +1276,13 @@ class Mvar(object,Automath,Right,Inplace):
         multiplying two Mvars together is defined to fit with power
         
         >>> assert A*A==A**2
-        >>> assert A*A==A*A.transform()
-        >>> assert A*B == A*B.transform()
-
-       >>> assert A*(B**2) == A*(B.cov)
+        >>> assert A*A==A*A.transform() or flat
+        >>> assert A*B == B*A
 
         Note that the result does not depend on the mean of the 
         second mvar(!) (really any mvar after the leftmost mvar or matrix)
+
+        
         """
         result = (self*mvar.transform()+mvar*self.transform())
         
