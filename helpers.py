@@ -1,4 +1,5 @@
 import itertools
+import copy
 
 import numpy
 
@@ -38,7 +39,7 @@ def ascomplex(self):
     different type
     """
     shape=self.shape
-    duplicate=self
+    duplicate=copy.copy(self)
     duplicate.dtype=complex
     duplicate.shape=shape[:-1]
     return duplicate

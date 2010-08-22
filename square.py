@@ -9,7 +9,7 @@ import helpers
 from matrix import Matrix
 
 def square(vectors,var=None,full=False):
-   """
+    """
     calculates the eigen-vectors and eigen-values of the covariance matrix that 
     would be produced by multiplying out vectors.H*numpy.diagflat(var)*vectors 
     without necessarily calculating the covariance matrix itself.
@@ -29,8 +29,8 @@ def square(vectors,var=None,full=False):
     http://en.wikipedia.org/wiki/Singular_value_decomposition#Compact_SVD
 
     but here I only need one of the two sets of vectors, so I actually calculate the smaller of 
-      
-""" 
+    the two possible covariance marixes and, and then it's eigen-stuff.
+    """ 
     var =( 
         numpy.ones(vectors.shape[0]) if 
         var is None else 

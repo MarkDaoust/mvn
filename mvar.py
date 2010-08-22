@@ -10,7 +10,7 @@ Mvar is the main idea of the package: Multivariate normal distributions
 
 wiki is just to demonstrate the equivalency between my blending algorithm, 
     and the wikipedia version of it.
-   (http://en.wikipedia.org/wiki/Kalman_filtering#Update)
+        http://en.wikipedia.org/wiki/Kalman_filtering#Update
 
 The docstrings are full of examples. The test objects are created by runTest.sh, 
 and stored in test_objects.pkl. You can get the most recent versions of them by 
@@ -1460,7 +1460,9 @@ class Mvar(object,Automath,Right,Inplace):
          """
          return numpy.exp(self.dist2(self,locations))/2/numpy.pi/self.det(self)**0.5
 
-        
+    def entropy(self):
+        assert 1==0
+ 
     def __repr__(self):
         """
         print self
@@ -1477,7 +1479,7 @@ class Mvar(object,Automath,Right,Inplace):
     __str__=__repr__
 
     ################ Art
-    def getPatch(self,nstd=2,**kwargs):
+    def patch(self,nstd=2,**kwargs):
         """
             get a matplotlib Ellipse patch representing the Mvar, 
             all **kwargs are passed on to the call to 
@@ -1495,7 +1497,7 @@ class Mvar(object,Automath,Right,Inplace):
             )
         
         #unpack the width and height from the scale matrix 
-        width,height = nstd*numpy.diagflat(self.var**(0.5+0j))
+        width,height = nstd*numpy.real_if_close(self.var**(0.5+0j))
         
         #return an Ellipse patch
         return Ellipse(
@@ -1504,9 +1506,7 @@ class Mvar(object,Automath,Right,Inplace):
             #matching width and height
             width=width, height=height,
             #and rotation angle pulled from the vectors matrix
-            angle=numpy.rad2deg(
-                numpy.angle(helpers.ascomplex(self.vectors)).flatten()[0]
-            ),
+            angle=180/numpy.pi*(numpy.angle(helpers.ascomplex(self.vectors)[0,0])),
             #while transmitting any kwargs.
             **kwargs
         )
@@ -1524,11 +1524,11 @@ def wiki(P,M):
     Direct implementation of the wikipedia blending algorithm
     
     The quickest way to prove it's equivalent is by examining these:
-        >>> assert A**-1 == A*A**-2
-        >>> assert A & B == (A*A**-2+B*B**-2)**-1
+        >>> assert A**-1 == A*A**-2 or flat
+        >>> assert A & B == (A*A**-2+B*B**-2)**-1 or flat
 
         >>> D = A*(A.cov)**(-1) + B*(B.cov)**(-1)
-        >>> assert wiki(A,B) == D*(D.cov)**(-1)
+        >>> assert wiki(A,B) == D*(D.cov)**(-1) or flat
         >>> assert A & B == wiki(A,B) or flat
     """
     yk=M.mean-P.mean
@@ -1544,7 +1544,7 @@ def newBlend(A,B):
     """
     cleaned up implementation of the wikipedia blending algorithm
     
-        >>> assert newBlend(A,B) == wiki(A,B)
+        >>> assert newBlend(A,B) == wiki(A,B) or flat
     """
     E=Matrix.eye(A.ndim)
 

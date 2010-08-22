@@ -47,7 +47,7 @@ def makeTestObjects(cplx=False,flat=False):
         ndim=3
         num=2
     else:
-        ndim=randint(1,10)
+        ndim=2#randint(1,10)
         num=2*ndim
  
     #create n random vectors, 
@@ -100,8 +100,8 @@ def makeTestObjects(cplx=False,flat=False):
 def loadTestObjects():
     testObjects={}
     assert (
-        'flat' not in sys.argv,
-        "you can't flatten and reload at the same time"
+        'flat' not in sys.argv and 'cplx' not in sys.argv,
+        "you can't set a type and reload at the same time"
     )
 
     print "#attempting to load pickle"        
@@ -121,7 +121,6 @@ def loadTestObjects():
 
 def saveTestObjects(testObjects):
     pickleFile=open(pickleName,'w')
-    moduleFile=open(moduleName,'w')
 
     print "#dumping new pickle"
     cPickle.dump(
@@ -129,26 +128,16 @@ def saveTestObjects(testObjects):
         pickleFile,
     )
 
-    moduleFile.write( 
-        '\n'.join([
-            'import numpy',
-            'from mvar import Mvar',
-            'from matrix import Matrix',
-            'import cPickle',
-            'locals().update(',
-            '    cPickle.load(open("'+pickleName+'","r"))',
-            ')'
-        ])
-    )
-
-
 testObjects={}
 
 if '-r' in sys.argv:
     testObjects=loadTestObjects()
 
 if not testObjects:
-    testObjects=makeTestObjects(cplx=False, flat='flat' in sys.argv)
+    testObjects=makeTestObjects(
+        cplx='cplx' in sys.argv, 
+        flat='flat' in sys.argv,
+    )
     saveTestObjects(testObjects)
 
 for name,mod in localMods.iteritems():
