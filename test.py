@@ -142,12 +142,10 @@ def saveTestObjects(testObjects):
     )
 
 
-
+testObjects={}
 
 if '-r' in sys.argv:
     testObjects=loadTestObjects()
-else:
-    testObjects={}
 
 if not testObjects:
     testObjects=makeTestObjects(cplx=False, flat='flat' in sys.argv)

@@ -1,18 +1,6 @@
 #!/usr/bin/env python
 """
-this module contains one function: square
-
-I was surprisedm when it worked. the idea was based on these two lines from wikipedia
- 
-http://en.wikipedia.org/wiki/Square_root_of_a_matrix:
-(math notation converted to local python standard)
-    '''if T = A*A.H = B*B.H, then there exists a unitary U s.t. 
-    A = B*U'''
-
-a unitary matrix is a complex rotation matrix
-http://en.wikipedia.org/wiki/Unitary_matrix
-    '''In mathematics, a unitary matrix is an nxn complex matrix U 
-    satisfying the condition U.H*U = I, U*U.H = I'''
+This module contains one function: square
 """
 
 import numpy
@@ -21,7 +9,28 @@ import helpers
 from matrix import Matrix
 
 def square(vectors,var=None,full=False):
-    
+   """
+    calculates the eigen-vectors and eigen-values of the covariance matrix that 
+    would be produced by multiplying out vectors.H*numpy.diagflat(var)*vectors 
+    without necessarily calculating the covariance matrix itself.
+
+    It is also setup to handle vectors with infinite variances.
+    origionally the idea came from these two line on wikipedia:
+
+    http://en.wikipedia.org/wiki/Square_root_of_a_matrix:
+        '''if T = A*A.H = B*B.H, then there exists a unitary U s.t. A = B*U'''
+
+    http://en.wikipedia.org/wiki/Unitary_matrix
+        '''In mathematics, a unitary matrix is an nxn complex matrix U satisfying 
+        the condition U.H*U = I, U*U.H = I'''
+
+    *********************************
+    A better description for all this is the compact singular value decomposition.
+    http://en.wikipedia.org/wiki/Singular_value_decomposition#Compact_SVD
+
+    but here I only need one of the two sets of vectors, so I actually calculate the smaller of 
+      
+""" 
     var =( 
         numpy.ones(vectors.shape[0]) if 
         var is None else 
