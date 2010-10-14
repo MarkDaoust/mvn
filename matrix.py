@@ -56,15 +56,7 @@ class Matrix(numpy.matrix):
             
 
     def __repr__(self):
-        result='M'+numpy.matrix.__repr__(self)[1:]
-        result=result.replace('[], shape=(','numpy.zeros(')
-        for match in re.findall('numpy.zeros\([0-9, ]*\)',result):
-            result=result.replace(
-                match,
-                match.replace('(','([').replace(')','])')
-            )
-        return result.replace('dtype=','dtype=numpy.')
-    
+        return 'M'+numpy.matrix.__repr__(self)[1:]
 
     __str__ = __repr__
 

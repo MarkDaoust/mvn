@@ -35,9 +35,11 @@ localMods={
 }
 
 pickleName='testObjects.pkl'
-moduleName='testObjects.py'
 
-def makeTestObjects(cplx=False,flat=False):   
+def makeTestObjects(cplx=False,flat=False,seed=False):   
+
+    if seed:
+        numpy.random.seed(seed)
 
     rand=numpy.random.rand
     randn=numpy.random.randn
@@ -92,7 +94,9 @@ def makeTestObjects(cplx=False,flat=False):
         'M':M,'M2':M2,'E':E,
         'K1':K1,'K2':K2,
         'N':N,
-        'flat':flat    
+        'flat':flat,
+        'cplx':cplx,
+        'seed':seed,
     }
 
     return testObjects
@@ -100,7 +104,9 @@ def makeTestObjects(cplx=False,flat=False):
 def loadTestObjects():
     testObjects={}
     assert (
-        'flat' not in sys.argv and 'cplx' not in sys.argv,
+        'flat' not in sys.argv and 
+        'cplx' not in sys.argv and
+        'seed' not in sys.argv,
         "you can't set a type and reload at the same time"
     )
 
@@ -134,9 +140,16 @@ if '-r' in sys.argv:
     testObjects=loadTestObjects()
 
 if not testObjects:
+    seed=False
+    for n,item in enumerate(sys.argv):
+        if item=='seed':
+            seed=float(sys.argv[n+1])
+            break
+
     testObjects=makeTestObjects(
         cplx='cplx' in sys.argv, 
         flat='flat' in sys.argv,
+        seed=seed
     )
     saveTestObjects(testObjects)
 

@@ -4,6 +4,7 @@ This module contains one function: square
 """
 
 import numpy
+import scipy
 
 import helpers
 from matrix import Matrix
@@ -37,7 +38,7 @@ def square(vectors,var=None,full=False):
         numpy.real_if_close(var)
     )
 
-    infinite=helpers.approx(1/var**0.5) | ~numpy.isfinite(var)
+    infinite=helpers.approx(1/scipy.sqrt(var)) | ~numpy.isfinite(var)
 
     Ivar=numpy.array([])
     Ivectors=Matrix(numpy.zeros((0,vectors.shape[1])))
@@ -137,7 +138,7 @@ def _subSquare(vectors,var,full=False):
         val=numpy.zeros(vec.shape[0])    
 
     else:
-        scaled=Matrix(numpy.diagflat(var**(0.5+0j)))*vectors
+        scaled=Matrix(numpy.diagflat(scipy.sqrt(var)))*vectors
         Xcov=vectors*vectors.H
         if Xcov == Matrix.eye:
             return (var,vectors)
@@ -147,7 +148,7 @@ def _subSquare(vectors,var,full=False):
         Xscaled=(Xvec.H*scaled)
         val=helpers.mag2(Xscaled)
 
-        vec=numpy.array(Xscaled)/val[:,numpy.newaxis]**(0.5+0j)
+        vec=numpy.array(Xscaled)/scipy.sqrt(val[:,numpy.newaxis])
 
     
     return (val,vec)

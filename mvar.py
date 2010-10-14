@@ -1,24 +1,41 @@
 #! /usr/bin/env python
 
+#todo: fix indexing
+#todo: understand transforms composed of Mvars as the component vectors, and 
+#          whether it is meaningful to consider mvars in both the rows and columns
+#todo: see if div should be upgraded to act more like matlab backwards divide
+#todo: impliment collectionss of mvars so that or '|'  is meaningful
+#todo: cleanup my 'square' function (now that it is clear that it's just an SVD)
+#todo: entropy
+#todo: chain rule(see moore's datamining slides)
+#todo: start using unittest instead of just doctest
+#todo: split the class into two levels: "fast" and 'safe'?
+#      maybe have the 'safe' class inherit from 'fast' and a add a variance-free 'plane' class?
+#todo: understand the EM and K-means algorithms (available in scipy)
+#todo: understans what complex numbers imply with these.
+#todo: understand the relationship betweent hese and a hessian matrix.
+#todo: figure out the relationship between these and spherical harmonics
+#todo: investigate higher order cumulants
+
 """
 This module contains only two things: the "Mvar" class, and the "wiki" 
 function.
 
-Mvar is the main idea of the package: Multivariate normal distributions 
+Mvar is the main idea of the module: Multivariate normal distributions 
     packaged to act like a vector. Perfect for kalman filtering, sensor fusion, 
-    (and maybe expectation maximization)  
+    (and maybe Expectation Maximization)  
 
 wiki is just to demonstrate the equivalency between my blending algorithm, 
     and the wikipedia version of it.
         http://en.wikipedia.org/wiki/Kalman_filtering#Update
 
-The docstrings are full of examples. The test objects are created by runTest.sh, 
-and stored in test_objects.pkl. You can get the most recent versions of them by 
+The docstrings are full of examples. The objects used in theexamples are created 
+by test.sh, and stored in test_objects.pkl. You can get the most recent versions of them by 
 importing testObjects.py, which will give you a module containing the objects used
 in the tests
     A,B and C are instances of the Mvar class  
-    K1 and K2 are random complex numbers
-    M and M2 are complex valued matrixes
+    K1 and K2 are random numbers
+    M and M2 are matrixes
     E is an apropriately sized eye matrix
     N is an integer
 
@@ -26,16 +43,9 @@ remember: circular logic works because circluar logic works.
     a lot of the examples are demonstrations of what the code is doing, or expected
     invariants. they don't prove I'm right, but only that I'm being consistant
  
-
-see their individual documentions for more information.    
 """
 
-##imports
-
-
-#self!
-if __name__=='__main__':
-    import mvar  
+## imports
 
 #builtins
 import itertools
@@ -45,6 +55,7 @@ import operator
 
 #3rd party
 import numpy
+import scipy
 
 #maybe imports: third party things that we can live without
 from maybe import Ellipse
@@ -92,8 +103,6 @@ class Mvar(object,Automath,Right,Inplace):
         
     Sensor fusion is just:
         result = measurment1 & measurrment2 & measurment3
-        or
-        result = Mvar.blend(*measurments)
         
     normally (at least in what I read on wikipedia) these things are handled 
         with mean and covariance, but I find mean, variance, and eigenvectors 
@@ -112,7 +121,7 @@ class Mvar(object,Automath,Right,Inplace):
         var
             the variance asociated with each vector.
         vectors
-            unit vectors, as rows, not necessarily orthogonal. 
+            unit vectors, as rows, ?not necessarily orthogonal?. 
             only guranteed to give the right covariance see below.
         
         >>> assert A.vectors.H*numpy.diagflat(A.var)*A.vectors == A.cov
@@ -215,77 +224,7 @@ class Mvar(object,Automath,Right,Inplace):
 
         if squeeze:
             self.copy(self.squeeze(**kwargs))
-    
-    def inflate(self):
-        """
-        add the zero length direction vectors so no information is lost during 
-        rotations
 
-        >>> if A.shape[0] == A.shape[1]:
-        ...     assert A*A.vectors.H*A.vectors==A
-        
-        >>> if A.shape[0] != A.shape[1]:
-        ...     assert A*A.vectors.H*A.vectors!=A
-
-        >>> A=A.inflate()
-        >>> assert A*A.vectors.H*A.vectors==A        
-        """
-        result = self.copy()
-
-        shape=self.shape        
-
-        missing = shape[1]-shape[0]
-
-        if missing == 0:
-            return result
-        elif missing<0:
-            return result.square()
-
-
-        result.var = numpy.concatenate([result.var,numpy.zeros(missing)])
-        
-        result.vectors = numpy.vstack(
-            [self.vectors,numpy.zeros((missing,shape[1]))]
-        )
-
-        result = result.square()
-
-        zeros=helpers.approx(result.var)
-
-        result.var[zeros]=0
-
-        return result
-
-    def square(self):
-        """
-        squares up the vectors, so that the 'vectors' matrix is unitary 
-        (rotation matrix extended to complex numbers)
-        
-        >>> assert A.vectors*A.vectors.H==Matrix.eye
-        """ 
-        result=self.copy()
-        (result.var,result.vectors)=square(
-            vectors=self.vectors,
-            var=self.var,
-        )
-        return result
-
-    def sign(self):
-        return sign(self.var)
-
-    def squeeze(self,**kwargs):
-        """
-        drop any vector/variance pairs with sqrt(variance) under the tolerence 
-        limits the defaults match numpy's for 'allclose'
-        """
-        result=self.copy()
-        (result.var,result.vectors)=helpers.squeeze(
-            vectors=result.vectors,
-            var=result.var
-        )
-
-        return result
-            
     ############## alternate creation methods
     @staticmethod
     def fromCov(cov,**kwargs):
@@ -341,8 +280,79 @@ class Mvar(object,Automath,Right,Inplace):
             mean= mean,
             **kwargs
         )
+    
+    ##### 'cosmetic' manipulations
+    def inflate(self):
+        """
+        add the zero length direction vectors so no information is lost during 
+        rotations
+
+        >>> if A.shape[0] == A.shape[1]:
+        ...     assert A*A.vectors.H*A.vectors==A
         
-    ############ get methods/properties
+        >>> if A.shape[0] != A.shape[1]:
+        ...     assert A*A.vectors.H*A.vectors!=A
+
+        >>> A=A.inflate()
+        >>> assert A*A.vectors.H*A.vectors==A        
+        """
+        result = self.copy()
+
+        shape=self.shape        
+
+        missing = shape[1]-shape[0]
+
+        if missing == 0:
+            return result
+        elif missing<0:
+            return result.square()
+
+
+        result.var = numpy.concatenate([result.var,numpy.zeros(missing)])
+        
+        result.vectors = numpy.vstack(
+            [self.vectors,numpy.zeros((missing,shape[1]))]
+        )
+
+        result = result.square()
+
+        zeros=helpers.approx(result.var)
+
+        result.var[zeros]=0
+
+        return result
+
+    def squeeze(self,**kwargs):
+        """
+        drop any vector/variance pairs with (self.var) under the tolerence limit
+        the default tolerence is 1e-12,
+        """
+        result=self.copy()
+        
+        small=helpers.approx(self.var,**kwargs)
+        
+        if small.size:
+            result.var = result.var[~small]
+            result.vectors = result.vectors[~small,:]
+        
+        return result
+
+    def square(self):
+        """
+        squares up the vectors, so that the 'vectors' matrix is unitary 
+        (rotation matrix extended to complex numbers)
+        
+        >>> assert A.vectors*A.vectors.H==Matrix.eye
+        """ 
+        result=self.copy()
+        (result.var,result.vectors)=square(
+            vectors=self.vectors,
+            var=self.var,
+        )
+        return result
+
+    
+    ############ setters/getters -> properties
 
     def getCov(self):
         """
@@ -365,7 +375,7 @@ class Mvar(object,Automath,Right,Inplace):
     )
     
     scaled = property(
-        fget=lambda self:Matrix(numpy.diagflat(self.var**(0.5+0j)))*self.vectors,
+        fget=lambda self:Matrix(numpy.diagflat(scipy.sqrt(self.var)))*self.vectors,
         doc=
         """
         get the vectors, scaled by the standard deviations. 
@@ -432,6 +442,9 @@ class Mvar(object,Automath,Right,Inplace):
             >>> assert A.shape[1]==A.ndim
         """
     )
+
+    def sign(self):
+        return sign(self.var)
 
     ########## Utilities
     def copy(self,other=None,deep=False):
@@ -508,11 +521,41 @@ class Mvar(object,Automath,Right,Inplace):
         Mvar being sampled
         """
         units = Matrix(
-            helpers.ascomplex(randn(n,self.ndim,2))/sqrt(2)
+            helpers.ascomplex(numpy.random.randn(n,self.ndim,2))/sqrt(2)
             if cplx else 
-            randn(n,self.ndim)
+            numpy.random.randn(n,self.ndim)
         )
         return Matrix(numpy.array(units*self.scaled.T)+self.mean)
+
+    def measure(self,actual):
+        """
+        This method is to simulate a sensor. 
+     
+        It treats the Mvar as a the description of a sensor, 
+        the mean is the sensor's bias, and the variance is the sensor's variance.
+
+        The result is an Mvar, with the mean being a sample pulled from the sensor's 
+        distribution based on the 'actual' value you're trying to measure.
+
+        It repreresents 1 measurment, the uncertianty interval is where you would expect 
+        to find the actual value base on that single measurment.
+
+        simulate sensor fusion:
+
+        >>> sensor1=A
+        >>> sensor1.mean*=0
+        >>>
+        >>> sensor2=B
+        >>> sensor2.mean*=0
+        >>>
+        >>> actual=numpy.arange(0,A.ndim)
+        >>>
+        >>> result = sensor1.measure(actual) & sensor2.measure(actual)
+        """
+        sample=self.sample(1)-self.mean
+        sample[numpy.isnan(sample)]=0
+
+        return self+(sample+actual)
 
     def det(self):
         """
@@ -527,11 +570,11 @@ class Mvar(object,Automath,Right,Inplace):
         ...     numpy.prod(A.var)
         ... )
         """
-        shape=A.shape
+        shape=self.shape
         return (
             0 if 
             shape[0]!=shape[1] else 
-            numpy.prod(A.var)
+            numpy.prod(self.var)
         )
         
     def trace(self):
@@ -550,10 +593,15 @@ class Mvar(object,Automath,Right,Inplace):
         place holder for quadratic forum
         http://en.wikipedia.org/wiki/Quadratic_form_(statistics)
         """
-        #todo: implement quadratic forms
+        #todo: implement quadratic forms?
         assert 1==0
 
-
+    def entropy(self):
+        """
+        place holder for entroppy function...
+        """
+        assert 1==0
+        
     def dist2(self,locations):
         """
         return the square of the mahalabois distance from the Mvar to each vector.
@@ -904,8 +952,10 @@ class Mvar(object,Automath,Right,Inplace):
         return self+other-2*(self&other)
     
 
-    def blend(*mvars):
-        """        
+    def __and__(self,other):
+        """
+        self & other
+
         This is awsome.
         
         optimally blend together any number of mvars, this is done with the 
@@ -927,7 +977,7 @@ class Mvar(object,Automath,Right,Inplace):
         
         >>> abc=numpy.random.permutation([A,B,C])
         >>> assert A & B & C == helpers.paralell(*abc) or flat
-        >>> assert A & B & C == Mvar.blend(*abc) or flat
+        >>> assert A & B & C == reduce(operator.and_ ,abc) or flat
         
         >>> assert (A & B) & C == A & (B & C) or flat
         
@@ -955,13 +1005,8 @@ class Mvar(object,Automath,Right,Inplace):
         >>> L2=Mvar(mean=[0,1],vectors=[1,0],var=numpy.inf) 
         >>> assert (L1&L2).mean==[1,1]
         >>> assert (L1&L2).var.size==0
-        """
-        return reduce(operator.and_,mvars)
-        
-    def __and__(self,other):
-        """
-        self & other
-        """
+    """
+    
         #assuming the mvars are squared and squeezed 
         #if they both fill the space        
         if (
@@ -1187,7 +1232,7 @@ class Mvar(object,Automath,Right,Inplace):
                 
                 The pure mvar case fails for slightly different reasons:
                     >>> assert A*(B**0+B**0) == A*(2*B**0)   #here the mean is stretched to sqrt(2) times 
-                    >>> assert (2*B**0).transform() == 2**0.5*(B**0).transform()    
+                    >>> assert (2*B**0).transform() == scipy.sqrt(2)*(B**0).transform()    
         
                     >>> assert (A*B**0 + A*B**0).cov == (2*A*B**0).cov 
                     >>> (A*B**0 + A*B**0).mean == (2*A*B**0).mean
@@ -1444,6 +1489,7 @@ class Mvar(object,Automath,Right,Inplace):
         )
         
     ################# Non-Math python internals
+    
     def __iter__(self):
         raise ValueError("Mvars are not iterable... for now?")
 
@@ -1458,10 +1504,7 @@ class Mvar(object,Automath,Right,Inplace):
          If spacial dimensions have been flattened out of the mvar the result is always 1/0
          since the probablilities will have dimensions of hits/length**ndim 
          """
-         return numpy.exp(self.dist2(self,locations))/2/numpy.pi/self.det(self)**0.5
-
-    def entropy(self):
-        assert 1==0
+         return numpy.exp(self.dist2(self,locations))/2/numpy.pi/scipy.sqrt(self.det(self))
  
     def __repr__(self):
         """
@@ -1473,13 +1516,14 @@ class Mvar(object,Automath,Right,Inplace):
             '    var=',8*' '+self.var.__repr__().replace('\n','\n'+8*' ')+',',
             '    vectors=',8*' '+self.vectors.__repr__().replace('\n','\n'+8*' ')+',',
             ')',
-        ]).replace('dtype=','dtype=numpy.').replace('numpy.numpy','numpy')
+        ])
         
     
     __str__=__repr__
 
     ################ Art
-    def patch(self,nstd=2,**kwargs):
+    
+    def patch(self,nstd=2,alpha='auto',slope=1,minalpha=0.05,**kwargs):
         """
             get a matplotlib Ellipse patch representing the Mvar, 
             all **kwargs are passed on to the call to 
@@ -1490,15 +1534,33 @@ class Mvar(object,Automath,Right,Inplace):
             the number of standard deviations, 'nstd', is just a multiplier for 
             the eigen values. So the standard deviations are projected, if you 
             want volumetric standard deviations I think you need to multiply by sqrt(ndim)
+
+            if  you don't specify a value for alpha it is set to the exponential of the area,
+            as if it has a fixed amount if ink that is spread over it's area.
+
+            the 'slope' and 'minalpha' parameters control this auto-alpha:
+                'slope' controls how quickly the the alpha drops to zero
+                'minalpha' is used to make sure that very large elipses are not invisible.  
         """
         if self.ndim != 2:
             raise ValueError(
                 'this method can only produce patches for 2d data'
             )
         
+        if alpha=='auto':
+            kwargs['alpha']=numpy.max([
+                minalpha,
+                numpy.exp(-slope*scipy.sqrt(self.det()))
+            ])
+        else:
+            kwargs['alpha']=alpha
+
         #unpack the width and height from the scale matrix 
-        width,height = nstd*numpy.real_if_close(self.var**(0.5+0j))
-        
+        wh = nstd*sqrt(self.var)
+        wh[~numpy.isfinite(wh)]=10**5
+
+        width,height=2*wh
+
         #return an Ellipse patch
         return Ellipse(
             #with the Mvar's mean at the centre 
@@ -1567,14 +1629,13 @@ def mooreGiven(self,index,value):
  
     >>> assert mooreGiven(A,0,0)==A.given(0,0)
     """
-    I=self.binindex(index)
-    Iu=numpy.where(~I)[0]
-    Iv=numpy.where( I)[0]
+    Iv=self.binindex(index)
+    Iu=~Iv
  
     U=self[Iu]
     V=self[Iv]
 
-    vu=V.vectors.H*numpy.diagflat(self.var)*U.vectors
+    vu=numpy.diagflat(self.var)*V.vectors.H*U.vectors
 
     return Mvar.fromCov(
         mean=U.mean+(value-V.mean)*(V**-1).cov*vu,
@@ -1586,4 +1647,6 @@ if __name__=='__main__':
     #overwrite everything we just created with the copy that was 
     #created when we imported mvar, so there's only one copy.
     from mvar import *
+    from testObjects import *
+    mooreGiven(A,0,0)==A.given(0,0)
 

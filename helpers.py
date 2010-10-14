@@ -31,7 +31,7 @@ def sign(self):
     )
  
 def unit(self):
-    return numpy.array(self)/mag2(self)**0.5
+    return scipy.sqrt(numpy.array(self)/mag2(self))
 
 def ascomplex(self):
     """

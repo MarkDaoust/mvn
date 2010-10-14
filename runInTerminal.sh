@@ -1,2 +1,2 @@
 #! /bin/bash
-xfce4-terminal -x ./run_test.sh
+xfce4-terminal -x $1
