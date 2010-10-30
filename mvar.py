@@ -3,10 +3,12 @@
 #todo: fix indexing
 #todo: understand transforms composed of Mvars as the component vectors, and 
 #          whether it is meaningful to consider mvars in both the rows and columns
+#todo: implement a transpose
 #todo: see if div should be upgraded to act more like matlab backwards divide
 #todo: impliment collectionss of mvars so that or '|'  is meaningful
-#todo: cleanup my 'square' function (now that it is clear that it's just an SVD)
+#todo: cleanup my 'square' function (now that it is clear that it's an SVD)
 #todo: entropy
+#todo: quadratic forms (ref: http://en.wikipedia.org/wiki/Quadratic_form_(statistics))
 #todo: chain rule(see moore's datamining slides)
 #todo: start using unittest instead of just doctest
 #todo: split the class into two levels: "fast" and 'safe'?
@@ -15,7 +17,7 @@
 #todo: understans what complex numbers imply with these.
 #todo: understand the relationship betweent hese and a hessian matrix.
 #todo: figure out the relationship between these and spherical harmonics
-#todo: investigate higher order cumulants
+#todo: investigate higher order cumulants, 'principal cumulant analysis??'
 
 """
 This module contains only two things: the "Mvar" class, and the "wiki" 
@@ -32,6 +34,7 @@ wiki is just to demonstrate the equivalency between my blending algorithm,
 The docstrings are full of examples. The objects used in theexamples are created 
 by test.sh, and stored in test_objects.pkl. You can get the most recent versions of them by 
 importing testObjects.py, which will give you a module containing the objects used
+
 in the tests
     A,B and C are instances of the Mvar class  
     K1 and K2 are random numbers
@@ -47,20 +50,20 @@ remember: circular logic works because circluar logic works.
 
 ## imports
 
-#builtins
+## builtins
 import itertools
 import collections 
 import copy
 import operator
 
-#3rd party
+## 3rd party
 import numpy
 import scipy
 
-#maybe imports: third party things that we can live without
+## maybe imports: third party things that we can live without
 from maybe import Ellipse
 
-#local
+## local
 import helpers
 
 from square import square
@@ -72,28 +75,24 @@ from matrix import Matrix
 class Mvar(object,Automath,Right,Inplace):
     """
     Multivariate normal distributions packaged to act like a vector 
+    (Ref: andrew moore / data mining / gaussians )
     (Ref: http://en.wikipedia.org/wiki/Vector_space)
     
     The class fully supports complex numbers.
     
     basic math operators (+,-,*,/,**,&) have been overloaded to work 'normally'
         for kalman filtering and common sense. But there are several surprising 
-        features in the math these things produce, so watchout. 
-        
-        It basically boils down to the fact that there are differences between scalar, 
-        matrix, and mvar operations, and if re-aranging an equation changes which type of 
-        operation is called, the results will be different.
+        features in the math these things produce, so watchout. (It basically 
+        boils down to the fact that there are differences between scalar, matrix, 
+        and mvar operations, and if re-aranging an equation changes which type of 
+        operation is called, the results will be different.)
     
     This is perfect for kalman filtering, sensor fusion, or anything where you 
         need to track linked uncertianties across multiple variables 
-        (
-            like maybe the expectation maximization algorithm 
-            and principal component analysis
-            http://en.wikipedia.org/wiki/Expectation-maximization_algorithm
-        )
+        like expectation maximization principal component analysis 
+        (ref: http://en.wikipedia.org/wiki/Expectation-maximization_algorithm)
 
-    since the operations are defined for kalman filtering, the entire process 
-        becomes:
+    kalman filtering simplifies to: 
         
         state[t+1] = (state[t]*STM + noise) & measurment
         
@@ -104,18 +103,15 @@ class Mvar(object,Automath,Right,Inplace):
     Sensor fusion is just:
         result = measurment1 & measurrment2 & measurment3
         
-    normally (at least in what I read on wikipedia) these things are handled 
-        with mean and covariance, but I find mean, variance, and eigenvectors 
-        to be more useful, so that is how the data is actually managed in this 
-        class, but other useful info in accessable through virtual attributes 
+    The data is stored as mean, variance, and (eigen)vectors 
+        but other useful info in accessable through virtual attributes 
         (properties).
     
-        This system makes compression (like principal component analysis) much 
-        easier and more useful. Especially since, I can calculate the eigenvectors 
-        without necessarily calculating the 
-        covariance matrix
+        This system makes 'compression' (like principal component analysis, or 
+        thin SVD) easy and maybe more useful, since I can calculate the eigenvectors 
+        without necessarily calculating a full covariance matrix
     
-    actual attributes:
+    Attributes:
         mean
             mean of the distribution
         var
@@ -124,17 +120,19 @@ class Mvar(object,Automath,Right,Inplace):
             unit vectors, as rows, ?not necessarily orthogonal?. 
             only guranteed to give the right covariance see below.
         
-        >>> assert A.vectors.H*numpy.diagflat(A.var)*A.vectors == A.cov
+    Properties:
         
-    virtual attributes (properties):
         ndim
             >>> assert A.ndim == A.mean.size
 
         cov
             gets or sets the covariance matrix
+                >>> assert A.vectors.H*numpy.diagflat(A.var)*A.vectors == A.cov
+    
         scaled
             gets the vectors, scaled by one standard deviation
             (transforms from unit-eigen-space to data-space) 
+            
         transform
             >>> assert A.transform()**2 == abs(A).cov 
             >>> if not(flat and N<0):
@@ -142,20 +140,20 @@ class Mvar(object,Automath,Right,Inplace):
 
             >>> assert A.transform(2) == abs(A).cov
             
-            this is just more efficient than square-rooting the covariance, 
+            this is just more efficient than square-rooting the covariance matrix, 
             since it is stored de-composed
             (transforms from unit-data-space to data-space) 
             
     
-    the from* functions all create new instances from varous 
+    The from* functions all create new instances from varous 
     common constructs.
         
-    the get* functions all grab useful things out of the structure
+    The get* functions all grab useful things out of the structure
     
-    the inplace operators (like +=) work but, unlike in many classes, 
+    The inplace operators (like +=) work, inplace, but unlike in many classes, 
     do not currently speed up any operations.
     
-    the mean of the distribution is stored as a row vector, so make sure align 
+    The mean of the distribution is stored as a row vector, so make sure to align 
     your transforms apropriately and have the Mvar on left the when attempting 
     to do a matrix multiplies on it. This is for two reasons: 
 
@@ -163,7 +161,7 @@ class Mvar(object,Automath,Right,Inplace):
         
         2) The Mvar is (currently) the only object that knows how to do 
         operations on itself, might as well go straight to it instead of 
-        passing around 'NotImplemented's 
+        passing around "NotImplemented" 
         
     No work has been done to make things fast, because until they work at all 
     speed is not worth working on.  
@@ -245,9 +243,16 @@ class Mvar(object,Automath,Right,Inplace):
         )
     
     @staticmethod
-    def from_data(data, bias=False, **kwargs):
+    def fromData(data, bias=False, **kwargs):
         """
-        >>> assert Mvar.from_data(A)==A 
+        >>> assert Mvar.fromData(A)==A 
+        
+        >>> data=[1,2,3]
+        >>> new=Mvar.fromData([1,2,3])
+        >>> new.mean == [1,2,3]
+        >>> new.var == numpy.zeros([0])
+        >>> new.vectors == numpy.zeros([0,3])
+        >>> new.cov == numpy.zeros([3,3])
         
         bias is passed to numpy's cov function.
         
@@ -261,6 +266,9 @@ class Mvar(object,Automath,Right,Inplace):
         """
         if isinstance(data,Mvar):
             return data.copy()
+        else:
+            data=numpy.asarray(data)
+        
         
         #get the number of samples, subtract 1 if un-biased
         N=data.shape[0] if bias else data.shape[0]-1
@@ -353,25 +361,21 @@ class Mvar(object,Automath,Right,Inplace):
 
     
     ############ setters/getters -> properties
-
-    def getCov(self):
-        """
-        get the covariance matrix used by the object
-        
-        >>> assert A.cov==A.vectors.H*numpy.diagflat(A.var)*A.vectors
-        >>> assert A.cov==A.getCov()
-        >>> assert A.scaled.H*A.scaled==abs(A).cov
-        """
-        return self.vectors.H*numpy.diagflat(self.var)*self.vectors
     
     cov = property(
-        fget=getCov, 
+        fget=lambda self:self.vectors.H*numpy.diagflat(self.var)*self.vectors, 
         fset=lambda self,cov:self.copy(
             Mvar.fromCov(
                 mean=self.mean,
                 cov=cov,
         )),
-        doc="set or get the covariance matrix"
+        doc="""
+            get or set the covariance matrix used by the object
+        
+            >>> assert A.cov==A.vectors.H*numpy.diagflat(A.var)*A.vectors
+            >>> assert A.cov==A.getCov()
+            >>> assert A.scaled.H*A.scaled==abs(A).cov
+        """
     )
     
     scaled = property(
@@ -434,7 +438,7 @@ class Mvar(object,Automath,Right,Inplace):
         fget=lambda self:(self.vectors.shape),
         doc="""
             get the shape of the vectors,the first element is the number of 
-            vectors, the secondis their lengths: the number of dimensions of 
+            vectors, the second is their lengths: the number of dimensions of 
             the space they are embedded in
             
             >>> assert A.vectors.shape == A.shape
@@ -451,36 +455,29 @@ class Mvar(object,Automath,Right,Inplace):
         """
         either return a copy of an Mvar, or copy another into the self
         the default uses deep=False.
+        
         >>> A2=A.copy(deep=True)        
         >>> assert A2 == A
         >>> assert A2 is not A
         >>> assert A2.mean is not A.mean
-        >>> assert A2.var is not A.var
-        >>> assert A2.vectors is not A.vectors
 
         >>> A.copy(B,deep=True)
         >>> assert B == A
         >>> assert B is not A
         >>> assert A.mean is not B.mean
-        >>> assert A.var is not B.var
-        >>> assert A.vectors is not B.vectors
 
         set deep=False to not copy the attributes
         >>> A2=A.copy(deep=False)        
         >>> assert A2 == A
         >>> assert A2 is not A
         >>> assert A2.mean is A.mean
-        >>> assert A2.var is A.var
-        >>> assert A2.vectors is A.vectors
 
         >>> A.copy(B,deep=False)
         >>> assert B == A
         >>> assert B is not A
         >>> assert A.mean is B.mean
-        >>> assert A.var is B.var
-        >>> assert A.vectors is B.vectors
-
-        """ 
+        """
+         
         C=copy.deepcopy if deep else copy.copy
         if other is None:
             return C(self)
@@ -490,7 +487,7 @@ class Mvar(object,Automath,Right,Inplace):
     @staticmethod
     def stack(*mvars,**kwargs):
         """
-        it's a static method to make it clear that it's not happening in place
+        It's a static method to make it clear that this is not happening in place
         
         Stack two Mvars together, equivalent to hstacking the means, and 
         diag-stacking the covariances
@@ -499,6 +496,8 @@ class Mvar(object,Automath,Right,Inplace):
         something you calculated from an Mvar, back to the same Mvar it was 
         calculated from, you'll loose all the cross corelations. 
         If you're trying to do that use a better matrix multiply. 
+        
+        there is a connection between this and 'chain' (ref: andrew moore/data mining/gaussians)
         """
         #no 'square' is necessary here because the rotation matrixes are in 
         #entierly different dimensions
@@ -591,7 +590,7 @@ class Mvar(object,Automath,Right,Inplace):
     def quad(self,matrix):
         """
         place holder for quadratic forum
-        http://en.wikipedia.org/wiki/Quadratic_form_(statistics)
+       
         """
         #todo: implement quadratic forms?
         assert 1==0
@@ -599,6 +598,12 @@ class Mvar(object,Automath,Right,Inplace):
     def entropy(self):
         """
         place holder for entroppy function...
+        """
+        assert 1==0
+        
+    def chain(self,other):
+        """
+        place holder for chain (ref: andrew moore/data mining/gaussians)
         """
         assert 1==0
         
@@ -626,145 +631,90 @@ class Mvar(object,Automath,Right,Inplace):
             ).sum(axis = locations.ndim-1)
         )
         
-    def binindex(self,index):
-        """
-        convert whatever format index, for this object, to binary 
-        so it can be easily inverted
-        """
-        if hasattr(index,'dtype') and index.dtype==bool:
-            return index
-        
-        binindex=numpy.zeros(self.ndim,dtype=bool)
-        binindex[index]=True
-
-        return binindex
-
+    ## indexing
     def given(self,index,value):
         """
         return an mvar representing the conditional probability distribution, 
         given the values, on the given indexes
         ref: andrew moore/data mining/gussians/page 22
-
+        
+        This is really just an interface to Mvar.__and__. The conditional 
+        distributions are generated by doing an __and__ with an apropriate 
+        Mvar (zero variance if the input value is a scalar or vector) so this 
+        method can accept an Mvar (or data that can be turned into an Mvar) 
+        insted of a simple vector  
+        
+        __setitem__ uses this for an inplace version
+        
         >>> assert A.given(0,1).mean[0,0]==1
         >>> assert A.given(0,1).vectors[:,0]==numpy.zeros
         """
-        #convert the indexes
-        index=self.binindex(index)
+        #convert the inputs
+        value=Mvar.fromData(value)
+        index=binindex(index,self.ndim)
         
-        #get the dimensions we'll need
-        ndim=self.ndim
+        #create the mean, for the new object,and set the values of interest
+        mean=numpy.zeros([1,self.shape[0]])
+        mean[0,index[1]]=value.mean
 
-        #create the mean, 
-        mean=numpy.zeros([1,ndim])
-        #and set the values of interest
-        mean[0,index]=value
+        #create empty vectors for the new object
+        vectors=numpy.zeros([
+            value.shape[0]+(self.ndim-value.ndim),
+            self.ndim
+        ])
+        vectors[0:value.shape[0],index[1]]=value.vectors
+        vectors[value.shape[0]:,~index[1]]=numpy.eye(self.ndim-value.ndim)
+        
+        #create the variance for the new object
+        var=numpy.zeros(vectors.shape[0])
+        var[0:value.shape[0]]=value.var
+        var[value.shape[0]:]=numpy.Inf
 
-        #invert the indexes
-        nindex=~index
-        #find the number of infinite vectors we need
-        nvec=nindex.sum()
-
-        vectors=numpy.zeros([nvec,ndim])
-        where=numpy.argwhere(nindex)
-        N=numpy.arange(nvec)[:,numpy.newaxis]
-
-        vectors[N,where]=1
-
-        var=numpy.inf*numpy.ones(nvec)
-
+        #blend with the self
         return self & Mvar(
             var=var,
             mean=mean,
             vectors=vectors,
         ) 
         
-        
-
     def __setitem__(self,index,value):
         """
         self[index]=value
-
-        opertor interface to self.given 
+        
+        this is an opertor interface to self.given 
+        
+        watchout, this only takes a single index, not two like __getitem__
+        the asymetry is unavoidable, they do very different things 
         """
-        #todo: figure out what to do with i0        
-        if isinstance(index,tuple):
-            i0=index[0]
-            i1=index[1]
-        else:
-            i0=index
-            i1=slice(None)
+        self.copy(self.given(index,value))
 
-        assert i0==slice(None)
-        self.copy(self.given(i1,value))
-
-    def marginal(self,index,squeeze=True, square=True):
-        """
-        return the marginal distribution,
-        flattened in the indexed dimensions,
-        unused mean components get replaced with nan's
-        no dimensions are removed, be explicit, use knockout(index), or del()
-
-        >>> a = A[:,0].square().squeeze()
-        >>> assert A[:,0].knockout(range(1,A.ndim)) == a*a.vectors.H
-        """
-        assert ~isinstance(index,tuple)
-
-        index=self.binindex(index)
-
-        result=self.copy(deep=True)
-        result.mean[:,~index]=0
-        result.vectors[:,~index]=0
-
-        if (~index).all():
-            result.var[:]=0
-        elif square:
-            result=result.square()
-
-        if squeeze:
-            result=result.squeeze()
-
-        return result
-
-    def __getitem__(self,index):
+    def __getitem__(self,*index):
         """
         self[index]
-        operator interface to self.marginal
+        return the marginal distribution,
+        over the indexed dimensions,
         """
-        result=self.copy()
-        
-        if isinstance(index,tuple):
-            i0=index[0]
-            i1=index[1]
+        index=tuple(index)
+        if len(index)==1:
+            index=index+(slice(None),)
         else:
-            i0=index
-            i1=slice(None)
-
-        if i0 != slice(None):
-            result.vectors=result.vectors[i0,:]
-            result.var = result.var[i0]
-     
-        if i1 != slice(None):
-            result=result.marginal(i1)
-
-        return result
+            assert (len(index) == 2,'Invalid Index, should have 1 or 2 elements')
         
-    def knockout(self,index):
-        """
-        return an Mvar with the selected dimensions removed
-        """
-        keep=~self.binindex(index)
         return Mvar(
-            mean=self.mean[:,keep],
-            vectors=self.vectors[:,keep],
-            var=self.var,
+            mean=self.mean[:,index[1]],
+            vectors=self.vectors[index[0],index[1]],
+            var=self.var[index[0]],
         )
-
-    def __delitem__(self,index):
+    
+    def __iter__(self):
         """
-        del(self[index])
-        just an in-place interface to self.knockout
+        >>> assert sum(self) == self
         """
-        self.copy(self.knockout(index))
+        yield Mvar.fromData(self.mean,bias=True)
+        for n in range(self.shape[0]):
+            result=self[n]
+            result.mean=numpy.zeros_like(self.mean)
+            yield result
 
     ############ Math
 
@@ -777,8 +727,6 @@ class Mvar(object,Automath,Right,Inplace):
         >>> assert A==A.copy()
         >>> assert A is not A.copy()
         >>> assert A != B
-
-        but there are always surpriese.
 
         You'll get an Error if the mvars have different numbers of dimensions. 
         
@@ -1489,10 +1437,6 @@ class Mvar(object,Automath,Right,Inplace):
         )
         
     ################# Non-Math python internals
-    
-    def __iter__(self):
-        raise ValueError("Mvars are not iterable... for now?")
-
     def __call__(self,locations):
          """
         self(locations)
@@ -1629,7 +1573,7 @@ def mooreGiven(self,index,value):
  
     >>> assert mooreGiven(A,0,0)==A.given(0,0)
     """
-    Iv=self.binindex(index)
+    Iv=binindex(index,self.ndim)
     Iu=~Iv
  
     U=self[Iu]
@@ -1641,6 +1585,19 @@ def mooreGiven(self,index,value):
         mean=U.mean+(value-V.mean)*(V**-1).cov*vu,
         cov=U.cov-vu.H*(V**-1).cov*vu,
     )
+
+def binindex(self,index):
+    """
+    convert whatever format index, for this object, to binary 
+    so it can be easily inverted
+    """
+    if hasattr(index,'dtype') and index.dtype==bool:
+        return index
+    
+    binindex=numpy.zeros(self.ndim,dtype=bool)
+    binindex[index]=True
+
+    return binindex
 
 
 if __name__=='__main__':    
