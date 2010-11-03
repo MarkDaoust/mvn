@@ -949,9 +949,9 @@ class Mvar(object,Automath,Right,Inplace):
         >>> assert (L1&L2).vectors==[1,0]
         
         >>> L1=Mvar(mean=[0,0],vectors=[[1,1],[1,-1]], var=[numpy.inf,0.5])
-        >>> L2=Mvar(mean=[1,1],vectors=[0,-1],var=numpy.inf) 
+        >>> L2=Mvar(mean=[1,1],vectors=[0,1],var=numpy.inf) 
         >>> assert (L1&L2).mean==[1,1]
-        >>> assert (L1&L2).cov=[[0,0],[0,2]]
+        >>> assert (L1&L2).cov==[[0,0],[0,2]]
         
     """
     
@@ -966,18 +966,12 @@ class Mvar(object,Automath,Right,Inplace):
         
         #otherwise there is more work to do
         
-        #invert each object        
-        Iself=self**-1
-        Iother=other**-1
+        #invert each object
+        self=self.inflate()
+        other=other.inflate()
 
-        Fself=numpy.isfinite(Iself.var)
-        Fother=numpy.isfinite(Iother.var)
-
-        #the object's null vectors will show up as having infinite 
-        #variances in the inverted objects        
-
-        Nself=Iself.vectors[~Fself,:]
-        Nother=Iother.vectors[~Fother,:] 
+        Nself=self.vectors[self.var==0,:]
+        Nother=other.vectors[other.var==0,:] 
 
         null=numpy.vstack([
             Nself,
@@ -985,7 +979,7 @@ class Mvar(object,Automath,Right,Inplace):
         ])
 
         #get length of the component of the means along each null vector
-        r=numpy.vstack([Nself*self.mean.H,Nother*other.mean.H])
+        r=numpy.hstack([self.mean*Nself.H,other.mean*Nother.H])
 
         (s,v,d)=numpy.linalg.svd(null,full_matrices=False)
 
@@ -995,14 +989,11 @@ class Mvar(object,Automath,Right,Inplace):
         v=v[nonZero]
         d=d[nonZero,:]
         
-        Dmean=r.H*s*numpy.diagflat(v)*d
+        Dmean=r*s*numpy.diagflat(v)*d
+        
 
         ## new=(Iself+Iother+Mvar(vectors=d,var=Matrix.infs))**(-1)
-        new=(Iself+Iother+Mvar(vectors=d,var=Matrix.infs))**(-1)
-
-
-        #add in the components of the means along each null vector
-        new.mean=new.mean+Dmean
+        new=1/(1/(self-Dmean)+1/(other-Dmean))+Dmean
 
         return new
         
