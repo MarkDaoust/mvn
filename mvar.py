@@ -1,15 +1,14 @@
 #! /usr/bin/env python
 
-#todo: fix indexing
 #todo: understand transforms composed of Mvars as the component vectors, and 
 #          whether it is meaningful to consider mvars in both the rows and columns
-#todo: implement a transpose
+#todo: implement a transpose,for the above 
 #todo: see if div should be upgraded to act more like matlab backwards divide
 #todo: impliment collectionss of mvars so that or '|'  is meaningful
 #todo: cleanup my 'square' function (now that it is clear that it's an SVD)
-#todo: entropy
+#todo: entropy?
 #todo: quadratic forms (ref: http://en.wikipedia.org/wiki/Quadratic_form_(statistics))
-#todo: chain rule(see moore's datamining slides)
+#todo: chain rule(see moore's datamining slides), it looks like a division 
 #todo: start using unittest instead of just doctest
 #todo: split the class into two levels: "fast" and 'safe'?
 #      maybe have the 'safe' class inherit from 'fast' and a add a variance-free 'plane' class?
@@ -48,7 +47,7 @@ remember: circular logic works because circluar logic works.
  
 """
 
-## imports
+############  imports
 
 ## builtins
 import itertools
@@ -203,8 +202,8 @@ class Mvar(object,Automath,Right,Inplace):
         #stack everything to check sizes and automatically inflate any 
         #functions that were passed in
         
-        var= var if callable(var) else numpy.array(var).flatten()[:,numpy.newaxis]
-        mean= mean if callable(mean) else numpy.array(mean).flatten()[numpy.newaxis,:]
+        var= var if callable(var) else numpy.array(var).flatten()[:,None]
+        mean= mean if callable(mean) else numpy.array(mean).flatten()[None,:]
         vectors= vectors if callable(vectors) else Matrix(vectors)
         
         stack=Matrix(helpers.autostack([
@@ -243,16 +242,16 @@ class Mvar(object,Automath,Right,Inplace):
         )
     
     @staticmethod
-    def fromData(data, bias=False, **kwargs):
+    def fromData(data,mean=None,weights=None, bias=False, **kwargs):
         """
         >>> assert Mvar.fromData(A)==A 
         
         >>> data=[1,2,3]
-        >>> new=Mvar.fromData([1,2,3])
-        >>> new.mean == [1,2,3]
-        >>> new.var == numpy.zeros([0])
-        >>> new.vectors == numpy.zeros([0,3])
-        >>> new.cov == numpy.zeros([3,3])
+        >>> new=Mvar.fromData([1,2,3],bias=True)
+        >>> assert new.mean == [1,2,3]
+        >>> assert (new.var == numpy.zeros([0])).all()
+        >>> assert new.vectors == numpy.zeros([0,3])
+        >>> assert new.cov == numpy.zeros([3,3])
         
         bias is passed to numpy's cov function.
         
@@ -264,11 +263,17 @@ class Mvar(object,Automath,Right,Inplace):
         remember numpy's default covariance calculation divides by (n-1) not 
         (n) set bias = 1 to use N,
         """
+        
         if isinstance(data,Mvar):
             return data.copy()
-        else:
-            data=numpy.asarray(data)
         
+        data=Matrix(data)
+
+        
+        #todo: implement these
+        assert mean is None,'standard error not yet implemented'
+        assert weights is None,'weights not implemented'
+        assert data.dtype is not numpy.dtype('object'),'not mplementd for mvars yet'
         
         #get the number of samples, subtract 1 if un-biased
         N=data.shape[0] if bias else data.shape[0]-1
@@ -276,11 +281,7 @@ class Mvar(object,Automath,Right,Inplace):
         #get the mean of the data
         mean=numpy.mean(data,axis=0)
         
-        #calculate the covariance
-        data-=mean
-        data=Matrix(data)
-        
-        cov=(data.H*data)/N
+        cov=(data.H*data)/N-mean.H*mean
         
         #create the mvar from the mean and covariance of the data
         return Mvar.fromCov(
@@ -288,6 +289,30 @@ class Mvar(object,Automath,Right,Inplace):
             mean= mean,
             **kwargs
         )
+    
+    @staticmethod
+    def zeros(n=1):
+        """
+        >>> if N>0:
+        ...     Z=Mvar.zeros(N)
+        ...     assert Z.mean==Matrix.zeros
+        ...     assert Z.var.size==0
+        ...     assert Z.vectors.size==0
+        """
+        return Mvar(mean=Matrix.zeros(n))
+    
+    @staticmethod
+    def infs(n=1):
+        """
+        >>> if N>0:
+        ...     inf=Mvar.infs(N)
+        ...     assert inf.mean==Matrix.zeros
+        ...     assert inf.var.size==inf.mean.size==N
+        ...     assert (inf.var==numpy.inf).all()
+        ...     assert inf.vectors==Matrix.eye
+        """
+        
+        return Mvar.zeros(n)**-1
     
     ##### 'cosmetic' manipulations
     def inflate(self):
@@ -373,7 +398,6 @@ class Mvar(object,Automath,Right,Inplace):
             get or set the covariance matrix used by the object
         
             >>> assert A.cov==A.vectors.H*numpy.diagflat(A.var)*A.vectors
-            >>> assert A.cov==A.getCov()
             >>> assert A.scaled.H*A.scaled==abs(A).cov
         """
     )
@@ -451,38 +475,6 @@ class Mvar(object,Automath,Right,Inplace):
         return sign(self.var)
 
     ########## Utilities
-    def copy(self,other=None,deep=False):
-        """
-        either return a copy of an Mvar, or copy another into the self
-        the default uses deep=False.
-        
-        >>> A2=A.copy(deep=True)        
-        >>> assert A2 == A
-        >>> assert A2 is not A
-        >>> assert A2.mean is not A.mean
-
-        >>> A.copy(B,deep=True)
-        >>> assert B == A
-        >>> assert B is not A
-        >>> assert A.mean is not B.mean
-
-        set deep=False to not copy the attributes
-        >>> A2=A.copy(deep=False)        
-        >>> assert A2 == A
-        >>> assert A2 is not A
-        >>> assert A2.mean is A.mean
-
-        >>> A.copy(B,deep=False)
-        >>> assert B == A
-        >>> assert B is not A
-        >>> assert A.mean is B.mean
-        """
-         
-        C=copy.deepcopy if deep else copy.copy
-        if other is None:
-            return C(self)
-        else:
-            self.__dict__.update(C(other.__dict__))
         
     @staticmethod
     def stack(*mvars,**kwargs):
@@ -631,7 +623,8 @@ class Mvar(object,Automath,Right,Inplace):
             ).sum(axis = locations.ndim-1)
         )
         
-    ## indexing
+    ############## indexing
+    
     def given(self,index,value):
         """
         return an mvar representing the conditional probability distribution, 
@@ -646,24 +639,27 @@ class Mvar(object,Automath,Right,Inplace):
         
         __setitem__ uses this for an inplace version
         
-        >>> assert A.given(0,1).mean[0,0]==1
-        >>> assert A.given(0,1).vectors[:,0]==numpy.zeros
+        >>> assert A.given(index=0,value=1).mean[:,0]==1
+        >>> assert A.given(index=0,value=1).vectors[:,0]==numpy.zeros
+        
+        >>> a=A.copy()
+        >>> a[0]=1
+        >>> assert a==A.given(index=0,value=1)
         """
         #convert the inputs
-        value=Mvar.fromData(value)
-        index=binindex(index,self.ndim)
+        value=Mvar.fromData(value,bias=True)
         
         #create the mean, for the new object,and set the values of interest
         mean=numpy.zeros([1,self.shape[0]])
-        mean[0,index[1]]=value.mean
+        mean[0,index]=value.mean
 
         #create empty vectors for the new object
         vectors=numpy.zeros([
             value.shape[0]+(self.ndim-value.ndim),
             self.ndim
         ])
-        vectors[0:value.shape[0],index[1]]=value.vectors
-        vectors[value.shape[0]:,~index[1]]=numpy.eye(self.ndim-value.ndim)
+        vectors[0:value.shape[0],index]=value.vectors
+        vectors[value.shape[0]:,~index]=numpy.eye(self.ndim-value.ndim)
         
         #create the variance for the new object
         var=numpy.zeros(vectors.shape[0])
@@ -705,16 +701,6 @@ class Mvar(object,Automath,Right,Inplace):
             vectors=self.vectors[index[0],index[1]],
             var=self.var[index[0]],
         )
-    
-    def __iter__(self):
-        """
-        >>> assert sum(self) == self
-        """
-        yield Mvar.fromData(self.mean,bias=True)
-        for n in range(self.shape[0]):
-            result=self[n]
-            result.mean=numpy.zeros_like(self.mean)
-            yield result
 
     ############ Math
 
@@ -903,7 +889,7 @@ class Mvar(object,Automath,Right,Inplace):
     def __and__(self,other):
         """
         self & other
-
+        
         This is awsome.
         
         optimally blend together any number of mvars, this is done with the 
@@ -942,7 +928,7 @@ class Mvar(object,Automath,Right,Inplace):
         >>> assert A & B == wiki(A,B) or flat
 
         this algorithm is also, at the same time, solving linear equations
-        where zero variances corespond to 
+        where infinite vatiances correspond to 
 
         >>> L1=Mvar(mean=[1,0],vectors=[0,1],var=numpy.inf)
         >>> L2=Mvar(mean=[0,1],vectors=[1,0],var=numpy.inf) 
@@ -953,6 +939,20 @@ class Mvar(object,Automath,Right,Inplace):
         >>> L2=Mvar(mean=[0,1],vectors=[1,0],var=numpy.inf) 
         >>> assert (L1&L2).mean==[1,1]
         >>> assert (L1&L2).var.size==0
+        
+        but I seem to have screwed up on when the two are mixed:
+        
+        >>> L1=Mvar(mean=[0,0],vectors=Matrix.eye, var=[1,1])
+        >>> L2=Mvar(mean=[0,1],vectors=[1,0],var=numpy.inf) 
+        >>> assert (L1&L2).mean==[0,1]
+        >>> assert (L1&L2).var==1
+        >>> assert (L1&L2).vectors==[1,0]
+        
+        >>> L1=Mvar(mean=[0,0],vectors=[[1,1],[1,-1]], var=[numpy.inf,0.5])
+        >>> L2=Mvar(mean=[1,1],vectors=[0,-1],var=numpy.inf) 
+        >>> assert (L1&L2).mean==[1,1]
+        >>> assert (L1&L2).cov=[[0,0],[0,2]]
+        
     """
     
         #assuming the mvars are squared and squeezed 
@@ -989,17 +989,17 @@ class Mvar(object,Automath,Right,Inplace):
 
         (s,v,d)=numpy.linalg.svd(null,full_matrices=False)
 
-        finite = ~helpers.approx(v)
+        nonZero = ~helpers.approx(v)
 
-        s=s[:,finite]
-        v=v[finite]
-        d=d[finite,:]
+        s=s[:,nonZero]
+        v=v[nonZero]
+        d=d[nonZero,:]
         
-        r=numpy.diagflat(v**-1)*s.H*r
+        Dmean=r.H*s*numpy.diagflat(v)*d
 
-        Dmean=r.H*d
-
+        ## new=(Iself+Iother+Mvar(vectors=d,var=Matrix.infs))**(-1)
         new=(Iself+Iother+Mvar(vectors=d,var=Matrix.infs))**(-1)
+
 
         #add in the components of the means along each null vector
         new.mean=new.mean+Dmean
@@ -1571,7 +1571,7 @@ def mooreGiven(self,index,value):
 
     todo: figure out why this doesn't work
  
-    >>> assert mooreGiven(A,0,0)==A.given(0,0)
+    >>> assert mooreGiven(A,index=0,value=1)==A.given(index=0,value=1)
     """
     Iv=binindex(index,self.ndim)
     Iu=~Iv
@@ -1582,11 +1582,11 @@ def mooreGiven(self,index,value):
     vu=numpy.diagflat(self.var)*V.vectors.H*U.vectors
 
     return Mvar.fromCov(
-        mean=U.mean+(value-V.mean)*(V**-1).cov*vu,
-        cov=U.cov-vu.H*(V**-1).cov*vu,
+        mean=U.mean+(value-V.mean)*(V.transform(power=-2))*vu,
+        cov=U.cov-vu.H*(V.transform(power=-2))*vu,
     )
 
-def binindex(self,index):
+def binindex(index,n):
     """
     convert whatever format index, for this object, to binary 
     so it can be easily inverted
@@ -1594,7 +1594,7 @@ def binindex(self,index):
     if hasattr(index,'dtype') and index.dtype==bool:
         return index
     
-    binindex=numpy.zeros(self.ndim,dtype=bool)
+    binindex=numpy.zeros(n,dtype=bool)
     binindex[index]=True
 
     return binindex
@@ -1602,8 +1602,8 @@ def binindex(self,index):
 
 if __name__=='__main__':    
     #overwrite everything we just created with the copy that was 
-    #created when we imported mvar, so there's only one copy.
+    #created when we imported mvar; there can only be one.
     from mvar import *
     from testObjects import *
-    mooreGiven(A,0,0)==A.given(0,0)
+    mooreGiven(A,0,1)==A.given(0,1)
 

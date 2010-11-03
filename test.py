@@ -73,7 +73,7 @@ def makeTestObjects(cplx=False,flat=False,seed=False):
         cov=(lambda x:x.H*x)(5*randn()*rvec(num))
     )
 
-    C=Mvar.from_data(
+    C=Mvar.fromData(
         rvec(num+1)
     )
 

@@ -1,6 +1,8 @@
 #! /usr/bin/env python
 
-class Inplace():
+from copyable import Copyable
+
+class Inplace(Copyable):
     """
     given: a class with self.copy(other) and definition of the basic forms of 
     the operators (+,-,*,/,**,&,|,^,<<,>>)
