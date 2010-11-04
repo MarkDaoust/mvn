@@ -884,7 +884,6 @@ class Mvar(object,Automath,Right,Inplace):
         I don't  know what this means yet
         """
         return self+other-2*(self&other)
-    
 
     def __and__(self,other):
         """
@@ -892,7 +891,9 @@ class Mvar(object,Automath,Right,Inplace):
         
         This is awsome.
         
-        optimally blend together any number of mvars, this is done with the 
+        it is the blend step from kalman filtering
+        
+        optimally blend together two mvars, this is done with the 
         'and' operator because the elipses look like ven-diagrams
         
         Just choosing an apropriate inversion operator (1/A) allows us to 
@@ -900,11 +901,6 @@ class Mvar(object,Automath,Right,Inplace):
         resistors. operator overloading takes care of the rest.
         
         The inversion automatically leads to power, multiply, and divide  
-        
-        When called as a method 'self' is part of *mvars 
-        
-        This blending function is not restricted to two inputs like the basic
-        (wikipedia) version. Any number works,and the order doesn't matter.
         
         >>> assert A & B == B & A 
         >>> assert A & B == 1/(1/A+1/B) or flat
@@ -922,13 +918,13 @@ class Mvar(object,Automath,Right,Inplace):
         >>> assert A &~A == Mvar(mean=numpy.zeros(ndim))**-1 or flat
         
         The proof that this is identical to the wikipedia definition of blend 
-        is a little too involved to write here. Just try it (see the "wiki "
+        is a little too involved to write here. Just try it (and see the "wiki"
         function)
         
         >>> assert A & B == wiki(A,B) or flat
 
         this algorithm is also, at the same time, solving linear equations
-        where infinite vatiances correspond to 
+        where the zero vatiances correspond to a plane's null vectors 
 
         >>> L1=Mvar(mean=[1,0],vectors=[0,1],var=numpy.inf)
         >>> L2=Mvar(mean=[0,1],vectors=[1,0],var=numpy.inf) 
@@ -940,8 +936,6 @@ class Mvar(object,Automath,Right,Inplace):
         >>> assert (L1&L2).mean==[1,1]
         >>> assert (L1&L2).var.size==0
         
-        but I seem to have screwed up on when the two are mixed:
-        
         >>> L1=Mvar(mean=[0,0],vectors=Matrix.eye, var=[1,1])
         >>> L2=Mvar(mean=[0,1],vectors=[1,0],var=numpy.inf) 
         >>> assert (L1&L2).mean==[0,1]
@@ -952,27 +946,25 @@ class Mvar(object,Automath,Right,Inplace):
         >>> L2=Mvar(mean=[1,1],vectors=[0,1],var=numpy.inf) 
         >>> assert (L1&L2).mean==[1,1]
         >>> assert (L1&L2).cov==[[0,0],[0,2]]
-        
     """
-    
-        #assuming the mvars are squared and squeezed 
-        #if they both fill the space        
+        #check if they both fill the space
         if (
-            self.shape[0] == self.shape[1] and 
-            other.shape[0]==other.shape[1]
+            self.mean.size == (self.var!=0).sum() and 
+            other.mean.size == (other.var!=0).sum()
         ):
             #then this is a standard paralell operation
             return (self**(-1)+other**(-1))**(-1) 
         
         #otherwise there is more work to do
         
-        #invert each object
+        #inflate each object
         self=self.inflate()
         other=other.inflate()
-
+        #collect the null vectors
         Nself=self.vectors[self.var==0,:]
         Nother=other.vectors[other.var==0,:] 
 
+        #and stack them
         null=numpy.vstack([
             Nself,
             Nother,
@@ -981,22 +973,20 @@ class Mvar(object,Automath,Right,Inplace):
         #get length of the component of the means along each null vector
         r=numpy.hstack([self.mean*Nself.H,other.mean*Nother.H])
 
+        #square up the null vectors
         (s,v,d)=numpy.linalg.svd(null,full_matrices=False)
 
-        nonZero = ~helpers.approx(v)
-
+        #discard any very small components
+        nonZero = ~helpers.approx(v**2)
         s=s[:,nonZero]
         v=v[nonZero]
         d=d[nonZero,:]
         
-        Dmean=r*s*numpy.diagflat(v)*d
+        #calculate the mean component in the direction of the new null vectors
+        Dmean=r*s*numpy.diagflat(v**-1)*d
         
-
-        ## new=(Iself+Iother+Mvar(vectors=d,var=Matrix.infs))**(-1)
-        new=1/(1/(self-Dmean)+1/(other-Dmean))+Dmean
-
-        return new
-        
+        #do the blending, while compensating for the mean of the working plane
+        return ((self-Dmean)**-1+(other-Dmean)**-1)**-1+Dmean
 
     def __pow__(self,power):
         """
