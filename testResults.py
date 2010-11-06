@@ -1,6 +1,6 @@
 #dumping new pickle
 **********************************************************************
-File "/home/olpc/personal-projects/kalman/mvar.py", line 1555, in mvar.mooreGiven
+File "/home/olpc/personal-projects/kalman/mvar.py", line 1565, in mvar.mooreGiven
 Failed example:
     assert mooreGiven(A,index=0,value=1)==A.given(index=0,value=1)
 Exception raised:
@@ -11,18 +11,6 @@ Exception raised:
         assert mooreGiven(A,index=0,value=1)==A.given(index=0,value=1)
     AssertionError
 **********************************************************************
-File "/home/olpc/personal-projects/kalman/mvar.py", line 1534, in mvar.newBlend
-Failed example:
-    assert newBlend(A,B) == wiki(A,B) or flat
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.5/doctest.py", line 1228, in __run
-        compileflags, 1) in test.globs
-      File "<doctest mvar.newBlend[0]>", line 1, in <module>
-        assert newBlend(A,B) == wiki(A,B) or flat
-    AssertionError
-**********************************************************************
-2 items had failures:
+1 items had failures:
    1 of   1 in mvar.mooreGiven
-   1 of   1 in mvar.newBlend
-***Test Failed*** 2 failures.
+***Test Failed*** 1 failures.
