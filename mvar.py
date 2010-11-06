@@ -251,13 +251,13 @@ class Mvar(object,Automath,Right,Inplace):
         )
     
     @staticmethod
-    def fromData(data,mean=None,weights=None, bias=False, **kwargs):
+    def fromData(data,mean=None,weights=None, bias=True, **kwargs):
         """
         >>> assert Mvar.fromData(A)==A 
         
         >>> data=[1,2,3]
-        >>> new=Mvar.fromData([1,2,3],bias=True)
-        >>> assert new.mean == [1,2,3]
+        >>> new=Mvar.fromData(data)
+        >>> assert new.mean == data
         >>> assert (new.var == numpy.zeros([0])).all()
         >>> assert new.vectors == numpy.zeros([0,3])
         >>> assert new.cov == numpy.zeros([3,3])
@@ -280,7 +280,6 @@ class Mvar(object,Automath,Right,Inplace):
 
         
         #todo: implement these
-        assert mean is None,'standard error not yet implemented'
         assert weights is None,'weights not implemented'
         assert data.dtype is not numpy.dtype('object'),'not mplementd for mvars yet'
         
@@ -288,16 +287,19 @@ class Mvar(object,Automath,Right,Inplace):
         N=data.shape[0] if bias else data.shape[0]-1
         
         #get the mean of the data
-        mean=numpy.mean(data,axis=0)
+        if mean is None:
+            mean=numpy.mean(data,axis=0)
+
+        if weights is None:
         
-        cov=(data.H*data)/N-mean.H*mean
+            cov=(data.H*data)/N-mean.H*mean
         
-        #create the mvar from the mean and covariance of the data
-        return Mvar.fromCov(
-            cov = cov,
-            mean= mean,
-            **kwargs
-        )
+            #create the mvar from the mean and covariance of the data
+            return Mvar.fromCov(
+                cov = cov,
+                mean= mean,
+                **kwargs
+            )
     
     @staticmethod
     def zeros(n=1):
@@ -677,7 +679,7 @@ class Mvar(object,Automath,Right,Inplace):
         >>> assert a==A.given(index=0,value=1)
         """
         #convert the inputs
-        value=Mvar.fromData(value,bias=True)
+        value=Mvar.fromData(value)
         
         #create the mean, for the new object,and set the values of interest
         mean=numpy.zeros([1,self.shape[0]])
@@ -760,10 +762,15 @@ class Mvar(object,Automath,Right,Inplace):
             >>> assert A != B
 
         """
+        other=Mvar.fromData(other)
+        
         #check the number of dimensions of the space
         assert (
             self.ndim == other.ndim,
-            """if the objects have different numbers of dimensions, you're doing something wrong"""
+            """
+            if the objects have different numbers of dimensions, 
+            you're doing something wrong
+            """
         )
 
         self=self.squeeze()
