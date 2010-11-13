@@ -2,7 +2,7 @@
 
 import copy
 
-class Copyable():
+class Copyable(object):
     def copy(self,other=None,deep=False):
         """
         either return a copy of the object, or copy another object's dictionary

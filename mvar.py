@@ -61,7 +61,7 @@ import numpy
 #from scipy import sqrt()
 def sqrt(data):
     """
-    like scipy.sqrt without waiting for scipy to import
+    like scipy.sqrt without a scipy depandancy
     """
     data = numpy.asarray(data)
     if numpy.isreal(data).all() and (data>=0).all():
@@ -80,7 +80,7 @@ from right import Right
 from inplace import Inplace
 from matrix import Matrix
 
-class Mvar(object,Automath,Right,Inplace):
+class Mvar(Automath,Right,Inplace):
     """
     Multivariate normal distributions packaged to act like a vector 
     (Ref: andrew moore / data mining / gaussians )
@@ -500,7 +500,7 @@ class Mvar(object,Automath,Right,Inplace):
         calculated from, you'll loose all the cross corelations. 
         If you're trying to do that use a better matrix multiply. 
         
-        there is a connection between this and 'chain' (ref: andrew moore/data mining/gaussians)
+        is there a connection between this and 'chain'? (ref: andrew moore/data mining/gaussians)
         """
         #no 'square' is necessary here because the rotation matrixes are in 
         #entierly different dimensions
@@ -1603,6 +1603,7 @@ if __name__=='__main__':
     #created when we imported mvar; there can only be one.
     from mvar import *
     from testObjects import *
-    Mvar.stack(A,Mvar.infs(3))
-    mooreGiven(A,0,1)==A.given(0,1)
+    
+    #Mvar.stack(A,Mvar.infs(3))
+    #mooreGiven(A,0,1)==A.given(0,1)
 

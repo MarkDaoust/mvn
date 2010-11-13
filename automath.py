@@ -3,7 +3,7 @@
 import itertools 
 import operator
 
-class Automath():
+class Automath(object):
     """
     abctract base class
     It attempts to define a complete set of sensible operations from a more limited set

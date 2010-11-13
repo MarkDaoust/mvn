@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-class Right():
+class Right(object):
     """
     This class just creates the right half of many operators that 
     can be easily calculated from the left versions and a few simple 
