@@ -1,6 +1,6 @@
 #dumping new pickle
 **********************************************************************
-File "/home/olpc/personal-projects/kalman/mvar.py", line 1565, in mvar.mooreGiven
+File "/home/olpc/personal-projects/kalman/mvar.py", line 1572, in mvar.mooreGiven
 Failed example:
     assert mooreGiven(A,index=0,value=1)==A.given(index=0,value=1)
 Exception raised:

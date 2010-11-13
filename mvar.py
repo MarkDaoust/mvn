@@ -509,7 +509,7 @@ class Mvar(Automath,Right,Inplace):
             mean=numpy.hstack([mvar.mean for mvar in mvars]),
             #stack the vector diagonally
             vectors=helpers.diagstack([mvar.vectors for mvar in mvars]),
-            var=numpy.concatenate([mvar.var for var in mvars]),
+            var=numpy.concatenate([mvar.var for mvar in mvars]),
             **kwargs
         )
     
@@ -1604,6 +1604,6 @@ if __name__=='__main__':
     from mvar import *
     from testObjects import *
     
-    #Mvar.stack(A,Mvar.infs(3))
-    #mooreGiven(A,0,1)==A.given(0,1)
+    Mvar.stack(A,Mvar.infs(3))
+    mooreGiven(A,0,1)==A.given(0,1)
 
