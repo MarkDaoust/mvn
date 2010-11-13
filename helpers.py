@@ -57,11 +57,13 @@ def diagstack(arrays):
     """
     #make a nested matrix, with the inputs on the diagonal, and the numpy.zeros
     #function everywhere else
-    result=numpy.where(
-        numpy.eye(len(arrays)),
-        numpy.diag(numpy.array(arrays,dtype=object)),
-        numpy.zeros,
-    )
+    E=numpy.eye(len(arrays),dtype=bool)
+    result=numpy.zeros(E.shape,dtype=object)
+    for index,array in zip(numpy.argwhere(E),arrays):
+        index=tuple(index)
+        result[index]=array
+    
+    result[~E]=numpy.zeros    
     
     return autostack(result)
 

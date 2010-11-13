@@ -104,6 +104,15 @@ class myTest(unittest.TestCase):
         assert (inf.var==numpy.inf).all()
         assert inf.vectors==Matrix.eye
 
+    def testStackAB(self):
+        AB= Mvar.stack(A,B)
+        AB[:A.ndim]==A
+        AB[A.ndim:]==B
+
+    def testStackI0(self):
+        assert Mvar.stack(Mvar.infs(2),Mvar.infs(5))==Mvar.Infs(7)
+        assert Mvar.stack(Mvar.zeros(2),Mvar.zeros(5))==Mvar.zeros(7)
+        
 
     def testVectors(self):
         if A.shape[0] == A.shape[1]:

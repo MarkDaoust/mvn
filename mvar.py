@@ -409,7 +409,7 @@ class Mvar(Automath,Right,Inplace):
             get or set the covariance matrix used by the object
         
             >>> assert A.cov==A.vectors.H*numpy.diagflat(A.var)*A.vectors
-            >>> assert A.scaled.H*A.scaled==abs(A).cov
+            >>> assert abs(A).cov==A.scaled.H*A.scaled
         """
     )
     
@@ -419,6 +419,7 @@ class Mvar(Automath,Right,Inplace):
         """
         get the vectors, scaled by the standard deviations. 
         Useful for transforming from unit-eigen-space, to data-space
+
         >>> assert A.vectors.H*A.scaled==A.transform()
         """
     )
@@ -490,6 +491,10 @@ class Mvar(Automath,Right,Inplace):
     @staticmethod
     def stack(*mvars,**kwargs):
         """
+        >>> AB= Mvar.stack(A,B)
+        >>> assert AB[:A.ndim]==A
+        >>> assert AB[A.ndim:]==B
+
         It's a static method to make it clear that this is not happening in place
         
         Stack two Mvars together, equivalent to hstacking the means, and 
@@ -716,22 +721,16 @@ class Mvar(Automath,Right,Inplace):
         """
         self.copy(self.given(index,value))
 
-    def __getitem__(self,*index):
+    def __getitem__(self,index):
         """
         self[index]
         return the marginal distribution,
         over the indexed dimensions,
         """
-        index=tuple(index)
-        if len(index)==1:
-            index=index+(slice(None),)
-        else:
-            assert (len(index) == 2,'Invalid Index, should have 1 or 2 elements')
-        
         return Mvar(
-            mean=self.mean[:,index[1]],
-            vectors=self.vectors[index[0],index[1]],
-            var=self.var[index[0]],
+            mean=self.mean[:,index],
+            vectors=self.vectors[:,index],
+            var=self.var,
         )
 
     ############ Math
@@ -1604,6 +1603,8 @@ if __name__=='__main__':
     from mvar import *
     from testObjects import *
     
-    Mvar.stack(A,Mvar.infs(3))
     mooreGiven(A,0,1)==A.given(0,1)
 
+    AB= Mvar.stack(A,B)
+    AB[:A.ndim]==A
+    AB[A.ndim:]==B
