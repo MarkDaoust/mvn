@@ -182,8 +182,8 @@ class myTest(unittest.TestCase):
         x=Mvar(mean=1,var=1)
         assert Y.given(index=0,value=x) == X&Y
 
-    def testMGiven(self):
-        assert mooreGiven(A,index=0,value=1)==A.given(index=0,value=1)
+    def testMooreGiven(self):
+        assert mooreGiven(A,index=0,value=1)==A.given(index=0,value=1)[1:]
 
 
     def testEq(self):

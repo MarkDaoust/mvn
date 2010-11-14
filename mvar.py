@@ -1568,19 +1568,20 @@ def mooreGiven(self,index,value):
 
     todo: figure out why this doesn't work
  
-    >>> assert mooreGiven(A,index=0,value=1)==A.given(index=0,value=1)
+    >>> assert mooreGiven(A,index=0,value=1)==A.given(index=0,value=1)[1:]
     """
     Iv=binindex(index,self.ndim)
     Iu=~Iv
- 
-    U=self[Iu]
-    V=self[Iv]
 
-    vu=numpy.diagflat(self.var)*V.vectors.H*U.vectors
+    cov=self.cov 
+
+    uu=cov[Iu,Iu]
+    uv=cov[Iu,Iv]
+    vvI=cov[Iv,Iv]**-1
 
     return Mvar.fromCov(
-        mean=U.mean+(value-V.mean)*(V.transform(power=-2))*vu,
-        cov=U.cov-vu.H*(V.transform(power=-2))*vu,
+        mean=self.mean[0,Iu]+uv.H*vvI*(value-self.mean[0,Iv]),
+        cov=uu-uv.H*vvI*uv
     )
 
 def binindex(index,n):
