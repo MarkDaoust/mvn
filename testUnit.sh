@@ -7,11 +7,11 @@ mkfifo pipe
 #runtest.py with all the input arguments
 #send the output and error to the pipe,
 #and run in the background 
-./testDoc.py $@ &> pipe & 
+./testUnit.py $@ &> pipe & 
 #on the recieving end of the pipe 
 #split the recieved text, printing one copy tothe stdIO, 
 #and writing the other copy to a file 
-tee docTestResults.py < pipe 
+tee unitTestResults.py < pipe 
 
 rm pipe
 echo '#done'

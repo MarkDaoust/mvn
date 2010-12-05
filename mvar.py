@@ -6,9 +6,8 @@
 #todo: see if div should be upgraded to act more like matlab backwards divide
 #todo: impliment collectionss of mvars so that or '|'  is meaningful
 #todo: cleanup my 'square' function (now that it is clear that it's an SVD)
-#todo: entropy?
+#todo: entropy
 #todo: quadratic forms (ref: http://en.wikipedia.org/wiki/Quadratic_form_(statistics))
-#todo: chain rule(see moore's datamining slides), it looks like a division 
 #todo: start using unittest instead of just doctest
 #todo: split the class into two levels: "fast" and 'safe'?
 #      maybe have the 'safe' class inherit from 'fast' and a add a variance-free 'plane' class?
@@ -34,7 +33,7 @@ The docstrings are full of examples. The objects used in theexamples are created
 by test.sh, and stored in test_objects.pkl. You can get the most recent versions of them by 
 importing testObjects.py, which will give you a module containing the objects used
 
-in the tests
+in the doc examples
     A,B and C are instances of the Mvar class  
     K1 and K2 are random numbers
     M and M2 are matrixes
@@ -505,7 +504,7 @@ class Mvar(Automath,Right,Inplace):
         calculated from, you'll loose all the cross corelations. 
         If you're trying to do that use a better matrix multiply. 
         
-        is there a connection between this and 'chain'? (ref: andrew moore/data mining/gaussians)
+        see also Mvar.chain
         """
         #no 'square' is necessary here because the rotation matrixes are in 
         #entierly different dimensions
@@ -598,9 +597,12 @@ class Mvar(Automath,Right,Inplace):
     def quad(self,matrix):
         """
         place holder for quadratic forum
+        
+        this looks a lot like a route towards implementing Mvar.T
+        and Mvar*Mvar.T
        
         """
-        #todo: implement quadratic forms?
+        #todo: implement quadratic forms
         assert 1==0
 
     def entropy(self):
@@ -610,12 +612,30 @@ class Mvar(Automath,Right,Inplace):
         #todo: impliment entropy function
         assert 1==0
         
-    def chain(self,other):
+    def chain(self,sensor,transform=None):
         """
-        place holder for chain (ref: andrew moore/data mining/gaussians)
+        given a distribution of actual values and an Mvar to act as a sensor 
+        this method returns the joint distribution of real and measured values
+
+        the, optional, transform parameter describes how to transform from actual
+        space to sensor space
+        
+        reference andrew moore/data mining/gaussians
         """
-        #todo: impliment entropy function
-        assert 1==0
+
+        if transform is not None:
+            transform=Matrix.eye(self.ndim)
+
+        T=self*transform+sensor
+        vv=self.cov        
+
+        return Mvar.fromCov(
+            mean=helpers.autostack([[self.mean,T.mean]]),
+            cov=helpers.autostack([
+                [vv,(vv*transform).T],
+                [vv*transform,T.cov],
+            ])
+        ) 
         
     def dist2(self,locations):
         """
@@ -913,7 +933,7 @@ class Mvar(Automath,Right,Inplace):
         I don't  know what this means yet
         """
         #todo: create a 'GMM' class so that | has real meaning
-        return self+other-self&other
+        return self+other-(self&other)
 
     def __xor__(self,other):
         """
@@ -1566,9 +1586,7 @@ def mooreGiven(self,index,value):
     direct implementation of the "given" algorithm in
     Andrew moore's data-mining/gussian slides
 
-    todo: figure out why this doesn't work
- 
-    >>> assert mooreGiven(A,index=0,value=1)==A.given(index=0,value=1)[1:]
+     >>> assert mooreGiven(A,index=0,value=1)==A.given(index=0,value=1)[1:]
     """
     Iv=binindex(index,self.ndim)
     Iu=~Iv
@@ -1583,6 +1601,29 @@ def mooreGiven(self,index,value):
         mean=self.mean[0,Iu]+uv.H*vvI*(value-self.mean[0,Iv]),
         cov=uu-uv.H*vvI*uv
     )
+
+    def chain(self,sensor,transform=None):
+        """
+        given a distribution of actual values and an Mvar to act as a sensor 
+        this method returns the joint distribution of real and measured values
+
+        the, optional, transform parameter describes how to transform from actual
+        space to sensor space
+        
+        >>> assert A.chain(B,M) == mooreChain(A,B,M)
+
+        reference andrew moore/data mining/gaussians
+        """
+        Z=Mvar.zeros(self.Ndim)
+
+        E=Matrix.eye(self.ndim)
+        if transform is None:
+            transform=E
+
+        return (
+            Mvar.stack([self,self])*helpers.diagstack([E,transform])+
+            Mvar.stack([Z,sensor])
+        )
 
 def binindex(index,n):
     """
@@ -1603,9 +1644,8 @@ if __name__=='__main__':
     #created when we imported mvar; there can only be one.
     from mvar import *
     from testObjects import *
-    
-    mooreGiven(A,0,1)==A.given(0,1)
 
-    AB= Mvar.stack(A,B)
-    AB[:A.ndim]==A
-    AB[A.ndim:]==B
+    assert sum(itertools.repeat(A,N-1),A) == A*(N)
+    assert A != B
+    assert A**K1.real/A**K2.real==A**(K1-K2)
+

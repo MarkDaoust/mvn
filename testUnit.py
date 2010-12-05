@@ -1,441 +1,351 @@
 #! /usr/bin/env python
 
 import unittest
-import testObjects
-from testObjects import *
+import testTools
+import cPickle
 from mvar import *
 
-class myTest(unittest.TestCase):
-    def setup(self):
-        testObjects = reload(testObjects)
-        globals().update(testObjects.__dict__)
 
-    def testEq(self):
-        assert A==A
-        assert A!=B
-        assert A==A.square()
-        assert A==A.copy()
-        assert A==A.inflate()
-        assert A==A.inflate().squeeze()
+jar=open('testObjects.pkl').read()
 
-    def testPlus(self):
-        assert A == +A 
-        assert A == ++A
-        assert A is not +A
-        assert A+A == 2*A
-        assert A+A+A == 3*A
-
-    def testMinus(self):
-        assert A == --A
-        assert A--B==A+B
-        assert -A == -1*A
-        assert A-B == A+(-B)
-
-    def testMul(self):
-        assert A**2==A*A
-
-    def testDiv(self):
-        assert A/B == A*B**(-1)
-
-    def testCopy(self):
-        A2=A.copy(deep=True)        
-        assert A2 == A
-        assert A2 is not A
-        assert A2.mean is not A.mean
-
-        A.copy(B,deep=True)
-        assert B == A
-        assert B is not A
-        assert A.mean is not B.mean
-
-        A2=A.copy(deep=False)        
-        assert A2 == A
-        assert A2 is not A
-        assert A2.mean is A.mean
-
-        A.copy(B,deep=False)
-        assert B == A
-        assert B is not A
-        assert A.mean is B.mean
-
-    def testNdim(self):
-        assert A.ndim == A.mean.size
-
-    def testShape(self):
-        assert A.vectors.shape == A.shape
-        assert (A.var.size,A.mean.size)==A.shape
-        assert A.shape[1]==A.ndim
+class myTests(unittest.TestCase):
+    jar=None
+    def setUp(self):
+       self.__dict__.update(cPickle.loads(jar))
 
 
-    def testCov(self):
-        assert A.vectors.H*numpy.diagflat(A.var)*A.vectors == A.cov
-        assert A.transform()**2 == abs(A).cov 
-        assert A.transform(2) == abs(A).cov
-        if not(flat and N<0):
-            assert A.transform()**N == A.transform(N)
+class commuteTester(myTests):
+   def testRight(self):
+        self.assertTrue( self.A+self.B == self.B+self.A )
+        self.assertTrue( self.A*self.B == self.B*self.A )
+        self.assertTrue( self.B-self.A == (-self.A)+self.B )
+        self.assertTrue( self.A/self.B == (self.B**-1)*self.A )
+        self.assertTrue( self.A & self.B == self.B & self.A )
+        self.assertTrue( self.A | self.B == self.B | self.A )
+        self.assertTrue( self.A ^ self.B == self.B ^ self.A )
 
-    def testScaled(self):
-        assert A.scaled.H*A.scaled==abs(A).cov
-        assert Matrix(helpers.mag2(A.scaled))==A.var
-        assert A.vectors.H*A.scaled==A.transform()
-
+class creationTester(myTests):
     def testFromData(self):
-        assert Mvar.fromData(A)==A 
+        self.assertTrue( Mvar.fromData(self.A)==self.A )
 
         data=[1,2,3]
         new=Mvar.fromData(data)
-        assert new.mean == data
-        assert (new.var == numpy.zeros([0])).all()
-        assert new.vectors == numpy.zeros
-        assert new.cov == numpy.zeros([3,3])
+        self.assertTrue( new.mean == data )
+        self.assertTrue( (new.var == numpy.zeros([0])).all() )
+        self.assertTrue( new.vectors == numpy.zeros )
+        self.assertTrue( new.cov == numpy.zeros([3,3]) )
 
     def testZeros(self):
-        n=abs(N)
+        n=abs(self.N)
         Z=Mvar.zeros(n)
-        assert Z.mean==Matrix.zeros
-        assert Z.var.size==0
-        assert Z.vectors.size==0
+        self.assertTrue( Z.mean==Matrix.zeros )
+        self.assertTrue( Z.var.size==0 )
+        self.assertTrue( Z.vectors.size==0 )
 
     def testInfs(self):
-        n=abs(N)
+        n=abs(self.N)
         inf=Mvar.infs(n)
-        assert inf.mean==Matrix.zeros
-        assert inf.var.size==inf.mean.size==n
-        assert (inf.var==numpy.inf).all()
-        assert inf.vectors==Matrix.eye
+        self.assertTrue( inf.mean==Matrix.zeros )
+        self.assertTrue( inf.var.size==inf.mean.size==n )
+        self.assertTrue( (inf.var==numpy.inf).all() )
+        self.assertTrue( inf.vectors==Matrix.eye )
 
-    def testStackAB(self):
-        AB= Mvar.stack(A,B)
-        AB[:A.ndim]==A
-        AB[A.ndim:]==B
+    def testCopy(self):
+        self.A2=self.A.copy(deep=True)        
+        self.assertTrue( self.A2 == self.A )
+        self.assertTrue( self.A2 is not self.A )
+        self.assertTrue( self.A2.mean is not self.A.mean )
 
-    def testStackI0(self):
-        assert Mvar.stack(Mvar.infs(2),Mvar.infs(5))==Mvar.Infs(7)
-        assert Mvar.stack(Mvar.zeros(2),Mvar.zeros(5))==Mvar.zeros(7)
-        
+        self.A.copy(self.B,deep=True)
+        self.assertTrue( self.B == self.A )
+        self.assertTrue( self.B is not self.A )
+        self.assertTrue( self.A.mean is not self.B.mean )
 
-    def testVectors(self):
-        if A.shape[0] == A.shape[1]:
-            assert A.vectors.H*A.vectors==Matrix.eye
-        else:
-            a=A.inflate()
-            assert a.vectors.H*a.vectors==Matrix.eye
-        
-    def testTransform(self):
-        assert A.transform() == A.transform(1)
-        assert A.transform() == A.scaled.H*A.vectors
-    
-    def testCov(self):
-        assert A.cov == (A**2).transform()
-        assert A.cov == A.transform()*A.transform()
-        assert A.cov == A.transform()**2
-        assert A.cov == A.transform(2)
-        assert (A*B.transform() + B*A.transform()).cov/2 == (A*B).cov
+        self.A2=self.A.copy(deep=False)        
+        self.assertTrue( self.A2 == self.A )
+        self.assertTrue( self.A2 is not self.A )
+        self.assertTrue( self.A2.mean is self.A.mean )
 
-    def testIntPowers(self):
-        assert A.transform(N)== (A**N).transform()
-        assert A.transform(N)== A.transform()**N 
-
-    def testRealPowers(self):
-        assert (A**K1.real).transform() == A.transform(K1.real) 
-
-    def testComplexPowers(self):
-        assert (A**K1).transform() == A.transform(K1) 
-
-    def testTrace(self):
-        assert Matrix(numpy.trace(A.transform(0))) == A.shape[0] 
-        assert Matrix(A.trace()) == A.var.sum()
-        assert Matrix(A.trace()) == numpy.trace(A.cov)
-
-    def testDet(self):
-        assert Matrix(A.det())== numpy.linalg.det(A.cov)
-        assert Matrix(A.det()) == (
-             0 if 
-             A.shape[0]!=A.shape[1] else 
-             numpy.prod(A.var)
-        )
-
-    def testDist2(self):
-        if not flat:
-            assert Matrix((A**0).dist2(numpy.zeros((1,ndim))))==helpers.mag2((A**0).mean)
-            
-    def testGivenScalar(self):
-        a = A.given(index=0,value=1)
-        assert a.mean[:,0]==1
-        assert a.vectors[:,0]==numpy.zeros
-
-        a=A.copy(deep=True)
-        a[0]=1
-        assert a==A.given(index=0,value=1)
+        self.A.copy(self.B,deep=False)
+        self.assertTrue( self.B == self.A )
+        self.assertTrue( self.B is not self.A )
+        self.assertTrue( self.A.mean is self.B.mean )
 
 
-    def testGivenLinear(self):
-        L1=Mvar(mean=[0,0],vectors=[[1,1],[1,-1]], var=[numpy.inf,0.5])
-        L2=Mvar(mean=[1,0],vectors=[0,1],var=numpy.inf) 
-        assert L1.given(index=0,value=1) == L1&L2
-        assert (L1&L2).mean==[1,1]
-        assert (L1&L2).cov==[[0,0],[0,2]]
-
-    def testGivenMvar(self):
-        Y=Mvar(mean=[0,1],vectors=Matrix.eye, var=[numpy.inf,1])
-        X=Mvar(mean=[1,0],vectors=Matrix.eye,var=[1,numpy.inf])
-        x=Mvar(mean=1,var=1)
-        assert Y.given(index=0,value=x) == X&Y
-
-    def testMooreGiven(self):
-        assert mooreGiven(A,index=0,value=1)==A.given(index=0,value=1)[1:]
-
-
+class equalityTester(myTests):
     def testEq(self):
-        assert A==A.copy()
-        assert A is not A.copy()
-        assert A != B
+        # always equal if same object
+        self.assertTrue( self.A==self.A )
+        # still equal if copy
+        self.assertTrue( self.A==self.A.copy() )
+        self.assertTrue( self.A is not self.A.copy() )
+    
+    def testCosmetic(self):
+        self.assertTrue( self.A==self.A.square() )
+        self.assertTrue( self.A==self.A.copy() )
+        self.assertTrue( self.A==self.A.inflate() )
+        self.assertTrue( self.A==self.A.inflate().squeeze() )
 
-        assert (
+    def testInf(self):
+        self.assertTrue(
              Mvar(mean=[1,0,0], vectors=[1,0,0], var=numpy.inf)==
              Mvar(mean=[0,0,0], vectors=[1,0,0], var=numpy.inf)
         )
-
-    def testInvert(self):
-        assert (A.var>=0).all()
-        assert abs(A) == abs(~A)
-
-        IA=A.copy(deep=True)
-        IA.var*=-1
-        assert IA == ~A
-
-        assert (~A).mean == A.mean
-
-        assert Matrix((~A).var) == (-A).var 
-        assert Matrix((~A).var) == -(A.var)
-
-        assert (~A).vectors==A.vectors
-
-        assert (~A).cov == (-A).cov 
-        assert (~A).cov == -(A.cov)
-
-        assert ~~A==A
-
-        assert ~(~A&~B) == A & B 
-
-        assert (A & ~A) == Mvar(mean=A.mean, vectors=A.vectors, var=Matrix.infs)
-
-        if not flat:
-            assert (A & ~A) == Mvar(mean=numpy.zeros(A.ndim))**-1
-            assert A == A & (B & ~B)
-            assert (A&B) & ~B == A & (B&~B)
-
-        assert  A &(B & ~B) == A & Mvar(mean=B.mean, vectors=B.vectors, var=Matrix.infs)
-        assert (A&~B) & B == (A&B) & ~B
-
-        assert not numpy.isfinite((A & ~A).var).any()
-
-        P=A.copy()
-        P.var=P.var/0.0
-        assert P==(A & ~A)       
-
-        assert (~A & ~B) == ~(A & B)
-
-    def testBlend(self):
-        assert A & B == B & A 
         
-        assert (A & A).cov == A.cov/2
-        assert (A & A).mean == A.mean
-        
-        if not flat:
-            assert A & B == 1/(1/A+1/B)
-            assert A &-A == Mvar(mean=numpy.zeros(ndim))**-1
-            assert A &~A == Mvar(mean=numpy.zeros(ndim))**-1
-            assert A & B == wiki(A,B)
-            
-            abc=numpy.random.permutation([A,B,C])
-            assert A & B & C == helpers.paralell(*abc) or flat
-            assert A & B & C == reduce(operator.and_ ,abc) or flat
+    def testNot(self):
+        self.assertTrue( self.A!=self.B )
+
+class signTester(myTests):
+    def testPlus(self):
+        self.assertTrue( self.A == +self.A )
+        self.assertTrue( self.A == ++self.A )
+        self.assertTrue( self.A is not +self.A )
+        self.assertTrue( self.A+self.A == 2*self.A )
+        self.assertTrue( self.A+self.A+self.A == 3*self.A )
+
+    def testMinus(self):
+        self.assertTrue( -self.A == -1*self.A )
+        self.assertTrue( self.A == --self.A )
+        self.assertTrue( self.A--self.B==self.A+self.B )
+        self.assertTrue( self.A-self.B == self.A+(-self.B) )
+
+    def testPos(self):
+        self.assertTrue( self.A==+self.A==++self.A )
     
-            assert (A & B) & C == A & (B & C) or flat
+    def testNeg(self):
+        self.assertTrue( -self.A==-1*self.A )
+        self.assertTrue( self.A==-1*-1*self.A )
+        self.assertTrue( 1j*self.A*1j==1j*(1j*self.A) ==-self.A )
 
+    def testsAdd(self):
+        self.assertTrue( (self.A+self.A)==(2*self.A) )
 
-        L1=Mvar(mean=[1,0],vectors=[0,1],var=numpy.inf)
-        L2=Mvar(mean=[0,1],vectors=[1,0],var=numpy.inf) 
-        assert (L1&L2).mean==[1,1]
-        assert (L1&L2).var.size==0
+        self.assertTrue( (self.A+self.A).mean==(2*self.A).mean )
+        self.assertTrue( (self.A+self.A).mean==2*self.A.mean )
 
-        L1=Mvar(mean=[0,0],vectors=[1,1],var=numpy.inf)
-        L2=Mvar(mean=[0,1],vectors=[1,0],var=numpy.inf) 
-        assert (L1&L2).mean==[1,1]
-        assert (L1&L2).var.size==0
+        n=abs(self.N)
+        self.assertTrue( numpy.array(itertools.repeat(self.A,n)).sum() == self.A*n )
 
-        L1=Mvar(mean=[0,0],vectors=Matrix.eye, var=[1,1])
-        L2=Mvar(mean=[0,1],vectors=[1,0],var=numpy.inf) 
-        assert (L1&L2).mean==[0,1]
-        assert (L1&L2).var==1
-        assert (L1&L2).vectors==[1,0]
+        self.assertTrue( self.A+self.B ==Mvar(
+            mean=self.A.mean+self.B.mean,
+            vectors=numpy.vstack([self.A.vectors,self.B.vectors]),
+            var = numpy.concatenate([self.A.var,self.B.var]),
+        ))
 
-        if not flat:    
-             assert A**-1 == A*A**-2 or flat
-             assert A & B == (A*A**-2+B*B**-2)**-1 or flat
+        self.assertTrue( (self.A+self.A).mean==(2*self.A).mean )
+        self.assertTrue( (self.A+self.A).mean==2*self.A.mean )
 
-             D = A*(A.cov)**(-1) + B*(B.cov)**(-1)
-             assert wiki(A,B) == D*(D.cov)**(-1)
-             assert A & B == wiki(A,B)
+        self.assertTrue( (self.A+self.B).mean==self.A.mean+self.B.mean )
+        self.assertTrue( (self.A+self.B).cov==self.A.cov+self.B.cov )
 
-    def testZeroPow(self):
-        assert A**0*A==A
-        assert A*A**0==A
-        if not flat:
-            assert A**0 == A**(-1)*A
-            assert A**0 == A*A**(-1)
-            assert A**0 == A/A 
-            assert (A**0).mean == A.mean*(A**-1).transform()
-            assert (A**0).mean == A.mean*A.transform(-1)
+    def testSub(self):
+        self.assertTrue( self.B+(-self.A) == self.B+(-1)*self.A == self.B-self.A )
+        self.assertTrue( (self.B-self.A)+self.A==self.B )
 
-        assert Matrix((A**0).var) == numpy.ones
+        self.assertTrue( self.A-self.A == Mvar(mean=numpy.zeros_like(self.A.mean)) )
+        self.assertTrue( (self.A-self.B)+self.B == self.A )
+        self.assertTrue( (self.A-self.B).mean == self.A.mean - self.B.mean )
+        self.assertTrue( (self.A-self.B).cov== self.A.cov - self.B.cov )
 
-    def testOnePow(self):
-        assert A==A**1
-        assert -A == (-A)**1
+        self.assertTrue( (self.A+self.B*(-self.E)).mean == self.A.mean - self.B.mean )
+        self.assertTrue( (self.A+self.B*(-self.E)).cov== self.A.cov + self.B.cov )
 
-        if not flat:
-            assert A == (A**-1)**-1
+        self.assertTrue( self.A-self.B == -(self.B-self.A) )
+        self.assertTrue( self.A+(self.B-self.B)==self.A )
 
-    def testRealPow(self):
-        assert A*A==A**2
-        assert A/A**-1 == A**2
-        
-        if not flat:
-            k=K1.real
-            assert A**k == A*A.transform(k-1) + Mvar(mean=A.mean-A.mean*A.transform(0)) 
-    
-        assert A.mean*A.transform(0) == ((A**-1)**-1).mean
-
-    
-        assert (A**K1.real)*(A**K2.real)==A**(K1.real+K2.real)
-        assert A**K1.real/A**K2.real==A**(K1-K2)
-
+class productTester(myTests):
     def testMulTypes(self):
-        assert isinstance(A*B,Mvar)
-        assert isinstance(A*M,Mvar)
-        assert isinstance(M*A,Matrix) 
-        assert isinstance(A*K1,Mvar)
-        assert isinstance(K1*A,Mvar)
+        self.assertTrue( isinstance(self.A*self.B,Mvar) )
+        self.assertTrue( isinstance(self.A*self.M,Mvar) )
+        self.assertTrue( isinstance(self.M*self.A,Matrix) )
+        self.assertTrue( isinstance(self.A*self.K1,Mvar) )
+        self.assertTrue( isinstance(self.K1*self.A,Mvar) )
+
+
+    def testMul(self):
+        self.assertTrue( self.A**2==self.A*self.A )
+
+    def testDiv(self):
+        self.assertTrue( self.A/self.B == self.A*self.B**(-1) )
 
     def testMvarMul(self):
-        assert (A*B).cov == (A*B.transform()+B*A.transform()).cov/2
-        assert (A*B).mean == (A*B.transform()+B*A.transform()).mean/2 or flat
+        self.assertTrue( (self.A*self.B).cov == (self.A*self.B.transform()+self.B*self.A.transform()).cov/2 )
+        if not self.flat: 
+            self.assertTrue( (self.A*self.B).mean == (self.A*self.B.transform()+self.B*self.A.transform()).mean/2 )
 
-        assert M*B==M*B.transform()
-        if not flat:
-            assert A**2==A*A.transform() or flat
+        self.assertTrue( self.M*self.B==self.M*self.B.transform() )
+        if not self.flat:
+            self.assertTrue( self.A**2==self.A*self.A.transform() )
 
-        assert A*(B**0+B**0) == A*(2*B**0)
-        assert (A*B**0 + A*B**0).cov == (2*A*B**0).cov 
+        self.assertTrue( self.A*(self.B**0+self.B**0) == self.A*(2*self.B**0) )
+        self.assertTrue( (self.A*self.B**0 + self.A*self.B**0).cov == (2*self.A*self.B**0).cov )
 
-        assert A*A==A**2
-        assert A*A==A*A.transform() or flat
-        assert A*B == B*A
+        self.assertTrue( self.A*self.A==self.A**2 )
+        self.assertTrue( self.A*self.B == self.B*self.A )
+        if not self.flat:
+            self.assertTrue( self.A*self.A==self.A*self.A.transform() )
 
 
     def testScalarMul(self):
-        assert A+A == 2*A
-        assert (2*A).mean==2*A.mean
-        assert (2*A.cov) == 2*A.cov
+        self.assertTrue( self.A+self.A == 2*self.A )
+        self.assertTrue( (2*self.A).mean==2*self.A.mean )
+        self.assertTrue( (2*self.A.cov) == 2*self.A.cov )
     
-        assert A*(K1+K2)==A*K1+A*K2
+        self.assertTrue( self.A*(self.K1+self.K2)==self.A*self.K1+self.A*self.K2 )
 
-        assert (A*(K1*E)).mean == K1*A.mean
-        assert (A*(K1*E)).cov == A.cov*abs(K1)**2
-        assert (K1*A)*K2 == K1*(A*K2)
+        self.assertTrue( (self.A*(self.K1*self.E)).mean == self.K1*self.A.mean )
+        self.assertTrue( (self.A*(self.K1*self.E)).cov == self.A.cov*abs(self.K1)**2 )
+        self.assertTrue( (self.K1*self.A)*self.K2 == self.K1*(self.A*self.K2) )
 
-        assert (2*B**0).transform() == sqrt(2)*(B**0).transform()    
+        self.assertTrue( (2*self.B**0).transform() == sqrt(2)*(self.B**0).transform() )
         
-        assert A*K1 == K1*A
+        self.assertTrue( self.A*self.K1 == self.K1*self.A )
 
-        assert (A*K1).mean==K1*A.mean
-        assert (A*K1).cov== (A.cov)*K1
+        self.assertTrue( (self.A*self.K1).mean==self.K1*self.A.mean )
+        self.assertTrue( (self.A*self.K1).cov== (self.A.cov)*self.K1 )
 
-        assert (A*(E*K1)).mean==A.mean*K1
-        assert (A*(E*K1)).cov ==(E*K1).H*A.cov*(E*K1)
+        self.assertTrue( (self.A*(self.E*self.K1)).mean==self.A.mean*self.K1 )
+        self.assertTrue( (self.A*(self.E*self.K1)).cov ==(self.E*self.K1).H*self.A.cov*(self.E*self.K1) )
 
 
     def testMixedMul(self):
-        assert K1*A*M == A*K1*M 
-        assert K1*A*M == A*M*K1
+        self.assertTrue( self.K1*self.A*self.M == self.A*self.K1*self.M )
+        self.assertTrue( self.K1*self.A*self.M == self.A*self.M*self.K1 )
 
     def testMatrixMul(self):
-        assert (A*M)*M2 == A*(M*M2)
-        assert (M*M2)*A == M*(M2*A)
+        self.assertTrue( (self.A*self.M)*self.M2 == self.A*(self.M*self.M2) )
+        self.assertTrue( (self.M*self.M2)*self.A == self.M*(self.M2*self.A) )
 
-        assert (A*M).cov == M.H*A.cov*M
-        assert (A**2).transform() == A.cov
+        self.assertTrue( (self.A*self.M).cov == self.M.H*self.A.cov*self.M )
+        self.assertTrue( (self.A**2).transform() == self.A.cov )
         
-        assert A*E==A
-        assert (-A)*E==-A 
+        self.assertTrue( self.A*self.E==self.A )
+        self.assertTrue( (-self.A)*self.E==-self.A )
 
-        assert (A*M).cov==M.H*A.cov*M
-        assert (A*M).mean==A.mean*M
+        self.assertTrue( (self.A*self.M).cov==self.M.H*self.A.cov*self.M )
+        self.assertTrue( (self.A*self.M).mean==self.A.mean*self.M )
 
     def testDiv(self):
-        assert A/B == A*(B**(-1))
-        assert A/M == A*(M**(-1))
-        assert A/K1 == A*(K1**(-1))
-        assert K1/A == K1*(A**(-1))
-        assert M/A==M*(A**(-1))
+        self.assertTrue( self.A/self.B == self.A*(self.B**(-1)) )
+        self.assertTrue( self.A/self.M == self.A*(self.M**(-1)) )
+        self.assertTrue( self.A/self.K1 == self.A*(self.K1**(-1)) )
+        self.assertTrue( self.K1/self.A == self.K1*(self.A**(-1)) )
+        self.assertTrue( self.M/self.A==self.M*(self.A**(-1)) )
 
-    def testPos(self):
-        assert A==+A==++A
 
-    def testAdd(self):
-        assert (A+A)==(2*A)
+class propertyTester(myTests):
+    def testNdim(self):
+        self.assertTrue( self.A.ndim == self.A.mean.size )
 
-        assert (A+A).mean==(2*A).mean
-        assert (A+A).mean==2*A.mean
+    def testShape(self):
+        self.assertTrue( self.A.vectors.shape == self.A.shape )
+        self.assertTrue( (self.A.var.size,self.A.mean.size)==self.A.shape )
+        self.assertTrue( self.A.shape[1]==self.A.ndim )
 
-        assert sum(itertools.repeat(A,N-1),A) == A*(N)
+    def testCov(self):
+        self.assertTrue( self.A.vectors.H*numpy.diagflat(self.A.var)*self.A.vectors == self.A.cov )
+        self.assertTrue( self.A.transform()**2 == abs(self.A).cov )
+        self.assertTrue( self.A.transform(2) == abs(self.A).cov )
+        if not(self.flat and self.N<0):
+            self.assertTrue( self.A.transform()**self.N == self.A.transform(self.N) )
 
-        assert (A+B)==Mvar(
-            mean=A.mean+B.mean,
-            vectors=numpy.vstack([A.vectors,B.vectors]),
-            var = numpy.concatenate([A.var,B.var]),
+    def testScaled(self):
+        self.assertTrue( self.A.scaled.H*self.A.scaled==abs(self.A).cov )
+        self.assertTrue( Matrix(helpers.mag2(self.A.scaled))==self.A.var )
+        self.assertTrue( self.A.vectors.H*self.A.scaled==self.A.transform() )
+
+    def testVectors(self):
+        if self.A.shape[0] == self.A.shape[1]:
+            self.assertTrue( self.A.vectors.H*self.A.vectors==Matrix.eye )
+        else:
+            a=self.A.inflate()
+            self.assertTrue( a.vectors.H*a.vectors==Matrix.eye )
+
+    def testTransform(self):
+        self.assertTrue( self.A.transform() == self.A.transform(1) )
+        self.assertTrue( self.A.transform() == self.A.scaled.H*self.A.vectors )
+    
+    def testCov(self):
+        self.assertTrue( self.A.cov == (self.A**2).transform() )
+        self.assertTrue( self.A.cov == self.A.transform()*self.A.transform() )
+        self.assertTrue( self.A.cov == self.A.transform()**2 )
+        self.assertTrue( self.A.cov == self.A.transform(2) )
+        self.assertTrue( (self.A*self.B.transform() + self.B*self.A.transform()).cov/2 == (self.A*self.B).cov )
+
+
+class mergeTester(myTests):
+    def testStack(self):
+        self.AB= Mvar.stack(self.A,self.B)
+        self.assertTrue( self.AB[:self.A.ndim]==self.A )
+        self.assertTrue( self.AB[self.A.ndim:]==self.B )
+        self.assertTrue( Mvar.stack(Mvar.infs(2),Mvar.infs(5))==Mvar.infs(7) )
+        self.assertTrue( Mvar.stack(Mvar.zeros(2),Mvar.zeros(5))==Mvar.zeros(7) )
+        
+
+class powerTester(myTests):
+    def testIntPowers(self):
+        self.assertTrue( self.A.transform(self.N)== (self.A**self.N).transform() )
+        self.assertTrue( self.A.transform(self.N)== self.A.transform()**self.N )
+
+    def testRealPowers(self):
+        self.assertTrue( (self.A**self.K1.real).transform() == self.A.transform(self.K1.real) )
+
+    def testComplexPowers(self):
+        self.assertTrue( (self.A**self.K1).transform() == self.A.transform(self.K1) )
+
+    def testZeroPow(self):
+        self.assertTrue( self.A**0*self.A==self.A )
+        self.assertTrue( self.A*self.A**0==self.A )
+        self.assertTrue( Matrix((self.A**0).var) == numpy.ones )
+
+        if not self.flat:
+            self.assertTrue( self.A**0 == self.A**(-1)*self.A )
+            self.assertTrue( self.A**0 == self.A*self.A**(-1) )
+            self.assertTrue( self.A**0 == self.A/self.A )
+            self.assertTrue( (self.A**0).mean == self.A.mean*(self.A**-1).transform() )
+            self.assertTrue( (self.A**0).mean == self.A.mean*self.A.transform(-1) )
+
+
+    def testOnePow(self):
+        self.assertTrue( self.A==self.A**1 )
+        self.assertTrue( -self.A == (-self.A)**1 )
+
+        if not self.flat:
+            self.assertTrue( self.A == (self.A**-1)**-1 )
+
+    def testRealPow(self):
+        self.assertTrue( self.A*self.A==self.A**2 )
+        self.assertTrue( self.A/self.A**-1 == self.A**2 )
+        
+        if not self.flat:
+            k=self.K1.real
+            self.assertTrue( self.A**k == self.A*self.A.transform(k-1) + Mvar(mean=self.A.mean-self.A.mean*self.A.transform(0)) )
+    
+        self.assertTrue( self.A.mean*self.A.transform(0) == ((self.A**-1)**-1).mean )
+
+    
+        self.assertTrue( (self.A**self.K1.real)*(self.A**self.K2.real)==self.A**(self.K1.real+self.K2.real) )
+        self.assertTrue( self.A**self.K1.real/self.A**self.K2.real==self.A**(self.K1-self.K2) )
+
+class linalgTester(myTests):
+    def testTrace(self):
+        self.assertTrue( Matrix(numpy.trace(self.A.transform(0))) == self.A.shape[0] )
+        self.assertTrue( Matrix(self.A.trace()) == self.A.var.sum() )
+        self.assertTrue( Matrix(self.A.trace()) == numpy.trace(self.A.cov) )
+
+    def testDet(self):
+        self.assertTrue( Matrix(self.A.det())== numpy.linalg.det(self.A.cov) )
+        self.assertTrue( Matrix(self.A.det()) == 
+             0 if 
+             self.A.shape[0]!=self.A.shape[1] else 
+             numpy.prod(self.A.var)
         )
 
-        assert (A+A).mean==(2*A).mean
-        assert (A+A).mean==2*A.mean
+    def testDist2(self):
+        if not self.flat:
+            self.assertTrue( Matrix((self.A**0).dist2(numpy.zeros((1,self.ndim))))==helpers.mag2((self.A**0).mean) )
 
-        assert (A+B).mean==A.mean+B.mean
-        assert (A+B).cov==A.cov+B.cov
-
-
-    def testNeg(self):
-        assert -A==-1*A
-        assert A==-1*-1*A
-        assert 1j*A*1j==1j*(1j*A) ==-A
-
-    def testSub(self):
-        assert B+(-A) == B+(-1)*A == B-A    
-        assert (B-A)+A==B
-
-        assert A-A == Mvar(mean=numpy.zeros_like(A.mean))
-        assert (A-B)+B == A
-        assert (A-B).mean == A.mean - B.mean
-        assert (A-B).cov== A.cov - B.cov
-
-        assert (A+B*(-E)).mean == A.mean - B.mean
-        assert (A+B*(-E)).cov== A.cov + B.cov
-
-        assert A-B == -(B-A)
-        assert A+(B-B)==A
-
-
-    def testRight(self):
-        assert A+B == B+A
-        assert A*B == B*A
-        assert B-A == B+(-A)
-        assert B/A == B*A**(-1)
-        assert A & B == B & A
-        assert A | B == B | A
-        assert A ^ B == B ^ A
-
-    def testSquare(myTest):
+    def testSquare(self):
         vectors=Matrix(helpers.ascomplex(numpy.random.randn(
             numpy.random.randint(1,10),numpy.random.randint(1,10),2
         )))
@@ -443,7 +353,132 @@ class myTest(unittest.TestCase):
         Xcov = vectors*vectors.H 
         (Xval,Xvec) = numpy.linalg.eigh(Xcov)
         vec = Xvec.H*vectors
-        assert vec.H*vec == cov
+        self.assertTrue( vec.H*vec == cov )
 
+class givenTester(myTests):            
+    def testGivenScalar(self):
+        a = self.A.given(index=0,value=1)
+        self.assertTrue( a.mean[:,0]==1 )
+        self.assertTrue( a.vectors[:,0]==numpy.zeros )
+
+        a=self.A.copy(deep=True)
+        a[0]=1
+        self.assertTrue( a==self.A.given(index=0,value=1) )
+
+
+    def testGivenLinear(self):
+        L1=Mvar(mean=[0,0],vectors=[[1,1],[1,-1]], var=[numpy.inf,0.5])
+        L2=Mvar(mean=[1,0],vectors=[0,1],var=numpy.inf) 
+        self.assertTrue( L1.given(index=0,value=1) == L1&L2 )
+        self.assertTrue( (L1&L2).mean==[1,1] )
+        self.assertTrue( (L1&L2).cov==[[0,0],[0,2]] )
+
+    def testGivenMvar(self):
+        Y=Mvar(mean=[0,1],vectors=Matrix.eye, var=[numpy.inf,1])
+        X=Mvar(mean=[1,0],vectors=Matrix.eye,var=[1,numpy.inf])
+        x=Mvar(mean=1,var=1)
+        self.assertTrue( Y.given(index=0,value=x) == X&Y )
+
+    def testMooreGiven(self):
+        self.assertTrue( mooreGiven(self.A,index=0,value=1)==self.A.given(index=0,value=1)[1:] )
+
+
+class inversionTester(myTests):
+    def testAbs(self):
+        self.assertTrue( (self.A.var>=0).all() )
+        self.assertTrue( abs(self.A) == abs(~self.A) )
+
+    def testNeg(self):
+        self.IA=self.A
+        self.IA.var= -self.IA.var
+        self.assertTrue( self.IA == ~self.A )
+
+        self.assertTrue( Matrix((~self.A).var) == (-self.A).var )
+        self.assertTrue( Matrix((~self.A).var) == -(self.A.var) )
+
+    def testInvariant(self):
+        self.assertTrue( (~self.A).mean == self.A.mean )
+        self.assertTrue( (~self.A).vectors==self.A.vectors )
+        self.assertTrue( (~self.A).cov == (-self.A).cov )
+        self.assertTrue( (~self.A).cov == -(self.A.cov) )
+        
+    def testDoubleNegative(self):
+        self.assertTrue( ~~self.A==self.A )
+        self.assertTrue( ~(~self.A&~self.B) == self.A & self.B )
+        self.assertTrue( (~self.A & ~self.B) == ~(self.A & self.B) )
+
+
+    def testParadoxes(self):
+        self.assertTrue( (self.A & ~self.A) == Mvar(mean=self.A.mean, vectors=self.A.vectors, var=Matrix.infs) )
+        self.assertTrue(  self.A &(self.B & ~self.B) == self.A & Mvar(mean=self.B.mean, vectors=self.B.vectors, var=Matrix.infs) )
+        self.assertTrue( (self.A&~self.B) & self.B == (self.A&self.B) & ~self.B )
+
+        self.assertTrue( (self.A & ~self.A) == Mvar(mean=numpy.zeros(self.A.ndim))**-1 )
+        self.assertTrue( self.A == self.A & (self.B & ~self.B) )
+        self.assertTrue( (self.A&self.B) & ~self.B == self.A & (self.B&~self.B) )
+
+        self.assertTrue( not numpy.isfinite((self.A & ~self.A).var).any() )
+
+        P=self.A.copy()
+        P.var=P.var/0.0
+        self.assertTrue( P==(self.A & ~self.A) )
+
+
+
+class blendTester(myTests):
+    def testCommutativity(self):
+        self.assertTrue( self.A & self.B == self.B & self.A)
+        
+    def testSelf(self):
+        self.assertTrue( (self.A & self.A).cov == self.A.cov/2)
+        self.assertTrue( (self.A & self.A).mean == self.A.mean)
+        
+    def testNotFlat(self):
+        if not self.flat:
+            self.assertTrue( self.A & self.B == 1/(1/self.A+1/self.B))
+            self.assertTrue( self.A & -self.A == Mvar(mean=numpy.zeros(self.ndim))**-1)
+            self.assertTrue( self.A & ~self.A == Mvar(mean=numpy.zeros(self.ndim))**-1)
+            self.assertTrue( self.A & self.B == wiki(self.A,self.B))
+            
+            abc=numpy.random.permutation([self.A,self.B,self.C])
+            self.assertTrue( self.A & self.B & self.C == helpers.paralell(*abc))
+            self.assertTrue( self.A & self.B & self.C == reduce(operator.and_ ,abc))
+    
+            self.assertTrue( (self.A & self.B) & self.C == self.A & (self.B & self.C))
+   
+            self.assertTrue( self.A**-1 == self.A*self.A**-2)
+            self.assertTrue( self.A & self.B == (self.A*self.A**-2+self.B*self.B**-2)**-1)
+
+            D = self.A*(self.A.cov)**(-1) + self.B*(self.B.cov)**(-1)
+            self.assertTrue( wiki(self.A,self.B) == D*(D.cov)**(-1))
+            self.assertTrue( self.A & self.B == wiki(self.A,self.B))
+
+
+    def testKnownValues1(self):
+        L1=Mvar(mean=[1,0],vectors=[0,1],var=numpy.inf)
+        L2=Mvar(mean=[0,1],vectors=[1,0],var=numpy.inf) 
+        self.assertTrue( (L1&L2).mean==[1,1])
+        self.assertTrue( (L1&L2).var.size==0)
+
+    def testKnownValues2(self):
+        L1=Mvar(mean=[0,0],vectors=[1,1],var=numpy.inf)
+        L2=Mvar(mean=[0,1],vectors=[1,0],var=numpy.inf) 
+        self.assertTrue( (L1&L2).mean==[1,1])
+        self.assertTrue( (L1&L2).var.size==0)
+
+    def testKnownValues3(self):
+        L1=Mvar(mean=[0,0],vectors=Matrix.eye, var=[1,1])
+        L2=Mvar(mean=[0,1],vectors=[1,0],var=numpy.inf) 
+        self.assertTrue( (L1&L2).mean==[0,1])
+        self.assertTrue( (L1&L2).var==1)
+        self.assertTrue( (L1&L2).vectors==[1,0])
+ 
 if __name__ == '__main__':
-    unittest.main()
+    tests=tuple(value for name,value in globals() if issubclass(value,myTests))
+
+    for flat in [True,False]:
+        for cplx in [True,False]:
+            myTests.jar=cPickle.dumps(
+                testTools.makeObjects(cplx=cplx,flat=flat)
+            )            
+            unittest.main()
