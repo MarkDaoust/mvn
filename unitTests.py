@@ -3,15 +3,15 @@
 import unittest
 import testTools
 import cPickle
+import copy
 from mvar import *
 
 
 jar=open('testObjects.pkl').read()
 
 class myTests(unittest.TestCase):
-    jar=None
     def setUp(self):
-       self.__dict__.update(cPickle.loads(jar))
+       self.__dict__.update(cPickle.loads(self.jar))
 
 
 class commuteTester(myTests):
@@ -472,13 +472,9 @@ class blendTester(myTests):
         self.assertTrue( (L1&L2).mean==[0,1])
         self.assertTrue( (L1&L2).var==1)
         self.assertTrue( (L1&L2).vectors==[1,0])
- 
-if __name__ == '__main__':
-    tests=tuple(value for name,value in globals() if issubclass(value,myTests))
 
-    for flat in [True,False]:
-        for cplx in [True,False]:
-            myTests.jar=cPickle.dumps(
-                testTools.makeObjects(cplx=cplx,flat=flat)
-            )            
-            unittest.main()
+unitTests=[
+    value for (name,value) in copy.copy(locals()).iteritems() 
+    if isinstance(value,type) and issubclass(value,myTests)
+]
+

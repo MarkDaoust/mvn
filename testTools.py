@@ -16,6 +16,7 @@ def makeObjects(cplx=False,flat=False,ndim=None,seed=None):
         ndim=randint(1,20)
 
     if flat:
+        ndim+=2
         num=randint(1,ndim-1)
     else:
         num=2*ndim
@@ -23,7 +24,7 @@ def makeObjects(cplx=False,flat=False,ndim=None,seed=None):
     #create n random vectors, 
     #with a default length of 'ndim', 
     #they can be made complex by setting cplx=True
-    rvec= (lambda n=1:Matrix(helpers.ascomplex(randn(n,ndim,2)))) if cplx else (lambda n:randn(n,ndim))
+    rvec= (lambda n=1:Matrix(helpers.ascomplex(randn(n,ndim,2)))) if cplx else (lambda n=1:Matrix(randn(n,ndim)))
 
     #create random test objects
     A=Mvar(
@@ -64,11 +65,3 @@ def makeObjects(cplx=False,flat=False,ndim=None,seed=None):
     }
 
     return testObjects
-
-def saveTestObjects(testObjects,pickleName=pickleName):
-    pickleFile=open(pickleName,'w')
-
-    cPickle.dump(
-        testObjects,
-        pickleFile,
-    )
