@@ -412,34 +412,63 @@ class Mvar(Automath,Right,Inplace):
         """
     )
     
-    scaled = property(
-        fget=lambda self:Matrix(numpy.diagflat(sqrt(self.var)))*self.vectors,
-        doc=
+    @property
+    def scaled(self):
         """
         get the vectors, scaled by the standard deviations. 
         Useful for transforming from unit-eigen-space, to data-space
 
         >>> assert A.vectors.H*A.scaled==A.transform()
         """
-    )
+        Matrix(numpy.diagflat(sqrt(self.var)))*self.vectors,
+        
+    
+    @property
+    def flat(self):
+        """
+        >>> assert A.flat if A.vectors.shape[0]< A.vectors.shape[1] 
+        """
+        retun self.vectors.shape[0] < self.vectors.shape[1]
+
+    @property
+    def ndim(self):
+        """
+        get the number of dimensions of the space the mvar exists in
+        >>> assert A.ndim==A.mean.size
+        """
+        self.mean.size
+    
+    @property
+    def shape(self):
+        """
+        get the shape of the vectors,the first element is the number of 
+        vectors, the second is their lengths: the number of dimensions of 
+        the space they are embedded in
+            
+        >>> assert A.vectors.shape == A.shape
+        >>> assert (A.var.size,A.mean.size)==A.shape
+        >>> assert A.shape[1]==A.ndim
+        """
+        self.vectors.shape
+
 
     def transform(self,power=1):
         """
-            >>> assert A.transform() == A.transform(1)
+        >>> assert A.transform() == A.transform(1)
             
-            >>> assert A.cov == (A**2).transform()
-            >>> assert A.cov == A.transform()*A.transform()
-            >>> assert A.cov == A.transform()**2
-            >>> assert A.cov == A.transform(2)
-            
-            >>> assert A.transform(N)== (A**N).transform()
-            >>> assert A.transform(N)== A.transform()**N  
-            >>> #it's hit and miss for complex numbers, but real is fine
-            >>> assert (A**K1.real).transform() == A.transform(K1.real) 
+        >>> assert A.cov == (A**2).transform()
+        >>> assert A.cov == A.transform()*A.transform()
+        >>> assert A.cov == A.transform()**2
+        >>> assert A.cov == A.transform(2)
+        
+        >>> assert A.transform(N)== (A**N).transform()
+        >>> assert A.transform(N)== A.transform()**N  
+        >>> #it's hit and miss for complex numbers, but real is fine
+        >>> assert (A**numpy.real(K1)).transform() == A.transform(numpy.real(K1)) 
 
-            >>> assert (A*B.transform() + B*A.transform()).cov/2 == (A*B).cov
+        >>> assert (A*B.transform() + B*A.transform()).cov/2 == (A*B).cov
 
-            >>> assert Matrix(numpy.trace(A.transform(0))) == A.shape[0] 
+        >>> assert Matrix(numpy.trace(A.transform(0))) == A.shape[0] 
         """
         if not numpy.isreal(self.var).all() or not(self.var>0).all():
             power = complex(power)
@@ -460,27 +489,6 @@ class Mvar(Automath,Right,Inplace):
             numpy.real_if_close(numpy.diagflat(varP))*
             vectors
         )
-
-    ndim=property(
-        fget=lambda self:(self.mean.size),
-        doc="""
-            get the number of dimensions of the space the mvar exists in
-            >>> assert A.ndim==A.mean.size
-        """
-    )
-    
-    shape=property(
-        fget=lambda self:(self.vectors.shape),
-        doc="""
-            get the shape of the vectors,the first element is the number of 
-            vectors, the second is their lengths: the number of dimensions of 
-            the space they are embedded in
-            
-            >>> assert A.vectors.shape == A.shape
-            >>> assert (A.var.size,A.mean.size)==A.shape
-            >>> assert A.shape[1]==A.ndim
-        """
-    )
 
     def sign(self):
         return sign(self.var)
