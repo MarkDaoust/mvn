@@ -426,9 +426,9 @@ class Mvar(Automath,Right,Inplace):
     @property
     def flat(self):
         """
-        >>> assert A.flat == A.vectors.shape[0]< A.vectors.shape[1] 
+        >>> assert bool(A.flat) == bool(A.vectors.shape[1] > A.vectors.shape[0]) 
         """
-        return self.vectors.shape[0] < self.vectors.shape[1]
+        return max(self.vectors.shape[1] - self.vectors.shape[0],0)
 
     @property
     def ndim(self):
@@ -1106,13 +1106,11 @@ class Mvar(Automath,Right,Inplace):
             False
 
             those only work if the k's are real      
-            >>> k1,k2=numpy.real(K1),numpy.real(K2)
-            >>> assert (A**k1)*(A**k2)==A**(k1+k2) if (
-            ...     (not A.flat) o k1>=0 and k1>=0)
-            ... ) else True
-            >>> assert A**k1/A**k2==A**(k1-k2) if (
-            ...     not A.flat or K1>= 0 and K2 <= 0
-            ... ) else True
+            >>> k1=numpy.real(K1)
+            >>> k2=numpy.real(K2)
+            >>> if ((not A.flat) or (k1>=0 and k1>=0)):
+            ...     assert (A**k1)*(A**k2)==A**(k1+k2) 
+            ...     assert A**k1/A**k2==A**(k1-k2) 
             
         Zero power has some interesting properties: 
             
@@ -1121,7 +1119,7 @@ class Mvar(Automath,Right,Inplace):
             transform the ellipse to a sphere
               
             >>> assert Matrix((A**0).var) == numpy.ones
-            >>> assert (A**0).mean == A.mean*(A**-1).transform() if not flat else True
+            >>> assert (A**0).mean == A.mean*(A**-1).transform() if not A.flat else True
 
             if there are missing dimensions the transform is irreversable so this stops working 
             >>> assert (A**0).mean == A.mean*A.transform(-1) or A.flat

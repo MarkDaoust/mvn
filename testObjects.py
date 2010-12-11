@@ -26,7 +26,7 @@ def makeObjects(cplx=None,flat=None,ndim=None,seed=None):
         num=lambda :2*ndim
  
     if cplx is None:
-        cplx=numpy.random.rand
+        cplx=numpy.round(numpy.random.rand)
     else:
         c=bool(cplx)
         cplx=lambda:c
