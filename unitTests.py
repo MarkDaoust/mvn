@@ -167,11 +167,11 @@ class productTester(myTests):
 
     def testMvarMul(self):
         self.assertTrue( (self.A*self.B).cov == (self.A*self.B.transform()+self.B*self.A.transform()).cov/2 )
-        if not self.flat: 
+        if not (self.A.flat or self.B.flat): 
             self.assertTrue( (self.A*self.B).mean == (self.A*self.B.transform()+self.B*self.A.transform()).mean/2 )
 
         self.assertTrue( self.M*self.B==self.M*self.B.transform() )
-        if not self.flat:
+        if not self.A.flat:
             self.assertTrue( self.A**2==self.A*self.A.transform() )
 
         self.assertTrue( self.A*(self.B**0+self.B**0) == self.A*(2*self.B**0) )
@@ -179,7 +179,7 @@ class productTester(myTests):
 
         self.assertTrue( self.A*self.A==self.A**2 )
         self.assertTrue( self.A*self.B == self.B*self.A )
-        if not self.flat:
+        if not self.A.flat:
             self.assertTrue( self.A*self.A==self.A*self.A.transform() )
 
 
@@ -243,7 +243,7 @@ class propertyTester(myTests):
         self.assertTrue( self.A.vectors.H*numpy.diagflat(self.A.var)*self.A.vectors == self.A.cov )
         self.assertTrue( self.A.transform()**2 == abs(self.A).cov )
         self.assertTrue( self.A.transform(2) == abs(self.A).cov )
-        if not(self.flat and self.N<0):
+        if not(self.A.flat and self.N<0):
             self.assertTrue( self.A.transform()**self.N == self.A.transform(self.N) )
 
     def testScaled(self):
@@ -299,7 +299,7 @@ class powerTester(myTests):
         self.assertTrue( self.A*self.A**0==self.A )
         self.assertTrue( Matrix((self.A**0).var) == numpy.ones )
 
-    def testZeroFlat
+    def testZeroFlat(self):
         if not self.A.flat:
             self.assertTrue( self.A**0 == self.A**(-1)*self.A )
             self.assertTrue( self.A**0 == self.A*self.A**(-1) )
@@ -312,7 +312,7 @@ class powerTester(myTests):
         self.assertTrue( self.A==self.A**1 )
         self.assertTrue( -self.A == (-self.A)**1 )
 
-        if not self.flat:
+        if not self.A.flat:
             self.assertTrue( self.A == (self.A**-1)**-1 )
 
     def testRealPow(self):
@@ -326,7 +326,7 @@ class powerTester(myTests):
         self.assertTrue( (self.A**k1)*(self.A**k2)==self.A**(k1+k2) )
         self.assertTrue( self.A**k1/self.A**k2==self.A**(k1-k2) )
 
-        if not self.flat:
+        if not self.A.flat:
             self.assertTrue( self.A**k == self.A*self.A.transform(k-1) + Mvar(mean=self.A.mean-self.A.mean*self.A.transform(0)) )
         
 
@@ -345,7 +345,7 @@ class linalgTester(myTests):
         )
 
     def testDist2(self):
-        if not self.flat:
+        if not self.A.flat:
             self.assertTrue( Matrix((self.A**0).dist2(numpy.zeros((1,self.ndim))))==helpers.mag2((self.A**0).mean) )
 
     def testSquare(self):
@@ -437,24 +437,26 @@ class blendTester(myTests):
         self.assertTrue( (self.A & self.A).mean == self.A.mean)
         
     def testNotFlat(self):
-        if not self.flat:
+        if not (self.A.flat or self.B.flat):
             self.assertTrue( self.A & self.B == 1/(1/self.A+1/self.B))
             self.assertTrue( self.A & -self.A == Mvar(mean=numpy.zeros(self.ndim))**-1)
             self.assertTrue( self.A & ~self.A == Mvar(mean=numpy.zeros(self.ndim))**-1)
             self.assertTrue( self.A & self.B == wiki(self.A,self.B))
-            
-            abc=numpy.random.permutation([self.A,self.B,self.C])
-            self.assertTrue( self.A & self.B & self.C == helpers.paralell(*abc))
-            self.assertTrue( self.A & self.B & self.C == reduce(operator.and_ ,abc))
-    
-            self.assertTrue( (self.A & self.B) & self.C == self.A & (self.B & self.C))
-   
+               
             self.assertTrue( self.A**-1 == self.A*self.A**-2)
             self.assertTrue( self.A & self.B == (self.A*self.A**-2+self.B*self.B**-2)**-1)
 
             D = self.A*(self.A.cov)**(-1) + self.B*(self.B.cov)**(-1)
             self.assertTrue( wiki(self.A,self.B) == D*(D.cov)**(-1))
             self.assertTrue( self.A & self.B == wiki(self.A,self.B))
+
+        if not (self.A.flat or self.B.flat or self.C.flat):
+            abc=numpy.random.permutation([self.A,self.B,self.C])
+            self.assertTrue( self.A & self.B & self.C == helpers.paralell(*abc))
+            self.assertTrue( self.A & self.B & self.C == reduce(operator.and_ ,abc))
+    
+            self.assertTrue( (self.A & self.B) & self.C == self.A & (self.B & self.C))
+
 
 
     def testKnownValues1(self):

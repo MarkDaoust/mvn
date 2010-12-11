@@ -68,8 +68,6 @@ def makeObjects(cplx=None,flat=None,ndim=None,seed=None):
         'M':M,'M2':M2,'E':E,
         'K1':K1,'K2':K2,
         'N':N,
-        'flat':flat,
-        'cplx':cplx,
         'seed':seed,
     }
 

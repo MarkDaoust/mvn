@@ -142,7 +142,7 @@ class Mvar(Automath,Right,Inplace):
             
         transform
             >>> assert A.transform()**2 == abs(A).cov 
-            >>> if not(flat and N<0):
+            >>> if not(A.flat and N<0):
             ...     assert A.transform()**N == A.transform(N)
 
             >>> assert A.transform(2) == abs(A).cov
@@ -420,15 +420,15 @@ class Mvar(Automath,Right,Inplace):
 
         >>> assert A.vectors.H*A.scaled==A.transform()
         """
-        Matrix(numpy.diagflat(sqrt(self.var)))*self.vectors,
+        return Matrix(numpy.diagflat(sqrt(self.var)))*self.vectors
         
     
     @property
     def flat(self):
         """
-        >>> assert A.flat if A.vectors.shape[0]< A.vectors.shape[1] 
+        >>> assert A.flat == A.vectors.shape[0]< A.vectors.shape[1] 
         """
-        retun self.vectors.shape[0] < self.vectors.shape[1]
+        return self.vectors.shape[0] < self.vectors.shape[1]
 
     @property
     def ndim(self):
@@ -436,7 +436,7 @@ class Mvar(Automath,Right,Inplace):
         get the number of dimensions of the space the mvar exists in
         >>> assert A.ndim==A.mean.size
         """
-        self.mean.size
+        return self.mean.size
     
     @property
     def shape(self):
@@ -449,7 +449,7 @@ class Mvar(Automath,Right,Inplace):
         >>> assert (A.var.size,A.mean.size)==A.shape
         >>> assert A.shape[1]==A.ndim
         """
-        self.vectors.shape
+        return self.vectors.shape
 
 
     def transform(self,power=1):
@@ -650,10 +650,11 @@ class Mvar(Automath,Right,Inplace):
         return the square of the mahalabois distance from the Mvar to each vector.
         the vectors should be along the last dimension of the array.
 
-        >>> assert helpers.approx(
-        ...     (A**0).dist2(numpy.zeros((1,ndim))),
-        ...     helpers.mag2((A**0).mean)
-        ... ) or flat
+        >>> if A.flat:
+        ...     assert helpers.approx(
+        ...         (A**0).dist2(numpy.zeros((1,ndim))),
+        ...         helpers.mag2((A**0).mean)
+        ...     )
         """
         #make sure the mean is a flat numpy array
         mean=numpy.array(self.mean).squeeze()
@@ -893,12 +894,14 @@ class Mvar(Automath,Right,Inplace):
         except if the mvar is flat; that flattness is preserved 
         (because zeros get squeezed, positive and negative zeros are indistinguishable)
 
-        >>> assert (A & ~A) == Mvar(mean=numpy.zeros(A.ndim))**-1 or flat
         >>> assert (A & ~A) == Mvar(mean=A.mean, vectors=A.vectors, var=Matrix.infs)
+        >>> if not A.flat:
+        ...     assert (A & ~A) == Mvar(mean=numpy.zeros(A.ndim))**-1
+
 
         infinite variances provide no information, having a no effect when blended
-
-        >>> assert A == A & (B & ~B) or flat
+        >>> if not B.flat
+        ...     assert A == A & (B & ~B)
         
         if the mvar is flat, things are a little different:
             like this you're taking a slice of A in the plane of B
@@ -906,7 +909,8 @@ class Mvar(Automath,Right,Inplace):
    
             but watch out:
             >>> assert (A&~B) & B == (A&B) & ~B
-            >>> (A&B) & ~B == A & (B&~B) and flat
+            >>> if not flat
+            ...    assert (A&B) & ~B == A & (B&~B) and flat
             False
 
             todo: investigate why this doesn't match, 
@@ -967,25 +971,30 @@ class Mvar(Automath,Right,Inplace):
         The inversion automatically leads to power, multiply, and divide  
         
         >>> assert A & B == B & A 
-        >>> assert A & B == 1/(1/A+1/B) or flat
-        
-        >>> abc=numpy.random.permutation([A,B,C])
-        >>> assert A & B & C == helpers.paralell(*abc) or flat
-        >>> assert A & B & C == reduce(operator.and_ ,abc) or flat
-        
-        >>> assert (A & B) & C == A & (B & C) or flat
-        
+
+        >>> if not (A.flat or B.flat): 
+        ...     assert A & B == 1/(1/A+1/B)
+
+        >>> if not (A.flat or B.flat or C.flat):
+        ...     abc=numpy.random.permutation([A,B,C])
+        ...     assert A & B & C == helpers.paralell(*abc)
+        ...     assert A & B & C == reduce(operator.and_ ,abc)
+        ...     assert (A & B) & C == A & (B & C)
+
+        >>> if not A.flat:
+        ...     assert A &-A == Mvar(mean=numpy.zeros(ndim))**-1
+        ...     assert A &~A == Mvar(mean=numpy.zeros(ndim))**-1
+
+
         >>> assert (A & A).cov == A.cov/2
         >>> assert (A & A).mean == A.mean
-        
-        >>> assert A &-A == Mvar(mean=numpy.zeros(ndim))**-1 or flat
-        >>> assert A &~A == Mvar(mean=numpy.zeros(ndim))**-1 or flat
-        
+                
         The proof that this is identical to the wikipedia definition of blend 
         is a little too involved to write here. Just try it (and see the "wiki"
         function)
         
-        >>> assert A & B == wiki(A,B) or flat
+        >>> if not (A.flat or B.flat):
+        ...     assert A & B == wiki(A,B) or flat
 
         this algorithm is also, at the same time, solving linear equations
         where the zero vatiances correspond to a plane's null vectors 
@@ -1054,7 +1063,7 @@ class Mvar(Automath,Right,Inplace):
 
         >>> #the transform version doesn't work for flat objects if the transform power is less than 0
         >>> k = numpy.real(K1)
-        >>> if not flat or k>0:
+        >>> if not A.flat or k>0:
         ...     assert A**k == A*A.transform(k-1) + Mvar(mean=A.mean-A.mean*A.transform(0)) 
 
         This definition was developed to turn kalman blending into a standard 
@@ -1084,25 +1093,25 @@ class Mvar(Automath,Right,Inplace):
     
             >>> assert A**0*A==A
             >>> assert A*A**0==A
-            >>> if not flat:
+            >>> if not A.flat:
             ...     assert A**0 == A**(-1)*A
             ...     assert A**0 == A*A**(-1)
             ...     assert A**0 == A/A 
             ...     assert A/A**-1 == A**2
             
-            >>> False if flat else (A**K1)*(A**K2)==A**(K1+K2)
+            >>> False if A.flat else (A**K1)*(A**K2)==A**(K1+K2)
             False
 
-            >>> False if flat else A**K1/A**K2==A**(K1-K2)
+            >>> False if A.flat else A**K1/A**K2==A**(K1-K2)
             False
 
             those only work if the k's are real      
             >>> k1,k2=numpy.real(K1),numpy.real(K2)
             >>> assert (A**k1)*(A**k2)==A**(k1+k2) if (
-            ...     (not flat) o k1>=0 and k1>=0)
+            ...     (not A.flat) o k1>=0 and k1>=0)
             ... ) else True
             >>> assert A**k1/A**k2==A**(k1-k2) if (
-            ...     not flat orkK1>= 0 andkK2 <= 0
+            ...     not A.flat or K1>= 0 and K2 <= 0
             ... ) else True
             
         Zero power has some interesting properties: 
@@ -1115,18 +1124,18 @@ class Mvar(Automath,Right,Inplace):
             >>> assert (A**0).mean == A.mean*(A**-1).transform() if not flat else True
 
             if there are missing dimensions the transform is irreversable so this stops working 
-            >>> assert (A**0).mean == A.mean*A.transform(-1) or flat
+            >>> assert (A**0).mean == A.mean*A.transform(-1) or A.flat
             
         derivation of multiplication from this is messy.just remember that 
         all Mvars on the right, in a multiply, can just be converted to matrix:
             
             >>> assert (A*B).cov == (A*B.transform()+B*A.transform()).cov/2
 
-            >>> assert (A*B).mean == (A*B.transform()+B*A.transform()).mean/2 or flat
+            >>> assert (A*B).mean == (A*B.transform()+B*A.transform()).mean/2 or (A.flat or B.flat)
 
             >>> assert M*B==M*B.transform()
             >>> assert A**2==A*A
-            >>> assert A**2==A*A.transform() or flat
+            >>> assert A**2==A*A.transform() or A.flat
         """
         if numpy.real(power)<0: 
             self=self.inflate()
@@ -1322,7 +1331,7 @@ class Mvar(Automath,Right,Inplace):
         multiplying two Mvars together is defined to fit with power
         
         >>> assert A*A==A**2
-        >>> assert A*A==A*A.transform() or flat
+        >>> assert A*A==A*A.transform() or A.flat
         >>> assert A*B == B*A
 
         Note that the result does not depend on the mean of the 
@@ -1572,9 +1581,9 @@ def wiki(P,M):
     
     The quickest way to prove it's equivalent is by examining these:
 
-    >>> if not flat:    
-    ...     assert A**-1 == A*A**-2 or flat
-    ...     assert A & B == (A*A**-2+B*B**-2)**-1 or flat
+    >>> if not (A.flat or B.flat):    
+    ...     assert A**-1 == A*A**-2
+    ...     assert A & B == (A*A**-2+B*B**-2)**-1
     ...
     ...     D = A*(A.cov)**(-1) + B*(B.cov)**(-1)
     ...     assert wiki(A,B) == D*(D.cov)**(-1)
@@ -1645,15 +1654,11 @@ def binindex(index,n):
     binindex[index]=True
 
     return binindex
-
+        
 
 if __name__=='__main__':    
     #overwrite everything we just created with the copy that was 
     #created when we imported mvar; there can only be one.
     from mvar import *
     from testObjects import *
-
-    assert sum(itertools.repeat(A,N-1),A) == A*(N)
-    assert A != B
-    assert A**K1.real/A**K2.real==A**(K1-K2)
 
