@@ -1053,7 +1053,7 @@ class Mvar(Automath,Right,Inplace):
         self**power
 
         >>> #the transform version doesn't work for flat objects if the transform power is less than 0
-        >>> k = K1.real
+        >>> k = numpy.real(K1)
         >>> if not flat or k>0:
         ...     assert A**k == A*A.transform(k-1) + Mvar(mean=A.mean-A.mean*A.transform(0)) 
 
@@ -1096,13 +1096,13 @@ class Mvar(Automath,Right,Inplace):
             >>> False if flat else A**K1/A**K2==A**(K1-K2)
             False
 
-            those only work if the k's are real            
-            >>> assert (A**K1.real)*(A**K2.real)==A**(K1.real+K2.real) if (
-            ...     (not flat) or (K1.real>=0 and K1.real>=0)
+            those only work if the k's are real      
+            >>> k1,k2=numpy.real(K1),numpy.real(K2)
+            >>> assert (A**k1)*(A**k2)==A**(k1+k2) if (
+            ...     (not flat) o k1>=0 and k1>=0)
             ... ) else True
-
-            >>> assert A**K1.real/A**K2.real==A**(K1.real-K2.real) if (
-            ...     not flat or K1.real>= 0 and K2.real <= 0
+            >>> assert A**k1/A**k2==A**(k1-k2) if (
+            ...     not flat orkK1>= 0 andkK2 <= 0
             ... ) else True
             
         Zero power has some interesting properties: 

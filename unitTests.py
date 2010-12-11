@@ -6,9 +6,6 @@ import cPickle
 import copy
 from mvar import *
 
-
-jar=open('testObjects.pkl').read()
-
 class myTests(unittest.TestCase):
     def setUp(self):
        self.__dict__.update(cPickle.loads(self.jar))
@@ -286,19 +283,24 @@ class powerTester(myTests):
     def testIntPowers(self):
         self.assertTrue( self.A.transform(self.N)== (self.A**self.N).transform() )
         self.assertTrue( self.A.transform(self.N)== self.A.transform()**self.N )
-
+        
     def testRealPowers(self):
-        self.assertTrue( (self.A**self.K1.real).transform() == self.A.transform(self.K1.real) )
+        k=numpy.real(self.K1)
+        self.assertTrue( (self.A**k).transform() == self.A.transform(k) )
 
     def testComplexPowers(self):
         self.assertTrue( (self.A**self.K1).transform() == self.A.transform(self.K1) )
+        self.assertTrue( self.A**self.K1*self.A**self.K2 == self.A**(self.K1+self.K2))
+        self.assertTrue( self.A**self.K1/self.A**self.K2 == self.A**(self.K1-self.K2))
+
 
     def testZeroPow(self):
         self.assertTrue( self.A**0*self.A==self.A )
         self.assertTrue( self.A*self.A**0==self.A )
         self.assertTrue( Matrix((self.A**0).var) == numpy.ones )
 
-        if not self.flat:
+    def testZeroFlat
+        if not self.A.flat:
             self.assertTrue( self.A**0 == self.A**(-1)*self.A )
             self.assertTrue( self.A**0 == self.A*self.A**(-1) )
             self.assertTrue( self.A**0 == self.A/self.A )
@@ -317,15 +319,16 @@ class powerTester(myTests):
         self.assertTrue( self.A*self.A==self.A**2 )
         self.assertTrue( self.A/self.A**-1 == self.A**2 )
         
-        if not self.flat:
-            k=self.K1.real
-            self.assertTrue( self.A**k == self.A*self.A.transform(k-1) + Mvar(mean=self.A.mean-self.A.mean*self.A.transform(0)) )
-    
         self.assertTrue( self.A.mean*self.A.transform(0) == ((self.A**-1)**-1).mean )
 
-    
-        self.assertTrue( (self.A**self.K1.real)*(self.A**self.K2.real)==self.A**(self.K1.real+self.K2.real) )
-        self.assertTrue( self.A**self.K1.real/self.A**self.K2.real==self.A**(self.K1-self.K2) )
+        k1=numpy.real(k1)
+        k2=numpy.real(k2)
+        self.assertTrue( (self.A**k1)*(self.A**k2)==self.A**(k1+k2) )
+        self.assertTrue( self.A**k1/self.A**k2==self.A**(k1-k2) )
+
+        if not self.flat:
+            self.assertTrue( self.A**k == self.A*self.A.transform(k-1) + Mvar(mean=self.A.mean-self.A.mean*self.A.transform(0)) )
+        
 
 class linalgTester(myTests):
     def testTrace(self):
