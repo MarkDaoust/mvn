@@ -280,7 +280,7 @@ class Mvar(Automath,Right,Inplace):
         
         #todo: implement these
         assert weights is None,'weights not implemented'
-        assert data.dtype is not numpy.dtype('object'),'not mplementd for mvars yet'
+        assert data.dtype is not numpy.dtype('object'),'not iplementd for "dtype=object" yet'
         
         #get the number of samples, subtract 1 if un-biased
         N=data.shape[0] if bias else data.shape[0]-1
@@ -714,10 +714,11 @@ class Mvar(Automath,Right,Inplace):
         """
         #convert the inputs
         value=Mvar.fromData(value)
-        
+        index=binindex(index,self.ndim)
+
         #create the mean, for the new object,and set the values of interest
         mean=numpy.zeros([1,self.shape[0]])
-        mean[0,index]=value.mean
+        mean[:,index]=value.mean
 
         #create empty vectors for the new object
         vectors=numpy.zeros([
@@ -1640,15 +1641,14 @@ def mooreGiven(self,index,value):
             Mvar.stack([Z,sensor])
         )
 
-def binindex(index,n):
+def binindex(index,numel):
     """
-    convert whatever format index, for this object, to binary 
-    so it can be easily inverted
+    convert an index to binary so it can be easily inverted
     """
     if hasattr(index,'dtype') and index.dtype==bool:
         return index
     
-    binindex=numpy.zeros(n,dtype=bool)
+    binindex=numpy.zeros(numel,dtype=bool)
     binindex[index]=True
 
     return binindex
