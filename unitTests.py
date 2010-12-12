@@ -4,7 +4,19 @@ import unittest
 import testTools
 import cPickle
 import copy
-from mvar import *
+import sys
+
+import numpy
+import itertools
+
+import mvar
+from mvar import sqrt
+from mvar import Mvar
+from matrix import Matrix
+import helpers
+
+import testObjects
+
 
 class myTests(unittest.TestCase):
     def setUp(self):
@@ -121,7 +133,7 @@ class signTester(myTests):
         self.assertTrue( (self.A+self.A).mean==2*self.A.mean )
 
         n=abs(self.N)
-        self.assertTrue( numpy.array(itertools.repeat(self.A,n)).sum() == self.A*n )
+        self.assertTrue( numpy.array(list(itertools.repeat(self.A,n))).sum() == self.A*n )
 
         self.assertTrue( self.A+self.B ==Mvar(
             mean=self.A.mean+self.B.mean,
@@ -321,13 +333,13 @@ class powerTester(myTests):
         
         self.assertTrue( self.A.mean*self.A.transform(0) == ((self.A**-1)**-1).mean )
 
-        k1=numpy.real(k1)
-        k2=numpy.real(k2)
+        k1=numpy.real(self.K1)
+        k2=numpy.real(self.K2)
         self.assertTrue( (self.A**k1)*(self.A**k2)==self.A**(k1+k2) )
         self.assertTrue( self.A**k1/self.A**k2==self.A**(k1-k2) )
 
         if not self.A.flat:
-            self.assertTrue( self.A**k == self.A*self.A.transform(k-1) + Mvar(mean=self.A.mean-self.A.mean*self.A.transform(0)) )
+            self.assertTrue( self.A**k1 == self.A*self.A.transform(k1-1) + Mvar(mean=self.A.mean-self.A.mean*self.A.transform(0)) )
         
 
 class linalgTester(myTests):
@@ -383,7 +395,7 @@ class givenTester(myTests):
         self.assertTrue( Y.given(index=0,value=x) == X&Y )
 
     def testMooreGiven(self):
-        self.assertTrue( mooreGiven(self.A,index=0,value=1)==self.A.given(index=0,value=1)[1:] )
+        self.assertTrue( mvar.mooreGiven(self.A,index=0,value=1)==self.A.given(index=0,value=1)[1:] )
 
 
 class inversionTester(myTests):
@@ -441,14 +453,14 @@ class blendTester(myTests):
             self.assertTrue( self.A & self.B == 1/(1/self.A+1/self.B))
             self.assertTrue( self.A & -self.A == Mvar(mean=numpy.zeros(self.ndim))**-1)
             self.assertTrue( self.A & ~self.A == Mvar(mean=numpy.zeros(self.ndim))**-1)
-            self.assertTrue( self.A & self.B == wiki(self.A,self.B))
+            self.assertTrue( self.A & self.B == mvar.wiki(self.A,self.B))
                
             self.assertTrue( self.A**-1 == self.A*self.A**-2)
             self.assertTrue( self.A & self.B == (self.A*self.A**-2+self.B*self.B**-2)**-1)
 
             D = self.A*(self.A.cov)**(-1) + self.B*(self.B.cov)**(-1)
-            self.assertTrue( wiki(self.A,self.B) == D*(D.cov)**(-1))
-            self.assertTrue( self.A & self.B == wiki(self.A,self.B))
+            self.assertTrue( mvar.wiki(self.A,self.B) == D*(D.cov)**(-1))
+            self.assertTrue( self.A & self.B == mvar.wiki(self.A,self.B))
 
         if not (self.A.flat or self.B.flat or self.C.flat):
             abc=numpy.random.permutation([self.A,self.B,self.C])
@@ -478,8 +490,32 @@ class blendTester(myTests):
         self.assertTrue( (L1&L2).var==1)
         self.assertTrue( (L1&L2).vectors==[1,0])
 
-unitTests=[
-    value for (name,value) in copy.copy(locals()).iteritems() 
-    if isinstance(value,type) and issubclass(value,myTests)
-]
+def getTests(fixture=None):
+    testCases= [
+            value for (name,value) in copy.copy(globals()).iteritems() 
+            if isinstance(value,type) and issubclass(value,myTests)
+        ]
+    if fixture is None:
+        return testCases
+   
+    jar=cPickle.dumps(fixture)
+    testCases = [
+        unittest.makeSuite(
+            type(tc.__name__,(tc,),{'jar':jar})
+        ) for tc in testCases
+    ]
 
+    return testCases
+
+if __name__=='__main__':
+    suite=unittest.TestSuite()
+
+    if '-r' in sys.argv:
+        testFixture=testObjects.testObjects
+    else:
+        testFixture=testObjects.makeObjects()
+    
+    suite.addTests(getTests(testFixture))
+
+
+    unittest.TextTestRunner().run(suite)

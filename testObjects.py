@@ -1,7 +1,8 @@
 import numpy
-from matrix import Matrix
 import pickle
 
+
+from matrix import Matrix
 from mvar import Mvar
 import helpers
 
@@ -26,7 +27,7 @@ def makeObjects(cplx=None,flat=None,ndim=None,seed=None):
         num=lambda :2*ndim
  
     if cplx is None:
-        cplx=numpy.round(numpy.random.rand)
+        cplx=lambda :numpy.round(numpy.random.rand())
     else:
         c=bool(cplx)
         cplx=lambda:c
