@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 
 import unittest
-import testTools
+import operator
 import cPickle
 import copy
 import sys

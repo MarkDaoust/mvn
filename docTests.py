@@ -6,7 +6,7 @@ import doctest
 import testObjects
 
 def getTests(module,testFixture):
-    mvar.__dict__.update(testFixture)
+    module.__dict__.update(testFixture)
     testCases=doctest.DocTestSuite(module)
     return testCases
     

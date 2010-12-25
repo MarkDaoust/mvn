@@ -21,7 +21,7 @@ if __name__=='__main__':
         testFixture=testObjects.makeObjects()
     
     suite.addTests(unitTests.getTests(testFixture))
-    suite.addTests(docTests.getTests(testFixture,module=mvar))
+    suite.addTests(docTests.getTests(mvar,testFixture))
 
 
     unittest.TextTestRunner().run(suite)

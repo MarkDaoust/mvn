@@ -901,7 +901,7 @@ class Mvar(Automath,Right,Inplace):
 
 
         infinite variances provide no information, having a no effect when blended
-        >>> if not B.flat
+        >>> if not B.flat:
         ...     assert A == A & (B & ~B)
         
         if the mvar is flat, things are a little different:
@@ -910,9 +910,8 @@ class Mvar(Automath,Right,Inplace):
    
             but watch out:
             >>> assert (A&~B) & B == (A&B) & ~B
-            >>> if not flat
-            ...    assert (A&B) & ~B == A & (B&~B) and flat
-            False
+            >>> if not (A.flat or B.flat):
+            ...    assert (A&B) & ~B == A & (B&~B)
 
             todo: investigate why this doesn't match, 
                 I don't have a sense-physique for negative variances,
