@@ -13,8 +13,10 @@ def makeObjects(cplx=None,flat=None,ndim=None,seed=None):
     randn=numpy.random.randn
     randint=lambda x,y: int(numpy.round((x-0.5)+numpy.random.rand()*(y-x+0.5)))
 
-    if seed is not None:
-        numpy.random.seed(seed)
+    if seed is None:
+        seed=rand(1,1e9)
+    
+    numpy.random.seed(seed)
 
     if ndim is None:
         ndim=randint(0,20)
@@ -24,7 +26,7 @@ def makeObjects(cplx=None,flat=None,ndim=None,seed=None):
     elif flat:
         num=lambda :randint(0,ndim)
     else:
-        num=lambda :2*ndim
+        num=lambda :randint(ndim+1,2*ndim)
  
     if cplx is None:
         cplx=lambda :numpy.round(numpy.random.rand())

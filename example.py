@@ -47,7 +47,7 @@ class publisher(object):
             loc='upper left'
         )
 
-        savefig("%0.3d" % self.n,format='png')
+        savefig("art/%0.3d" % self.n,format='png')
         self.n+=1
 
 def do(real,filtered,sensor,noise,transform):

@@ -45,7 +45,7 @@ class creationTester(myTests):
         self.assertTrue( new.cov == numpy.zeros([3,3]) )
 
     def testZeros(self):
-        n=abs(self.N)
+        n=max(abs(self.N),1)
         Z=Mvar.zeros(n)
         self.assertTrue( Z.mean==Matrix.zeros )
         self.assertTrue( Z.var.size==0 )

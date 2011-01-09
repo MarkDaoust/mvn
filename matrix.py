@@ -21,8 +21,6 @@ class Matrix(numpy.matrix):
             
             >>> assert Matrix([[0,0],[0,0],[0,0]]) == numpy.zeros
             >>> assert Matrix([[1,0],[0,1]]) == Matrix.eye
-            
-            awsome eh?
     """
     def __new__(cls,data,dtype=None,copy=True):
         self=numpy.matrix(data,dtype,copy)

@@ -1,5 +1,7 @@
 #! /usr/bin/env python
 
+#todo: do something about mvars with zero dimensions
+#todo: convert some of those mixins to class decorators
 #todo: understand transforms composed of Mvars as the component vectors, and 
 #          whether it is meaningful to consider mvars in both the rows and columns
 #todo: implement a transpose,for the above 
@@ -8,8 +10,7 @@
 #todo: cleanup my 'square' function (now that it is clear that it's an SVD)
 #todo: entropy
 #todo: quadratic forms (ref: http://en.wikipedia.org/wiki/Quadratic_form_(statistics))
-#todo: start using unittest instead of just doctest
-#todo: split the class into two levels: "fast" and 'safe'?
+#todo: split the class into two levels: "fast" and 'safe'? <- "if __debug__" ?
 #      maybe have the 'safe' class inherit from 'fast' and a add a variance-free 'plane' class?
 #todo: understand the EM and K-means algorithms (available in scipy)
 #todo: understans what complex numbers imply with these.
@@ -470,6 +471,10 @@ class Mvar(Automath,Right,Inplace):
 
         >>> assert Matrix(numpy.trace(A.transform(0))) == A.shape[0] 
         """
+        if not self.var.size:
+            ndim=self.ndim
+            return Matrix.zeros((ndim,ndim))
+
         if not numpy.isreal(self.var).all() or not(self.var>0).all():
             power = complex(power)
 
@@ -794,13 +799,11 @@ class Mvar(Automath,Right,Inplace):
         other=Mvar.fromData(other)
         
         #check the number of dimensions of the space
-        assert (
-            self.ndim == other.ndim,
-            """
+        assert  self.ndim == other.ndim,"""
             if the objects have different numbers of dimensions, 
             you're doing something wrong
             """
-        )
+        
 
         self=self.squeeze()
         other=other.squeeze()
