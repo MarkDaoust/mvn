@@ -404,7 +404,7 @@ class inversionTester(myTests):
         self.assertTrue( abs(self.A) == abs(~self.A) )
 
     def testNeg(self):
-        self.IA=self.A
+        self.IA=self.A.copy()
         self.IA.var= -self.IA.var
         self.assertTrue( self.IA == ~self.A )
 

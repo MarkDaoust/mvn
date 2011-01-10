@@ -240,7 +240,7 @@ class Mvar(Automath,Right,Inplace):
         diag = Matrix(numpy.diag(cov))
         eig = numpy.linalg.eigh if abs(diag) == diag else numpy.linalg.eig
         #get the variances and vectors.
-        (var,vectors) = eig(cov) if cov.size else (Matrix([]),Matrix([]))
+        (var,vectors) = eig(cov) if cov.size else (Matrix.zeros([0,1]),Matrix.zeros([0,0]))
         vectors=Matrix(vectors.H)     
 
         return Mvar(
@@ -473,10 +473,20 @@ class Mvar(Automath,Right,Inplace):
         """
         if not self.var.size:
             ndim=self.ndim
-            return Matrix.zeros((ndim,ndim))
+            shape=(ndim,ndim)
+            return Matrix.zeros(shape)
+            #the section below looks right but fails all my tests             
+            #p=numpy.real(power)
+            #if p>0:
+            #    return Matrix.zeros(shape)
+            #elif p<0:
+            #    return Matrix.nans(shape)
+            #elif p == 0:
+            #    return Matrix.eye(shape)
 
         if not numpy.isreal(self.var).all() or not(self.var>0).all():
             power = complex(power)
+
 
         if helpers.approx(power):
             vectors=self.vectors
@@ -1091,7 +1101,8 @@ class Mvar(Automath,Right,Inplace):
 
             >>> #this doesn't work for flat objects because information about 
             >>> #the mean is lost after the first inversion, because of the infinite variance.
-            >>> assert A == (A**-1)**-1 or flat
+            >>> if not A.flat:
+            ...     assert A == (A**-1)**-1
             >>> assert A.mean*A.transform(0) == ((A**-1)**-1).mean
     
             >>> assert A**0*A==A
@@ -1102,11 +1113,8 @@ class Mvar(Automath,Right,Inplace):
             ...     assert A**0 == A/A 
             ...     assert A/A**-1 == A**2
             
-            >>> False if A.flat else (A**K1)*(A**K2)==A**(K1+K2)
-            False
-
-            >>> False if A.flat else A**K1/A**K2==A**(K1-K2)
-            False
+            >>> assert (A**K1)*(A**K2)==A**(K1+K2)
+            >>> assert (A**K1)/(A**K2)==A**(K1-K2)
 
             those only work if the k's are real      
             >>> k1=numpy.real(K1)
@@ -1200,16 +1208,17 @@ class Mvar(Automath,Right,Inplace):
 
             if you mix mvars with matrixes, it's two different types of multiplication, and 
             so is not asociative
-                >>> (M*A)*M2 == M*(A*M2)
-                False
+                >>> if ndim==1:
+                ...     assert (M*A)*M2 == M*(A*M2)
+                
                 
             and because of that, this also doesn't work, except in 1-dimension,
-                >>> (A*B)*C == A*(B*C) if ndim > 1  else False
-                False
+                
+                >>> if ndim==1: 
+                ...     assert (A*B)*C == A*(B*C)
 
             the reason that those don't work boils down to:            
-                >>> A.transform()*M == (A*M).transform()
-                False
+                >>> assert A.transform()*M != (A*M).transform()
 
             if you work it out you'll find that the problem is unavoidable given:
                 >>> assert (A*M).cov == M.H*A.cov*M
@@ -1217,14 +1226,13 @@ class Mvar(Automath,Right,Inplace):
 
             multiplication is distributive for constants only.
                 >>> assert A*(K1+K2)==A*K1+A*K2
-                >>> A*(M+M2)==A*M+A*M2
-                False
-                >>> A*(B+C)==A*B+A*C
-                False
+
+                >>> assert A*(M+M2)!=A*M+A*M2
+                
+                >>> assert A*(B+C)!=A*B+A*C
              
                 The reason is more clear if you consider the following:
-                >>> A*(E+E) == A*E+A*E
-                False
+                >>> assert A*(E+E) != A*E+A*E
 
                 because the left side will do a matrix multiplication by 2, 
                 and the right will do a scalar multiplication by 2, the means will match but the cov's will not 
@@ -1234,8 +1242,7 @@ class Mvar(Automath,Right,Inplace):
                     >>> assert (2*B**0).transform() == sqrt(2)*(B**0).transform()    
         
                     >>> assert (A*B**0 + A*B**0).cov == (2*A*B**0).cov 
-                    >>> (A*B**0 + A*B**0).mean == (2*A*B**0).mean
-                    False
+                    >>> assert (A*B**0 + A*B**0).mean != (2*A*B**0).mean
 
         for notes 
             
@@ -1616,7 +1623,7 @@ def mooreGiven(self,index,value):
     vvI=cov[Iv,Iv]**-1
 
     return Mvar.fromCov(
-        mean=self.mean[0,Iu]+uv.H*vvI*(value-self.mean[0,Iv]),
+        mean=self.mean[0,Iu]+(uv.H*vvI*(value-self.mean[0,Iv])).H,
         cov=uu-uv.H*vvI*uv
     )
 
@@ -1661,4 +1668,6 @@ if __name__=='__main__':
     #created when we imported mvar; there can only be one.
     from mvar import *
     from testObjects import *
+
+    mooreGiven(A,index=0,value=1)==A.given(index=0,value=1)[1:]
 

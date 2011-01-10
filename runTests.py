@@ -11,7 +11,7 @@ import unitTests
 import docTests
 import testObjects
 
-def runTests(cplx=None,flat=None,ndim=1,seed=None):
+def runTests(cplx=None,flat=None,ndim=None,seed=None):
     suite=unittest.TestSuite()
 
     if '-n' in sys.argv:
@@ -26,5 +26,5 @@ def runTests(cplx=None,flat=None,ndim=1,seed=None):
     unittest.TextTestRunner().run(suite)
 
 if __name__=='__main__':
-    runTests('cplx' in sys.argv,'flat' in sys.argv)
+    runTests()
 

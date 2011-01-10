@@ -14,7 +14,7 @@ def makeObjects(cplx=None,flat=None,ndim=None,seed=None):
     randint=lambda x,y: int(numpy.round((x-0.5)+numpy.random.rand()*(y-x+0.5)))
 
     if seed is None:
-        seed=rand(1,1e9)
+        seed=randint(1,1e9)
     
     numpy.random.seed(seed)
 
