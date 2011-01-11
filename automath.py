@@ -3,9 +3,23 @@
 import itertools 
 import operator
 
-class Automath(object):
+def automath(cls):
     """
-    abctract base class
+    class decorator:
+
+    inspired by "total ordering"
+
+    copy the contents of 'Automath' into the given class.
+    skip entries that the class already has.
+    """
+    for key,value in automath.__dict__.iteritems():
+        if not hasattr(cls,key):
+            setattr(cls,key,value)
+
+    return cls
+
+class Automath():
+    """
     It attempts to define a complete set of sensible operations from a more limited set
     if you define (A+B) you get an inefficient positive integer multiply (A*N)
     if you define (A*B) you get an inefficient positive integer power (A**N)

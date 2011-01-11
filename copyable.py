@@ -1,37 +1,31 @@
 #! /usr/bin/env python
 
-import copy
 
-class Copyable(object):
-    def copy(self,other=None,deep=False):
-        """
-        either return a copy of the object, or copy another object's dictionary
-        into the self. "deep" controls whether it uses copy.copy or copy.deepcopy.
-        
-        >>> A2=A.copy(deep=True)        
-        >>> assert A2 == A
-        >>> assert A2 is not A
-        >>> assert A2.mean is not A.mean
+import copy as cp
 
-        >>> A.copy(B,deep=True)
-        >>> assert B == A
-        >>> assert B is not A
-        >>> assert A.mean is not B.mean
+def copy(self,other=None,deep=False):
+    """
+    Either return a copy of the object, or copy the other object's dictionary
+    into the self.
 
-        set deep=False to not copy the attributes
-        >>> A2=A.copy(deep=False)        
-        >>> assert A2 == A
-        >>> assert A2 is not A
-        >>> assert A2.mean is A.mean
+    The "deep" key word controls whether it uses copy.copy or copy.deepcopy.
+    """
+     
+    C=cp.deepcopy if deep else cp.copy
+    if other is None:
+        return C(self)
+    else:
+        self.__dict__.update(C(other.__dict__))
 
-        >>> A.copy(B,deep=False)
-        >>> assert B == A
-        >>> assert B is not A
-        >>> assert A.mean is B.mean
-        """
-         
-        C=copy.deepcopy if deep else copy.copy
-        if other is None:
-            return C(self)
-        else:
-            self.__dict__.update(C(other.__dict__))
+def copyable(cls):
+    '''
+    class decorator:
+
+    inspired by "total ordering"
+
+    add a 'copy' method to a class
+    '''
+    assert not hasattr(cls,'copy')
+    cls.copy=copy
+    return cls
+

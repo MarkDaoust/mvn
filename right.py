@@ -1,6 +1,21 @@
 #! /usr/bin/env python
 
-class Right(object):
+def right(cls):
+    """
+    class decorator:
+
+    inspired by "total ordering"
+
+    copy the contents of 'Right' into the given class.
+    skip entries that the class already has.
+    """
+    for key,value in Right.__dict__.iteritems():
+        if not hasattr(cls,key):
+            setattr(cls,key,value)
+
+    return cls
+
+class Right():
     """
     This class just creates the right half of many operators that 
     can be easily calculated from the left versions and a few simple 
@@ -47,3 +62,5 @@ class Right(object):
         >>> assert A ^ B == B ^ A
         """
         return other ^ self
+
+

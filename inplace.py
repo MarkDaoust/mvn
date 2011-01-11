@@ -1,14 +1,29 @@
 #! /usr/bin/env python
 
-from copyable import Copyable
+from copyable import copyable
 
-class Inplace(Copyable):
+def inplace(cls):
     """
-    given: a class with self.copy(other) and definition of the basic forms of 
+    class decorator:
+
+    add the contents of thr 'Inplace' class to another class
+    
+    given: a class with a definition of the basic forms of 
     the operators (+,-,*,/,**,&,|,^,<<,>>)
 
     creates inplace versions of operators
     (+=, -=, *=, /=, **=, &=, |=, ^=, <<=, >>=)
+    """
+    for key,value in Inplace.__dict__.iteritems():
+        if not hasattr(cls,key):
+            setattr(cls,key,value)
+
+    return cls
+
+@copyable
+class Inplace:
+    """
+    this class only defines inplace operators in terms of the basic operators.
     """
     def __iadd__(self,other):
         self.copy(self + other)
@@ -36,4 +51,7 @@ class Inplace(Copyable):
         
     def __irshift__(self,other):
         self.copy(self >> other)
+
+
+    
 

@@ -72,15 +72,23 @@ def sqrt(data):
 from maybe import Ellipse
 
 ## local
+#helpers
 import helpers
-
 from square import square
-from automath import Automath
-from right import Right
-from inplace import Inplace
 from matrix import Matrix
 
-class Mvar(Automath,Right,Inplace):
+#class decorators
+from automath import automath
+from right import right
+from inplace import inplace
+
+#base class
+from plane import Plane
+
+@right
+@inplace
+@automath
+class Mvar(Plane):
     """
     Multivariate normal distributions packaged to act like a vector 
     (Ref: andrew moore / data mining / gaussians )
