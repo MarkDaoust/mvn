@@ -3,6 +3,16 @@ import copy
 
 import numpy
 
+#from scipy import sqrt()
+def sqrt(data):
+    """
+    like scipy.sqrt without a scipy depandancy
+    """
+    data = numpy.asarray(data)
+    if numpy.isreal(data).all() and (data>=0).all():
+        return numpy.sqrt(data)
+    return data**(0.5+0j)
+
 def squeeze(vectors,var,**kwargs):
     small=approx(var,**kwargs)
     

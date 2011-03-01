@@ -1,18 +1,37 @@
 #! /usr/bin/env python
 print 'starting'
 
+import os
+import sys
+import time
+import numpy
+
+#import matplotlib
+#matplotlib.use('cairo')
 
 from pylab import *
 from mvar import Mvar,Matrix
 
-import numpy
 
-#numpy.random.seed(12)
+if len(sys.argv)>1:
+    seed=int(sys.argv[1])
+else:
+    seed=numpy.random.randint(10000)
+    print 'seed: %d' % seed
 
+numpy.random.seed(seed)
+
+try:
+    os.stat('art')
+except OSError:
+    os.mkdir('art')
+
+open('art/seed','w').write(str(seed))
 
 class publisher(object):    
-    def __init__(self):
+    def __init__(self,formats=('png','svg')):
         self.n=0
+        self.formats=formats
 
     def publish(self):    
         xticks(range(-20,20,5))
@@ -25,7 +44,6 @@ class publisher(object):
         ylabel('Velocity')
 
         E=lambda **kwargs:matplotlib.patches.Ellipse([0,0],width=0,height=0,**kwargs)
-
 
         bottom_left=3
         legend(
@@ -46,8 +64,8 @@ class publisher(object):
             ],
             loc='upper left'
         )
-
-        savefig("art/%0.3d" % self.n,format='png')
+        for format in self.formats:
+            savefig("art/%0.3d.%s" % (self.n,format),format=format)
         self.n+=1
 
 def do(real,filtered,sensor,noise,transform):
@@ -55,7 +73,7 @@ def do(real,filtered,sensor,noise,transform):
     real=real*transform
     filtered=filtered*transform
 
-    plot(real[:,0],real[:,1],'v',color=[1,0,1],ms=20)
+    plot(real[:,0],real[:,1],'*',color=[1,0,1],ms=20)
     ax.add_artist(filtered.patch(minalpha=0.1,slope=0.5,facecolor=[0,1,0]))
     title('Update')
     P.publish()
@@ -72,14 +90,14 @@ def do(real,filtered,sensor,noise,transform):
     
     real=real.sample()
 
-    plot(real[:,0],real[:,1],'v',color=[1,0,1],ms=20)
+    plot(real[:,0],real[:,1],'*',color=[1,0,1],ms=20)
     
     title('Add process noise')    
     P.publish()
 
     ax.clear()
 
-    plot(real[:,0],real[:,1],'v',color=[1,0,1],ms=20)
+    plot(real[:,0],real[:,1],'*',color=[1,0,1],ms=20)
     ax.add_artist(filtered.patch(minalpha=0.1,slope=0.5,facecolor=[1,1,0]))
     title('Add process noise')    
     P.publish()
@@ -95,7 +113,7 @@ def do(real,filtered,sensor,noise,transform):
     P.publish()
 
     ax.clear()
-    plot(real[:,0],real[:,1],'v',color=[1,0,1],ms=20)
+    plot(real[:,0],real[:,1],'*',color=[1,0,1],ms=20)
     ax.add_artist(filtered.patch(minalpha=0.1,slope=0.5,facecolor=[0,1,1]))
     title('Merge')    
     P.publish()
@@ -104,41 +122,43 @@ def do(real,filtered,sensor,noise,transform):
 
     return real,filtered 
 
-#the actual, hidden state
-real=numpy.array([[0,4]])
 
-#the sensor
-sensor=Mvar(vectors=[[1,0],[0,1]],var=[1,numpy.Inf])
+if __name__=='__main__':
+    #the actual, hidden state
+    real=numpy.array([[0,4]])
 
-#the system noise
-noise=Mvar(vectors=[[1,-0.2],[0.2,1]],var=[0.25,1])
+    #the sensor
+    sensor=Mvar(vectors=[[1,0],[0,1]],var=[1,numpy.Inf])
 
-#the shear transform to move the system forward
-transform=Matrix([[1,0],[1,1]])
+    #the system noise
+    noise=Mvar(vectors=[[1,-0.2],[0.2,1]],var=[0.25,1])
 
-filtered=sensor.measure(real)
+    #the shear transform to move the system forward
+    transform=Matrix([[1,0],[1,1]])
 
-P=publisher()
+    filtered=sensor.measure(real)
 
-#create the figure and axis
-F=figure()
-ax=F.add_subplot(1,1,1,aspect='equal')
+    P=publisher()
 
-#plot the initial actual position
-plot(real[:,0],real[:,1],'v',color=[1,0,1],ms=20)
-title('Kalman Filtering: Start')
-note=P.publish()
+    #create the figure and axis
+    F=figure()
+    ax=F.add_subplot(1,1,1,aspect='equal')
 
-#measure the actual position, and plot the measurment
-ax.add_artist(filtered.patch(minalpha=0.1,slope=0.5,facecolor=[0,0,1]))
-title('Initialize to first measurment')
-P.publish()
-ax.clear()
+    #plot the initial actual position
+    plot(real[:,0],real[:,1],'*',color=[1,0,1],ms=20)
+    title('Kalman Filtering: Start')
+    note=P.publish()
+
+    #measure the actual position, and plot the measurment
+    ax.add_artist(filtered.patch(minalpha=0.1,slope=0.5,facecolor=[0,0,1]))
+    title('Initialize to first measurment')
+    P.publish()
+    ax.clear()
 
 
-(real,filtered) =do(real,filtered,sensor,noise,transform)
-(real,filtered) =do(real,filtered,sensor,noise,transform)
-(real,filtered) =do(real,filtered,sensor,noise,transform)
-(real,filtered) =do(real,filtered,sensor,noise,transform)
-(real,filtered) =do(real,filtered,sensor,noise,transform)
-(real,filtered) =do(real,filtered,sensor,noise,transform)
+    (real,filtered) =do(real,filtered,sensor,noise,transform)
+    (real,filtered) =do(real,filtered,sensor,noise,transform)
+    (real,filtered) =do(real,filtered,sensor,noise,transform)
+    (real,filtered) =do(real,filtered,sensor,noise,transform)
+    (real,filtered) =do(real,filtered,sensor,noise,transform)
+    (real,filtered) =do(real,filtered,sensor,noise,transform)

@@ -1,69 +1,85 @@
-import numpy
+
+import random
 import pickle
+import numpy
 
-
+from __init__ import Mvar
 from matrix import Matrix
-from mvar import Mvar
 import helpers
 
 pickleName='testObjects.pkl'
 
-def makeObjects(cplx=None,flat=None,ndim=None,seed=None):   
+def makeObjects(dtype=None,flat=None,ndim=None,seed=None):
     rand=numpy.random.rand
     randn=numpy.random.randn
     randint=lambda x,y: int(numpy.round((x-0.5)+numpy.random.rand()*(y-x+0.5)))
 
     if seed is None:
-        seed=randint(1,1e9)
-    
+        seed=randint(1,1e6)
+    assert isinstance(seed,int)
     numpy.random.seed(seed)
+
 
     if ndim is None:
         ndim=randint(0,20)
+    assert isinstance(ndim,int),'ndim must be an int'
 
-    if flat is None:
-        num=lambda :randint(0,2*ndim)
-    elif flat:
-        num=lambda :randint(0,ndim)
-    else:
-        num=lambda :randint(ndim+1,2*ndim)
- 
-    if cplx is None:
-        cplx=lambda :numpy.round(numpy.random.rand())
-    else:
-        c=bool(cplx)
-        cplx=lambda:c
+    shapes={
+        None:lambda :randint(-ndim,ndim),
+        True:lambda :randint(1,ndim),
+        False:lambda :randint(-ndim,0),
+    }
 
-    #create n random vectors, 
-    #with a default length of 'ndim', 
-    #they can be made complex by setting cplx=True
-    rvec= lambda n=1,ndim=ndim:Matrix(helpers.ascomplex(randn(n,ndim,2))) if cplx() else Matrix(randn(n,ndim))
-
-    #create random test objects
-    A=Mvar(
-        mean=5*randn()*rvec(),
-        vectors=5*randn()*rvec(num()),
-    )
-
-    B=Mvar.fromCov(
-        mean=5*randn()*rvec(),
-        cov=(lambda x:x.H*x)(5*randn()*rvec(num()))
-    )
-
-    C=Mvar.fromData(
-        rvec(num()+1)
-    )
-
-    A,B,C=numpy.random.permutation([A,B,C])
+    triple=lambda x:[x,x,x]
     
-    M=rvec(ndim)
-    M2=rvec(ndim)
+    if hasattr(flat,'__iter__'):
+        flat=[f if isinstance(f,int) else shapes[f]() for f in flat]   
+    elif flat in shapes:
+        flat=[item() for item in triple(shapes[flat])]
+    elif isinstance(flat,int):
+        flat=triple(x)
+    
+    assert all(f<=ndim for f in flat), "flatness can't be larger than ndim"
+
+
+    dtypes={
+        None:lambda:[1.0,1.0+1.0j,1.0j][randint(0,2)],
+        'r':lambda:1.0+0j,
+        'c':lambda:(1.0+1.0j)/(2**0.5),
+        'i':lambda:0+1.0j,
+    }
+ 
+    if hasattr(dtype,'__iter__'):
+        dtype=[
+                complex(item) if 
+                isinstance(item,(float,complex,int)) else 
+                dtypes[item]() 
+            for item in dtype
+        ]
+    elif dtype in dtypes:
+        dtype=[item() for item in triple(dtypes[dtype])]
+        
+    rvec= lambda n=1,dtype=1+0j,ndim=ndim:Matrix(
+        randn(n,ndim)*dtype.real+
+        randn(n,ndim)*dtype.imag
+    )
+
+    [A,B,C]=[
+        Mvar(
+            mean=5*randn()*rvec(dtype=D),
+            vectors=5*randn()*rvec(n=ndim-F,dtype=D),
+        ) for F,D in zip(flat,dtype)
+    ]
+ 
+    
+    M=rvec(n=ndim,dtype=random.choice(dtype))
+    M2=rvec(n=ndim,dtype=random.choice(dtype))
     E=Matrix.eye(ndim)
     
-    K1=randn()+randn()*(1j if cplx() else 0)
-    K2=randn()+randn()*(1j if cplx() else 0)
+    K1 = (numpy.random.randn()+numpy.random.randn()*1j)
+    K2 = (numpy.random.randn()+numpy.random.randn()*1j)
 
-    N=randint(-5,5)
+    N=randint(-3,3)
 
     testObjects={
         'ndim':ndim,
@@ -90,3 +106,19 @@ except ValueError:
 else:
     locals().update(testObjects)
 
+
+
+
+#    #create random test objects
+#    A=Mvar(
+#        mean=5*randn()*rvec(),
+#        vectors=5*randn()*rvec(num()),
+#    )
+#    B=Mvar.fromCov(
+#        mean=5*randn()*rvec(),
+#        cov=(lambda x:x.H*x)(5*randn()*rvec(num()))
+#    )
+#    C=Mvar.fromData(
+#        rvec(num()+1)
+#    )
+#   A,B,C=numpy.random.permutation([A,B,C])

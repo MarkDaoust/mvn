@@ -9,10 +9,11 @@ import sys
 import numpy
 import itertools
 
-import mvar
-from mvar import sqrt
-from mvar import Mvar
-from matrix import Matrix
+import __init__ as mvar
+sqrt = mvar.sqrt 
+Mvar = mvar.Mvar
+Matrix = mvar.Matrix
+
 import helpers
 
 import testObjects
@@ -43,6 +44,9 @@ class creationTester(myTests):
         self.assertTrue( (new.var == numpy.zeros([0])).all() )
         self.assertTrue( new.vectors == numpy.zeros )
         self.assertTrue( new.cov == numpy.zeros([3,3]) )
+
+    def testFromCov(self):
+        self.assertTrue(Mvar.fromCov(self.A.cov,mean=self.A.mean) == self.A)
 
     def testZeros(self):
         n=max(abs(self.N),1)
@@ -301,10 +305,33 @@ class powerTester(myTests):
         self.assertTrue( (self.A**k).transform() == self.A.transform(k) )
 
     def testComplexPowers(self):
-        self.assertTrue( (self.A**self.K1).transform() == self.A.transform(self.K1) )
-        self.assertTrue( self.A**self.K1*self.A**self.K2 == self.A**(self.K1+self.K2))
-        self.assertTrue( self.A**self.K1/self.A**self.K2 == self.A**(self.K1-self.K2))
+        self.assertTrue( (self.A**self.K1).transform()**2 == self.A.transform(self.K1)**2 )
 
+        #as nice as it would be if these worked, 
+
+        self.assertFalse( self.A**self.K1*self.A**self.K2 == self.A**(self.K1+self.K2))
+        self.assertFalse( self.A**self.K1/self.A**self.K2 == self.A**(self.K1-self.K2))
+
+        self.assertFalse( self.A*self.A**self.K2 == self.A**(1+self.K2))
+        self.assertFalse( self.A/self.A**self.K2 == self.A**(1-self.K2))
+
+        self.assertFalse( self.A**self.K1*self.A == self.A**(self.K1+1))
+        self.assertFalse( self.A**self.K1/self.A == self.A**(self.K1-1))
+
+        #they can't because as soon as you have complex variances
+        #there's a divergence between multiply and power.
+        #it's because half of the variance gets conjugated... and the 
+        #semetry complicates things even more.           
+        a=self.A**self.K1
+        self.assertTrue((
+            Matrix(numpy.sort((a*a).var)) == 
+            numpy.sort(numpy.conj(a.var**(0.5))*a.var*a.var**(0.5))
+        ).all())
+
+        #so
+        self.assertFalse(a*a == a**2)
+
+ 
 
     def testZeroPow(self):
         self.assertTrue( self.A**0*self.A==self.A )

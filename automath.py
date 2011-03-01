@@ -12,7 +12,7 @@ def automath(cls):
     copy the contents of 'Automath' into the given class.
     skip entries that the class already has.
     """
-    for key,value in automath.__dict__.iteritems():
+    for key,value in Automath.__dict__.iteritems():
         if not hasattr(cls,key):
             setattr(cls,key,value)
 
