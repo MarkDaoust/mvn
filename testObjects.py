@@ -59,9 +59,10 @@ def makeObjects(dtype=None,flat=None,ndim=None,seed=None):
     elif dtype in dtypes:
         dtype=[item() for item in triple(dtypes[dtype])]
         
+
     rvec= lambda n=1,dtype=1+0j,ndim=ndim:Matrix(
         randn(n,ndim)*dtype.real+
-        randn(n,ndim)*dtype.imag
+        randn(n,ndim)*dtype.imag*1j
     )
 
     [A,B,C]=[
@@ -70,8 +71,10 @@ def makeObjects(dtype=None,flat=None,ndim=None,seed=None):
             vectors=5*randn()*rvec(n=ndim-F,dtype=D),
         ) for F,D in zip(flat,dtype)
     ]
- 
-    
+
+#    M=rvec(n=randint(1,2*ndim),dtype=random.choice(dtype)).H
+#    M2=rvec(n=randint(1,2*ndim),dtype=random.choice(dtype)).H    
+
     M=rvec(n=ndim,dtype=random.choice(dtype))
     M2=rvec(n=ndim,dtype=random.choice(dtype))
     E=Matrix.eye(ndim)

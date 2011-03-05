@@ -420,7 +420,6 @@ class Mvar(Plane):
 
     ########## Utilities
         
-    @staticmethod
     def stack(*mvars,**kwargs):
         """
         >>> AB= Mvar.stack(A,B)
@@ -450,6 +449,7 @@ class Mvar(Plane):
             **kwargs
         )
     
+
     def sample(self,n=1,cplx=False):
         """
         take samples from the distribution
@@ -544,32 +544,71 @@ class Mvar(Plane):
         """
         #todo: impliment entropy function
         assert 1==0
-        
-    def chain(self,sensor,transform=None):
+    
+    def chain(self,sensor=None,transform=None):
         """
         given a distribution of actual values and an Mvar to act as a sensor 
-        this method returns the joint distribution of real and measured values
+        this method returns the joint distribution of actual and measured values
 
-        the, optional, transform parameter describes how to transform from actual
-        space to sensor space
+        self:       is the value we're  taking a measurment of
+
+        transform:  specifies the transform from the actual value to the sensor output
+                    defalults to Matrix.eye
+
+        sensor:     specifies the sensor's bias and noise
+                    defaults to Mvar.zeros
+
+        so if you supply neither of the optional arguments you get:
+        >>> assert A.chain()==A*numpy.hstack([E,E]) 
         
+        if you have a perfect sensor (or no sensor) chain is just a different 
+        way of doing a matrix multiply when you want to add new dimensions 
+        to your data
+        >>> assert ( 
+        ...     A*numpy.hstack([Matrix.eye(A.ndim),M])== 
+        ...     A.chain(transform=M)
+        ... )
+
+        when including a sensor, noise is added to those new dimensions
+
+        >>> assert A.chain(B) == mooreChain(A,B)
+        >>> assert A.chain(B,M) == mooreChain(A,B,M)
+
         reference andrew moore/data mining/gaussians
         """
+        twice = Mvar(
+            mean=numpy.hstack([self.mean,self.mean]),
+            vectors=numpy.hstack([self.vectors,self.vectors]),
+            var=self.var,
+        )
 
-        if transform is not None:
+        #create the base sensor output before sensor noise
+        if transform is None:
             transform=Matrix.eye(self.ndim)
+            Transform=Matrix.eye(2*self.ndim)
+            perfect=twice
+        else:
+            Transform=helpers.diagstack([Matrix.eye(self.ndim),transform])
+            perfect=twice*Transform
+        
 
-        T=self*transform+sensor
-        vv=self.cov        
+        #define the sensor noise
+        sensor = sensor if sensor is not None else Mvar.zeros(transform.shape[1])
+        #add some leading seros so it fits
+        sensor=Mvar.zeros(self.ndim).stack(sensor)
 
-        return Mvar.fromCov(
-            mean=helpers.autostack([[self.mean,T.mean]]),
-            cov=helpers.autostack([
-                [vv,(vv*transform).T],
-                [vv*transform,T.cov],
+        return perfect+sensor
+
+### junk         
+        return Mvar(
+            mean=numpy.hstack([self.mean,self.mean*transform+sensor.mean]),
+            var=numpy.concatenate([self.var,sensor.var]),
+            vectors=helpers.autostack([
+                [self.vectors,self.vectors*transform],
+                [Matrix.zeros,sensor.vectors],
             ])
         ) 
-        
+### /junk
     def dist2(self,locations):
         """
         return the square of the mahalabois distance from the Mvar to each vector.
@@ -637,6 +676,8 @@ class Mvar(Plane):
         >>> a[0]=1
         >>> assert a==A.given(index=0,value=1)
         """
+        #raise AttributeError("this function is broken: A.given(0,1j)") 
+
         #convert the inputs
         value=Mvar.fromData(value)
         index=binindex(index,self.ndim)
@@ -1121,15 +1162,7 @@ class Mvar(Plane):
 
             if you mix mvars with matrixes, it's two different types of multiplication, and 
             so is not asociative
-                >>> if ndim==1:
-                ...     assert (M*A)*M2 == M*(A*M2)
                 
-                
-            and because of that, this also doesn't work, except in 1-dimension,
-                
-                >>> if ndim==1: 
-                ...     assert (A*B)*C == A*(B*C)
-
             the reason that those don't work boils down to:            
                 >>> assert A.transform()*M != (A*M).transform()
 
@@ -1540,7 +1573,7 @@ def mooreGiven(self,index,value):
         cov=uu-uv*vvI*uv.H
     )
 
-    def chain(self,sensor,transform=None):
+def mooreChain(self,sensor,transform=None):
         """
         given a distribution of actual values and an Mvar to act as a sensor 
         this method returns the joint distribution of real and measured values
@@ -1548,20 +1581,24 @@ def mooreGiven(self,index,value):
         the, optional, transform parameter describes how to transform from actual
         space to sensor space
         
-        >>> assert A.chain(B,M) == mooreChain(A,B,M)
-
         reference andrew moore/data mining/gaussians
         """
-        Z=Mvar.zeros(self.Ndim)
 
-        E=Matrix.eye(self.ndim)
         if transform is None:
-            transform=E
+            transform=Matrix.eye(self.ndim)
 
-        return (
-            Mvar.stack([self,self])*helpers.diagstack([E,transform])+
-            Mvar.stack([Z,sensor])
+        T=(self*transform+sensor)
+        vv=self.cov        
+
+        return Mvar.fromCov(
+            mean=numpy.hstack([self.mean,T.mean]),
+            cov=numpy.vstack([
+                numpy.hstack([vv,vv*transform]),
+                numpy.hstack([(vv*transform).H,T.cov]),
+            ])
         )
+
+
 
 def binindex(index,numel):
     """
@@ -1579,8 +1616,8 @@ def binindex(index,numel):
 if __name__=='__main__':    
     #overwrite everything we just created with the copy that was 
     #created when we imported mvar; there can only be one.
-    from mvar import *
     from testObjects import *
 
+    mooreChain(A,B,M) == A.chain(B,M)
     mooreGiven(A,index=0,value=1)==A.given(index=0,value=1)[1:]
 
