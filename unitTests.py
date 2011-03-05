@@ -130,7 +130,7 @@ class signTester(myTests):
         self.assertTrue( self.A==-1*-1*self.A )
         self.assertTrue( 1j*self.A*1j==1j*(1j*self.A) ==-self.A )
 
-    def testsAdd(self):
+    def testAdd(self):
         self.assertTrue( (self.A+self.A)==(2*self.A) )
 
         self.assertTrue( (self.A+self.A).mean==(2*self.A).mean )
@@ -138,6 +138,8 @@ class signTester(myTests):
 
         n=abs(self.N)
         self.assertTrue( numpy.array(list(itertools.repeat(self.A,n))).sum() == self.A*n )
+        self.assertTrue( numpy.array(list(itertools.repeat(-self.A,n))).sum() == self.A*(-n) )
+        
 
         self.assertTrue( self.A+self.B ==Mvar(
             mean=self.A.mean+self.B.mean,
@@ -423,6 +425,34 @@ class givenTester(myTests):
 
     def testMooreGiven(self):
         self.assertTrue( mvar.mooreGiven(self.A,index=0,value=1)==self.A.given(index=0,value=1)[1:] )
+
+class chainTester(myTests):
+    def testBasic(self):
+        self.assertTrue( self.A.chain()==self.A*numpy.hstack([self.E,self.E]) ) 
+        self.assertTrue( 
+            self.A.chain(transform=self.M) ==
+            self.A*numpy.hstack([Matrix.eye(self.A.ndim),self.M])
+        )
+
+    def testMoore(self):
+        self.assertTrue( self.A.chain(self.B) == mvar.mooreChain(self.A,self.B) )
+        self.assertTrue( self.A.chain(self.B,self.M) == mvar.mooreChain(self.A,self.B,self.M) )
+
+    def testAnd(self):
+        """
+        __and__ is a shortcut over mvar.chain and mvar.given
+        this is just to show the relationship
+        """
+        measurment = self.B.mean
+        sensor=self.B.copy()
+        sensor.mean=sensor.mean*0
+
+        joint = self.A.chain(sensor)
+        measured = joint.copy()
+        measured[self.ndim:]=measurment
+
+        self.assertTrue(measured[:self.ndim] == self.A&self.B)
+
 
 
 class inversionTester(myTests):
