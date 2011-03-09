@@ -1,7 +1,8 @@
 #! /usr/bin/env python
 
+#todo: better type handling, multimethods?,anything that accepts an mvar should accept Mvar.zeros, Mvar.infs 
+#todo: error handling
 #todo: do something about mvars with zero dimensions
-#todo: convert some of those mixins to class decorators
 #todo: understand transforms composed of Mvars as the component vectors, and 
 #          whether it is meaningful to consider mvars in both the rows and columns
 #todo: implement a transpose,for the above 
@@ -112,7 +113,6 @@ class Mvar(Plane):
         mean=numpy.zeros,
         square=True,
         squeeze=True,
-        **kwargs
     ):
         """
         Create an Mvar from available attributes.
@@ -147,7 +147,7 @@ class Mvar(Plane):
             self.copy(self.square())
 
         if squeeze:
-            self.copy(self.squeeze(**kwargs))
+            self.copy(self.squeeze())
 
     ############## alternate creation methods
     @staticmethod
@@ -222,26 +222,44 @@ class Mvar(Plane):
     @staticmethod
     def zeros(n=1):
         """
-        >>> if N>0:
-        ...     Z=Mvar.zeros(N)
-        ...     assert Z.mean==Matrix.zeros
-        ...     assert Z.var.size==0
-        ...     assert Z.vectors.size==0
+        >>> n=abs(N)
+        >>> Z=Mvar.zeros(n)
+        >>> assert Z.mean==Matrix.zeros
+        >>> assert Z.var.size==0
+        >>> assert Z.vectors.size==0
+        >>> assert Z**-1 == Mvar.infs
         """
         return Mvar(mean=Matrix.zeros(n))
     
     @staticmethod
     def infs(n=1):
         """
-        >>> if N>0:
-        ...     inf=Mvar.infs(N)
-        ...     assert inf.mean==Matrix.zeros
-        ...     assert inf.var.size==inf.mean.size==N
-        ...     assert (inf.var==numpy.inf).all()
-        ...     assert inf.vectors==Matrix.eye
+        >>> n=abs(N)
+        >>> inf=Mvar.infs(n)
+        >>> assert inf.mean==Matrix.zeros
+        >>> assert inf.var.size==inf.mean.size==n
+        >>> assert Matrix(inf.var)==Matrix.infs
+        >>> assert inf.vectors==Matrix.eye
+        >>> assert inf**-1 == Mvar.zeros
         """
         
         return Mvar.zeros(n)**-1
+
+    @staticmethod
+    def eye(n=1):
+        """
+        >>> n=abs(N)
+        >>> eye=Mvar.eye(n)
+        >>> assert eye.mean==Matrix.zeros
+        >>> assert eye.var.size==eye.mean.size==n
+        >>> assert Matrix(eye.var)==Matrix.ones
+        >>> assert eye.vectors==Matrix.eye
+        >>> assert eye**-1 == eye
+        """
+        return Mvar(
+            mean=Matrix.zeros([1,n]),
+            vectors=Matrix.eye(n),
+        )
     
     ##### 'cosmetic' manipulations
     def inflate(self):
@@ -284,14 +302,13 @@ class Mvar(Plane):
 
         return result
 
-    def squeeze(self,**kwargs):
+    def squeeze(self):
         """
-        drop any vector/variance pairs with (self.var) under the tolerence limit
-        the default tolerence is 1e-12,
+        drop any vector/variance pairs with (self.var) under 1e-12,
         """
         result=self.copy()
         
-        small=helpers.approx(self.var,**kwargs)
+        small=helpers.approx(self.var)
         
         if small.size:
             result.var = result.var[~small]
@@ -434,7 +451,7 @@ class Mvar(Plane):
         yes it works but be careful. Don't use this for reconnecting 
         something you calculated from an Mvar, back to the same Mvar it was 
         calculated from, you'll loose all the cross corelations. 
-        If you're trying to do that use a better matrix multiply. 
+        If you're trying to do that use a better matrix multiply, or Mvar.chain 
         
         see also Mvar.chain
         """
@@ -565,16 +582,24 @@ class Mvar(Plane):
         way of doing a matrix multiply when you want to add new dimensions 
         to your data
         >>> assert ( 
-        ...     A*numpy.hstack([Matrix.eye(A.ndim),M])== 
+        ...     A*numpy.hstack([E,M])== 
         ...     A.chain(transform=M)
         ... )
 
         when including a sensor, noise is added to those new dimensions
 
         >>> assert A.chain(B) == mooreChain(A,B)
-        >>> assert A.chain(B,M) == mooreChain(A,B,M)
+        >>> assert A.chain(B*M,M) == mooreChain(A,B*M,M)
 
-        reference andrew moore/data mining/gaussians
+        some of te connections are more obvious when you look at it in terms of a block of data
+
+        >>> dataA=A.sample(100)
+        >>> a=Mvar.fromData(dataA)
+        >>> assert a.chain()==Mvar.fromData(numpy.hstack([dataA,dataA]))        
+        >>> assert a.chain(transform=M) == Mvar.fromData(dataA*numpy.hstack([E,M]))
+        >>> assert a.chain(B*M,M) == a.chain(transform=M)+Mvar.stack(Mvar.zeros(a.ndim),B*M)
+
+        reference: andrew moore/data mining/gaussians
         """
         twice = Mvar(
             mean=numpy.hstack([self.mean,self.mean]),
@@ -582,10 +607,9 @@ class Mvar(Plane):
             var=self.var,
         )
 
-        #create the base sensor output before sensor noise
+        #create the base sensor output (before add is sensor noise)
         if transform is None:
             transform=Matrix.eye(self.ndim)
-            Transform=Matrix.eye(2*self.ndim)
             perfect=twice
         else:
             Transform=helpers.diagstack([Matrix.eye(self.ndim),transform])
@@ -756,7 +780,21 @@ class Mvar(Plane):
 
             >>> assert A != B
 
+        when the comparison is done with a function, the function is called 
+        with the size of the self as the only argument:
+            >>> n=abs(N)
+            >>> assert Mvar.zeros(n) == Mvar.zeros
+            >>> assert Mvar.eye(n) == Mvar.eye
+            >>> assert Mvar.infs(n) == Mvar.infs
+
+
+            
+
         """
+        if not isinstance(other,Mvar):
+            if callable(other):
+                return self == other(self.ndim)
+
         other=Mvar.fromData(other)
         
         #check the number of dimensions of the space
@@ -1090,9 +1128,11 @@ class Mvar(Plane):
 
             >>> assert (A*B).mean == (A*B.transform()+B*A.transform()).mean/2 or (A.flat or B.flat)
 
-            >>> assert M*B==M*B.transform()
+            >>> assert M.H*B==M.H*B.transform()
             >>> assert A**2==A*A
-            >>> assert A**2==A*A.transform() or A.flat
+            >>> if not A.flat:
+            ...     #information is lost if the object is flat.
+            ...     assert A**2==A*A.transform()
         """
         if numpy.real(power)<0: 
             self=self.inflate()
@@ -1126,7 +1166,7 @@ class Mvar(Plane):
             
             >>> assert isinstance(A*B,Mvar)
             >>> assert isinstance(A*M,Mvar)
-            >>> assert isinstance(M*A,Matrix) 
+            >>> assert isinstance(M.T*A,Matrix) 
             >>> assert isinstance(A*K1,Mvar)
             >>> assert isinstance(K1*A,Mvar)
 
@@ -1157,14 +1197,16 @@ class Mvar(Plane):
                 >>> assert (K1*A)*K2 == K1*(A*K2)
 
             so are matrixes if the Mvar is not in the middle, because it's all matrix multiply.
-                >>> assert (A*M)*M2 == A*(M*M2)
-                >>> assert (M*M2)*A == M*(M2*A)
+                >>> assert (A*M)*M2.H == A*(M*M2.H)
+                >>> assert (M*M2.H)*A == M*(M2.H*A)
 
             if you mix mvars with matrixes, it's two different types of multiplication, and 
             so is not asociative
                 
             the reason that those don't work boils down to:            
-                >>> assert A.transform()*M != (A*M).transform()
+                >>> am=A.transform()*M
+                >>> ma=(A*M).transform()
+                >>> assert am.shape != ma.shape or ma != am
 
             if you work it out you'll find that the problem is unavoidable given:
                 >>> assert (A*M).cov == M.H*A.cov*M
@@ -1196,14 +1238,15 @@ class Mvar(Plane):
         The Automath class takes care of these details
             A/?
             
+            >>> m=M*M2.H
+            >>> assert A/m == A*(m**(-1))            
             >>> assert A/B == A*(B**(-1))
-            >>> assert A/M == A*(M**(-1))
             >>> assert A/K1 == A*(K1**(-1))
         
             ?/A: see __rmul__ and __pow__
             
             >>> assert K1/A == K1*(A**(-1))
-            >>> assert M/A==M*(A**(-1))
+            >>> assert M.H/A==M.H*(A**(-1))
 
         assert Matrix((A**0.0).trace()) == A.shape[0]
         """
@@ -1327,7 +1370,7 @@ class Mvar(Plane):
             but it matters a lot for Matrix/Mvar multiplication
         
             >>> assert isinstance(A*M,Mvar)
-            >>> assert isinstance(M*A,Matrix)
+            >>> assert isinstance(M.H*A,Matrix)
         
         be careful with right multiplying:
             Because power must fit with multiplication
@@ -1343,7 +1386,7 @@ class Mvar(Plane):
             this conversion is not applied when multiplied by a constant.
         
         martix*Mvar
-            >>> assert M*A==M*A.transform()
+            >>> assert M.H*A==M.H*A.transform()
 
         Mvar*constant==constant*Mvar
             >>> assert A*K1 == K1*A
@@ -1352,15 +1395,16 @@ class Mvar(Plane):
         
         see __mul__ and __pow__
         it would be immoral to overload power and multiply but not divide 
+            >>> m=M*M2.H
             >>> assert A/B == A*(B**(-1))
-            >>> assert A/M == A*(M**(-1))
+            >>> assert A/m == A*(m**(-1))
             >>> assert A/K1 == A*(K1**(-1))
 
         ?/A
         
         see __rmul__ and __pow__
             >>> assert K1/A == K1*(A**(-1))
-            >>> assert M/A==M*(A**(-1))
+            >>> assert M.H/A==M.H*(A**(-1))
         """
         (transform,other)= self._rmulConvert(other)
         return self._rmultipliers[type(other)](transform,other)
@@ -1616,8 +1660,10 @@ def binindex(index,numel):
 if __name__=='__main__':    
     #overwrite everything we just created with the copy that was 
     #created when we imported mvar; there can only be one.
+
     from testObjects import *
 
-    mooreChain(A,B,M) == A.chain(B,M)
+    A.chain(B,M) == mooreChain(A,B,M)
+
     mooreGiven(A,index=0,value=1)==A.given(index=0,value=1)[1:]
 

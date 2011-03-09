@@ -72,11 +72,10 @@ def makeObjects(dtype=None,flat=None,ndim=None,seed=None):
         ) for F,D in zip(flat,dtype)
     ]
 
-#    M=rvec(n=randint(1,2*ndim),dtype=random.choice(dtype)).H
-#    M2=rvec(n=randint(1,2*ndim),dtype=random.choice(dtype)).H    
+    n=randint(1,2*ndim)
+    M=rvec(n,dtype=random.choice(dtype)).H
+    M2=rvec(n,dtype=random.choice(dtype)).H    
 
-    M=rvec(n=ndim,dtype=random.choice(dtype))
-    M2=rvec(n=ndim,dtype=random.choice(dtype))
     E=Matrix.eye(ndim)
     
     K1 = (numpy.random.randn()+numpy.random.randn()*1j)

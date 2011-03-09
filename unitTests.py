@@ -137,8 +137,8 @@ class signTester(myTests):
         self.assertTrue( (self.A+self.A).mean==2*self.A.mean )
 
         n=abs(self.N)
-        self.assertTrue( numpy.array(list(itertools.repeat(self.A,n))).sum() == self.A*n )
-        self.assertTrue( numpy.array(list(itertools.repeat(-self.A,n))).sum() == self.A*(-n) )
+        self.assertTrue( sum(itertools.repeat(self.A,n),Mvar.zeros(self.A.ndim)) == self.A*n )
+        self.assertTrue( sum(itertools.repeat(-self.A,n),Mvar.zeros(self.A.ndim)) == self.A*(-n) )
         
 
         self.assertTrue( self.A+self.B ==Mvar(
@@ -172,7 +172,7 @@ class productTester(myTests):
     def testMulTypes(self):
         self.assertTrue( isinstance(self.A*self.B,Mvar) )
         self.assertTrue( isinstance(self.A*self.M,Mvar) )
-        self.assertTrue( isinstance(self.M*self.A,Matrix) )
+        self.assertTrue( isinstance(self.M.T*self.A,Matrix) )
         self.assertTrue( isinstance(self.A*self.K1,Mvar) )
         self.assertTrue( isinstance(self.K1*self.A,Mvar) )
 
@@ -188,7 +188,7 @@ class productTester(myTests):
         if not (self.A.flat or self.B.flat): 
             self.assertTrue( (self.A*self.B).mean == (self.A*self.B.transform()+self.B*self.A.transform()).mean/2 )
 
-        self.assertTrue( self.M*self.B==self.M*self.B.transform() )
+        self.assertTrue( self.M.T*self.B==self.M.T*self.B.transform() )
         if not self.A.flat:
             self.assertTrue( self.A**2==self.A*self.A.transform() )
 
@@ -228,8 +228,8 @@ class productTester(myTests):
         self.assertTrue( self.K1*self.A*self.M == self.A*self.M*self.K1 )
 
     def testMatrixMul(self):
-        self.assertTrue( (self.A*self.M)*self.M2 == self.A*(self.M*self.M2) )
-        self.assertTrue( (self.M*self.M2)*self.A == self.M*(self.M2*self.A) )
+        self.assertTrue( (self.A*self.M)*self.M2.H == self.A*(self.M*self.M2.H) )
+        self.assertTrue( (self.M*self.M2.H)*self.A == self.M*(self.M2.H*self.A) )
 
         self.assertTrue( (self.A*self.M).cov == self.M.H*self.A.cov*self.M )
         self.assertTrue( (self.A**2).transform() == self.A.cov )
@@ -242,10 +242,11 @@ class productTester(myTests):
 
     def testDiv(self):
         self.assertTrue( self.A/self.B == self.A*(self.B**(-1)) )
-        self.assertTrue( self.A/self.M == self.A*(self.M**(-1)) )
+        m=self.M*self.M2.T
+        self.assertTrue( self.A/m == self.A*(m**(-1)) )
         self.assertTrue( self.A/self.K1 == self.A*(self.K1**(-1)) )
         self.assertTrue( self.K1/self.A == self.K1*(self.A**(-1)) )
-        self.assertTrue( self.M/self.A==self.M*(self.A**(-1)) )
+        self.assertTrue( self.M.H/self.A==self.M.H*(self.A**(-1)) )
 
 
 class propertyTester(myTests):
@@ -431,18 +432,46 @@ class chainTester(myTests):
         self.assertTrue( self.A.chain()==self.A*numpy.hstack([self.E,self.E]) ) 
         self.assertTrue( 
             self.A.chain(transform=self.M) ==
-            self.A*numpy.hstack([Matrix.eye(self.A.ndim),self.M])
+            self.A*numpy.hstack([self.E,self.M])
         )
 
     def testMoore(self):
         self.assertTrue( self.A.chain(self.B) == mvar.mooreChain(self.A,self.B) )
-        self.assertTrue( self.A.chain(self.B,self.M) == mvar.mooreChain(self.A,self.B,self.M) )
+
+        b=self.B*self.M
+        self.assertTrue( self.A.chain(b,self.M) == mvar.mooreChain(self.A,b,self.M) )
+
+    def testStacks(self):
+        dataA=self.A.sample(100)
+
+        a=Mvar.fromData(dataA)
+
+        #a and a are correlated
+        self.assertTrue(
+            a.chain()==
+            Mvar.fromData(numpy.hstack([dataA,dataA]))
+        )        
+        #a and a*M are corelated        
+        self.assertTrue(
+            a.chain(transform=self.M) == 
+            dataA*numpy.hstack([self.E,self.M])
+        )
+
+        self.assertTrue(
+            a.chain(self.B*self.M,self.M) == 
+            a.chain(transform=self.M)+Mvar.stack(Mvar.zeros(a.ndim),self.B*self.M)
+        )
+
 
     def testAnd(self):
         """
         __and__ is a shortcut over mvar.chain and mvar.given
-        this is just to show the relationship
+        this is to show the relationship
+
+        I haven't figured yet out how a the transform works with __and__.
+        it probably involves the psudo-inverse of the transform 
         """
+
         measurment = self.B.mean
         sensor=self.B.copy()
         sensor.mean=sensor.mean*0
@@ -452,7 +481,6 @@ class chainTester(myTests):
         measured[self.ndim:]=measurment
 
         self.assertTrue(measured[:self.ndim] == self.A&self.B)
-
 
 
 class inversionTester(myTests):
