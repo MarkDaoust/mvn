@@ -49,20 +49,31 @@ class creationTester(myTests):
         self.assertTrue(Mvar.fromCov(self.A.cov,mean=self.A.mean) == self.A)
 
     def testZeros(self):
-        n=max(abs(self.N),1)
+        n=abs(self.N)
         Z=Mvar.zeros(n)
         self.assertTrue( Z.mean==Matrix.zeros )
         self.assertTrue( Z.var.size==0 )
         self.assertTrue( Z.vectors.size==0 )
+        self.assertTrue( Z**-1 == Mvar.infs)
 
     def testInfs(self):
         n=abs(self.N)
         inf=Mvar.infs(n)
         self.assertTrue( inf.mean==Matrix.zeros )
         self.assertTrue( inf.var.size==inf.mean.size==n )
-        self.assertTrue( (inf.var==numpy.inf).all() )
+        self.assertTrue( Matrix(inf.var)==Matrix.infs )
         self.assertTrue( inf.vectors==Matrix.eye )
-
+        self.assertTrue( inf**-1 == Mvar.zeros )
+    
+    def testEye(self):
+        n=abs(self.N)
+        eye=Mvar.eye(n)
+        self.assertTrue(eye.mean==Matrix.zeros)
+        self.assertTrue(eye.var.size==eye.mean.size==n)
+        self.assertTrue(Matrix(eye.var)==Matrix.ones)
+        self.assertTrue(eye.vectors==Matrix.eye)
+        self.assertTrue(eye**-1 == eye)
+        
     def testCopy(self):
         self.A2=self.A.copy(deep=True)        
         self.assertTrue( self.A2 == self.A )
@@ -426,6 +437,8 @@ class givenTester(myTests):
 
     def testMooreGiven(self):
         self.assertTrue( mvar.mooreGiven(self.A,index=0,value=1)==self.A.given(index=0,value=1)[1:] )
+        self.assertTrue( mvar.mooreGiven(self.A,index=0,value=1+1j)==self.A.given(index=0,value=1+1j)[1:] )
+        self.assertTrue( mvar.mooreGiven(self.A,index=0,value=1j)==self.A.given(index=0,value=1j)[1:] )
 
 class chainTester(myTests):
     def testBasic(self):
@@ -457,11 +470,17 @@ class chainTester(myTests):
             dataA*numpy.hstack([self.E,self.M])
         )
 
+        self.assertTrue( 
+            a.chain(transform=self.M) == 
+            Mvar.fromData(numpy.hstack([dataA,dataA*self.M]))
+        )
+
         self.assertTrue(
             a.chain(self.B*self.M,self.M) == 
             a.chain(transform=self.M)+Mvar.stack(Mvar.zeros(a.ndim),self.B*self.M)
         )
 
+        
 
     def testAnd(self):
         """
@@ -470,11 +489,13 @@ class chainTester(myTests):
 
         I haven't figured yet out how a the transform works with __and__.
         it probably involves the psudo-inverse of the transform 
+
+        I think the answer is on the wikipedia kalman-filtering page
         """
 
         measurment = self.B.mean
         sensor=self.B.copy()
-        sensor.mean=sensor.mean*0
+        sensor.mean-=sensor.mean
 
         joint = self.A.chain(sensor)
         measured = joint.copy()
