@@ -1,13 +1,18 @@
 #! /usr/bin/env python
 
-#todo: better type handling, multimethods?,anything that accepts an mvar should accept Mvar.zeros, Mvar.infs 
+#todo: consider removing the autosquare if you ever want to speed things up, 
+#         I bet it would help. it would also allow other factorizations.
+#todo: wikipedia/kalmanfiltering#information filter
+#todo: better type handling, multimethods? many things that accept an mvar should 
+#        accept Mvar.eye, Mvar.zeros, Mvar.infs 
 #todo: error handling
 #todo: do something about mvars with zero dimensions
 #todo: understand transforms composed of Mvars as the component vectors, and 
 #          whether it is meaningful to consider mvars in both the rows and columns
 #todo: implement a transpose,for the above 
-#todo: see if div should be upgraded to act more like matlab backwards divide
-#todo: impliment collectionss of mvars so that or '|'  is meaningful
+#todo: chi*2 distribution (other distributions)
+#todo: see if div should mtlab like matlab backwards divide added
+#todo: impliment collectionss so that or '|'  is meaningful
 #todo: cleanup my 'square' function (now that it is clear that it's an SVD)
 #todo: entropy
 #todo: quadratic forms (ref: http://en.wikipedia.org/wiki/Quadratic_form_(statistics))
@@ -15,13 +20,12 @@
 #      maybe have the 'safe' class inherit from 'fast' and a add a variance-free 'plane' class?
 #todo: understand the EM and K-means algorithms (available in scipy)
 #todo: understans what complex numbers imply with these.
-#todo: understand the relationship betweent these and a hessian matrix.
+#todo: understand the relationship between these and a hessian matrix.
 #todo: figure out the relationship between these and spherical harmonics
 #todo: investigate higher order cumulants, 'principal cumulant analysis??'
 
 """
-This module contains only two things: the "Mvar" class, and the "wiki" 
-function.
+This module contains one thing: the "Mvar" class.
 
 Mvar is the main idea of the module: Multivariate normal distributions 
     packaged to act like a vector. Perfect for kalman filtering, sensor fusion, 
@@ -155,6 +159,8 @@ class Mvar(Plane):
         """
         everything in kwargs is passed directly to the constructor
         """
+        cov=Matrix(cov)
+
         diag = Matrix(numpy.diag(cov))
         eig = numpy.linalg.eigh if abs(diag) == diag else numpy.linalg.eig
         #get the variances and vectors.
@@ -597,7 +603,11 @@ class Mvar(Plane):
         >>> a=Mvar.fromData(dataA)
         >>> assert a.chain()==Mvar.fromData(numpy.hstack([dataA,dataA]))        
         >>> assert a.chain(transform=M) == Mvar.fromData(dataA*numpy.hstack([E,M]))
+        >>> assert a.chain(transform=M) == Mvar.fromData(numpy.hstack([dataA,dataA*M]))
+        
+
         >>> assert a.chain(B*M,M) == a.chain(transform=M)+Mvar.stack(Mvar.zeros(a.ndim),B*M)
+
 
         reference: andrew moore/data mining/gaussians
         """
@@ -700,26 +710,47 @@ class Mvar(Plane):
         >>> a[0]=1
         >>> assert a==A.given(index=0,value=1)
         """
-        #raise AttributeError("this function is broken: A.given(0,1j)") 
+        
 
-        #convert the inputs
-        value=Mvar.fromData(value)
-        index=binindex(index,self.ndim)
+        if isinstance(value,Mvar):
+            return self.givenMvar(index,value)
+        
+        value= Matrix(value)
+
+        if len(value.shape) and value.shape[0]!=0:
+            #convert the inputs
+            value=Mvar.fromData(value)
+            if value.var.size != 0:
+                return self.givenMvar(index,value)
+            else:
+                value=value.mean
+        
+        return self.givenVector(index,value)
+    
+    def givenMvar(self,index,value):
+        fixed=binindex(index,self.ndim)
+        free=~fixed
+
+        Z=numpy.zeros
+
+        meanType=(Z([],self.mean.dtype)+Z([],value.mean.dtype)).dtype
+        varType=(Z([],self.var.dtype)+Z([],value.var.dtype)).dtype
+        vectorType=(Z([],self.vectors.dtype)+Z([],value.vectors.dtype)).dtype
 
         #create the mean, for the new object,and set the values of interest
-        mean=numpy.zeros([1,self.shape[0]])
-        mean[:,index]=value.mean
+        mean=numpy.zeros([1,self.ndim],dtype=meanType)
+        mean[:,fixed]=value.mean
 
         #create empty vectors for the new object
         vectors=numpy.zeros([
             value.shape[0]+(self.ndim-value.ndim),
             self.ndim
-        ])
-        vectors[0:value.shape[0],index]=value.vectors
-        vectors[value.shape[0]:,~index]=numpy.eye(self.ndim-value.ndim)
+        ],vectorType)
+        vectors[0:value.shape[0],fixed]=value.vectors
+        vectors[value.shape[0]:,free]=numpy.eye(self.ndim-value.ndim)
         
         #create the variance for the new object
-        var=numpy.zeros(vectors.shape[0])
+        var=numpy.zeros(vectors.shape[0],dtype=varType)
         var[0:value.shape[0]]=value.var
         var[value.shape[0]:]=numpy.Inf
 
@@ -729,15 +760,52 @@ class Mvar(Plane):
             mean=mean,
             vectors=vectors,
         ) 
+
+    def givenVector(self,index,value):
+        """
+        reference andrew moore/data mining/gaussians
+        """
+        fixed=binindex(index,self.ndim)
+        free=~fixed
+
+        Mu = self[free]
+        Mv = self[fixed]
+        #todo: cleanup
+        u=self.vectors[:,free]
+        v=self.vectors[:,fixed]
+
+        uv = u.H*numpy.diagflat(self.var)*v
+
+        result = Mu-(Mv-value)**-1*uv.T
+
+        #create the mean, for the new object,and set the values of interest
+        mean=numpy.zeros([1,self.ndim],dtype=result.mean.dtype)
+        mean[:,fixed]=value
+        mean[:,free]=result.mean
+
+        #create empty vectors for the new object
+        vectors=numpy.zeros([
+            result.shape[0],
+            self.ndim
+        ],result.vectors.dtype)
+        vectors[:,fixed]=0
+        vectors[:,free]=result.vectors
+        
+        return Mvar(
+            mean=mean,
+            vectors=vectors,
+            var=result.var
+        )
+
+
+
         
     def __setitem__(self,index,value):
         """
         self[index]=value
         
         this is an opertor interface to self.given 
-        
-        watchout, this only takes a single index, not two like __getitem__
-        the asymetry is unavoidable, they do very different things 
+
         """
         self.copy(self.given(index,value))
 
@@ -747,6 +815,8 @@ class Mvar(Plane):
         return the marginal distribution,
         over the indexed dimensions,
         """
+        #todo: consider also indexing by eigenvalue
+        #only makes sense if you havee a self.sort, or self.sorted
         return Mvar(
             mean=self.mean[:,index],
             vectors=self.vectors[:,index],
@@ -1601,21 +1671,23 @@ def mooreGiven(self,index,value):
     direct implementation of the "given" algorithm in
     Andrew moore's data-mining/gussian slides
 
-     >>> assert mooreGiven(A,index=0,value=1)==A.given(index=0,value=1)[1:]
+     >>> if numpy.isreal(A.mean).all():
+     ...     assert mooreGiven(A,index=0,value=1)==A.given(index=0,value=1)[1:]
     """
-    Iv=binindex(index,self.ndim)
-    Iu=~Iv
+    fixed=binindex(index,self.ndim)
+    free=~fixed
 
     cov=self.cov 
 
-    uu=cov[Iu,:][:,Iu]
-    uv=cov[Iu,:][:,Iv]
-    vvI=cov[Iv,:][:,Iv]**-1
+    uu=cov[free,:][:,free]
+    uv=cov[free,:][:,fixed]
+    vvI=cov[fixed,:][:,fixed]**-1
 
     return Mvar.fromCov(
-        mean=self.mean[0,Iu]+(uv*vvI*(value-self.mean[0,Iv])).H,
+        mean=self.mean[0,free]+(uv*vvI*(value-self.mean[0,fixed])).H,
         cov=uu-uv*vvI*uv.H
     )
+
 
 def mooreChain(self,sensor,transform=None):
         """
@@ -1625,7 +1697,7 @@ def mooreChain(self,sensor,transform=None):
         the, optional, transform parameter describes how to transform from actual
         space to sensor space
         
-        reference andrew moore/data mining/gaussians
+       
         """
 
         if transform is None:
@@ -1655,15 +1727,23 @@ def binindex(index,numel):
     binindex[index]=True
 
     return binindex
+
         
 
 if __name__=='__main__':    
     #overwrite everything we just created with the copy that was 
     #created when we imported mvar; there can only be one.
-
-    from testObjects import *
-
-    A.chain(B,M) == mooreChain(A,B,M)
-
+    #from testObjects import *
+    A=Mvar.fromCov([[2,1j],[1j,2]],mean=[1j,1j])
+    
     mooreGiven(A,index=0,value=1)==A.given(index=0,value=1)[1:]
+    mooreGiven(A,index=0,value=1j)==A.given(index=0,value=1j)[1:]
+
+
+    L1=Mvar(mean=[0,0],vectors=[[1,1],[1,-1]], var=[numpy.inf,0.5])
+    L2=Mvar(mean=[1,0],vectors=[0,1],var=numpy.inf) 
+    assert L1.given(index=0,value=1) == L1&L2 )
+    self.assertTrue( (L1&L2).mean==[1,1] )
+    self.assertTrue( (L1&L2).cov==[[0,0],[0,2]] )
+
 

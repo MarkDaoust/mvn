@@ -50,7 +50,6 @@ class Matrix(numpy.matrix):
             return numpy.matrix.__add__(self,other)
         
         return numpy.matrix.__add__(self,other)
-
             
 
     def __repr__(self):

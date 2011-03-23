@@ -72,6 +72,15 @@ def makeObjects(dtype=None,flat=None,ndim=None,seed=None):
         ) for F,D in zip(flat,dtype)
     ]
 
+# above we only get real varances, this would change them:
+# ad kill all the unit tests
+#
+#   for V,D in zip([A,B,C],dtype):
+#        V.var = V.var*(
+#            numpy.random.randn(V.var.size)*D.real+
+#            numpy.random.randn(V.var.size)*D.imag*1j
+#        )
+
     n=randint(1,2*ndim)
     M=rvec(n,dtype=random.choice(dtype)).H
     M2=rvec(n,dtype=random.choice(dtype)).H    

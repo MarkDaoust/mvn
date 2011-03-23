@@ -179,6 +179,15 @@ class signTester(myTests):
         self.assertTrue( self.A-self.B == -(self.B-self.A) )
         self.assertTrue( self.A+(self.B-self.B)==self.A )
 
+    def testImag(self):
+        A=self.A
+
+        Ai=A.copy()
+        Ai.vectors=1j*Ai.vectors
+        self.assertTrue(A == Ai)
+
+        self.assertTrue(A & self.B == Ai & self.B)
+
 class productTester(myTests):
     def testMulTypes(self):
         self.assertTrue( isinstance(self.A*self.B,Mvar) )
