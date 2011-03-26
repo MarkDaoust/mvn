@@ -633,16 +633,6 @@ class Mvar(Plane):
 
         return perfect+sensor
 
-### junk         
-        return Mvar(
-            mean=numpy.hstack([self.mean,self.mean*transform+sensor.mean]),
-            var=numpy.concatenate([self.var,sensor.var]),
-            vectors=helpers.autostack([
-                [self.vectors,self.vectors*transform],
-                [Matrix.zeros,sensor.vectors],
-            ])
-        ) 
-### /junk
     def dist2(self,locations):
         """
         return the square of the mahalabois distance from the Mvar to each vector.
@@ -675,7 +665,8 @@ class Mvar(Plane):
         return an mvar representing the conditional probability distribution, 
         given the values, on the given indexes
         
-        I think this equivalent to: andrew moore/data mining/gussians/page 22
+        equivalent to: andrew moore/data mining/gussians/page 22
+        except that my __and__ handels infinities, other versions of given don't
         
         basic usage fixes the indexed component of the mean to the given value 
         with zero variance in that dimension.
@@ -710,44 +701,26 @@ class Mvar(Plane):
         >>> a[0]=1
         >>> assert a==A.given(index=0,value=1)
         """
-        
-
-        if isinstance(value,Mvar):
-            return self.givenMvar(index,value)
-        
-        value= Matrix(value)
-
-        if len(value.shape) and value.shape[0]!=0:
-            #convert the inputs
-            value=Mvar.fromData(value)
-            if value.var.size != 0:
-                return self.givenMvar(index,value)
-            else:
-                value=value.mean
-        
-        return self.givenVector(index,value)
-    
-    def givenMvar(self,index,value):
-        fixed=binindex(index,self.ndim)
-        free=~fixed
+        #convert the inputs
+        value=Mvar.fromData(value)
+        index=binindex(index,self.ndim)
 
         Z=numpy.zeros
-
         meanType=(Z([],self.mean.dtype)+Z([],value.mean.dtype)).dtype
         varType=(Z([],self.var.dtype)+Z([],value.var.dtype)).dtype
         vectorType=(Z([],self.vectors.dtype)+Z([],value.vectors.dtype)).dtype
 
         #create the mean, for the new object,and set the values of interest
-        mean=numpy.zeros([1,self.ndim],dtype=meanType)
-        mean[:,fixed]=value.mean
+        mean=numpy.zeros([1,self.shape[0]],dtype=meanType)
+        mean[:,index]=value.mean
 
         #create empty vectors for the new object
         vectors=numpy.zeros([
             value.shape[0]+(self.ndim-value.ndim),
-            self.ndim
-        ],vectorType)
-        vectors[0:value.shape[0],fixed]=value.vectors
-        vectors[value.shape[0]:,free]=numpy.eye(self.ndim-value.ndim)
+            self.ndim,
+        ],dtype=vectorType)
+        vectors[0:value.shape[0],index]=value.vectors
+        vectors[value.shape[0]:,~index]=numpy.eye(self.ndim-value.ndim)
         
         #create the variance for the new object
         var=numpy.zeros(vectors.shape[0],dtype=varType)
@@ -760,44 +733,6 @@ class Mvar(Plane):
             mean=mean,
             vectors=vectors,
         ) 
-
-    def givenVector(self,index,value):
-        """
-        reference andrew moore/data mining/gaussians
-        """
-        fixed=binindex(index,self.ndim)
-        free=~fixed
-
-        Mu = self[free]
-        Mv = self[fixed]
-        #todo: cleanup
-        u=self.vectors[:,free]
-        v=self.vectors[:,fixed]
-
-        uv = u.H*numpy.diagflat(self.var)*v
-
-        result = Mu-(Mv-value)**-1*uv.T
-
-        #create the mean, for the new object,and set the values of interest
-        mean=numpy.zeros([1,self.ndim],dtype=result.mean.dtype)
-        mean[:,fixed]=value
-        mean[:,free]=result.mean
-
-        #create empty vectors for the new object
-        vectors=numpy.zeros([
-            result.shape[0],
-            self.ndim
-        ],result.vectors.dtype)
-        vectors[:,fixed]=0
-        vectors[:,free]=result.vectors
-        
-        return Mvar(
-            mean=mean,
-            vectors=vectors,
-            var=result.var
-        )
-
-
 
         
     def __setitem__(self,index,value):
@@ -1666,27 +1601,45 @@ def wiki(P,M):
         cov=(Matrix.eye(P.ndim)-Kk)*P.cov
     )
 
-def mooreGiven(self,index,value):
+def givenVector(self,index,value):
     """
     direct implementation of the "given" algorithm in
     Andrew moore's data-mining/gussian slides
 
-     >>> if numpy.isreal(A.mean).all():
-     ...     assert mooreGiven(A,index=0,value=1)==A.given(index=0,value=1)[1:]
+    >>> assert givenVector(A,index=0,value=1)==A.given(index=0,value=1)
     """
     fixed=binindex(index,self.ndim)
     free=~fixed
 
-    cov=self.cov 
+    Mu = self[free]
+    Mv = self[fixed]
+    #todo: cleanup
+    u=self.vectors[:,free]
+    v=self.vectors[:,fixed]
 
-    uu=cov[free,:][:,free]
-    uv=cov[free,:][:,fixed]
-    vvI=cov[fixed,:][:,fixed]**-1
+    uv = u.H*numpy.diagflat(self.var)*v
 
-    return Mvar.fromCov(
-        mean=self.mean[0,free]+(uv*vvI*(value-self.mean[0,fixed])).H,
-        cov=uu-uv*vvI*uv.H
+    result = Mu-(Mv-value)**-1*uv.H
+
+    #create the mean, for the new object,and set the values of interest
+    mean=numpy.zeros([1,self.ndim],dtype=result.mean.dtype)
+    mean[:,fixed]=value
+    mean[:,free]=result.mean
+
+    #create empty vectors for the new object
+    vectors=numpy.zeros([
+        result.shape[0],
+        self.ndim
+    ],result.vectors.dtype)
+    vectors[:,fixed]=0
+    vectors[:,free]=result.vectors
+    
+    return Mvar(
+        mean=mean,
+        vectors=vectors,
+        var=result.var
     )
+
 
 
 def mooreChain(self,sensor,transform=None):
@@ -1736,13 +1689,13 @@ if __name__=='__main__':
     #from testObjects import *
     A=Mvar.fromCov([[2,1j],[1j,2]],mean=[1j,1j])
     
-    mooreGiven(A,index=0,value=1)==A.given(index=0,value=1)[1:]
-    mooreGiven(A,index=0,value=1j)==A.given(index=0,value=1j)[1:]
+    mooreGiven(A,index=0,value=1)==A.given(index=0,value=1)
+    mooreGiven(A,index=0,value=1j)==A.given(index=0,value=1j)
 
 
     L1=Mvar(mean=[0,0],vectors=[[1,1],[1,-1]], var=[numpy.inf,0.5])
     L2=Mvar(mean=[1,0],vectors=[0,1],var=numpy.inf) 
-    assert L1.given(index=0,value=1) == L1&L2 )
+    assert ( L1.given(index=0,value=1) == L1&L2 )
     self.assertTrue( (L1&L2).mean==[1,1] )
     self.assertTrue( (L1&L2).cov==[[0,0],[0,2]] )
 

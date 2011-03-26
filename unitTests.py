@@ -444,10 +444,10 @@ class givenTester(myTests):
         x=Mvar(mean=1,var=1)
         self.assertTrue( Y.given(index=0,value=x) == X&Y )
 
-    def testMooreGiven(self):
-        self.assertTrue( mvar.mooreGiven(self.A,index=0,value=1)==self.A.given(index=0,value=1)[1:] )
-        self.assertTrue( mvar.mooreGiven(self.A,index=0,value=1+1j)==self.A.given(index=0,value=1+1j)[1:] )
-        self.assertTrue( mvar.mooreGiven(self.A,index=0,value=1j)==self.A.given(index=0,value=1j)[1:] )
+    def testGivenVector(self):
+        self.assertTrue( mvar.givenVector(self.A,index=0,value=1)==self.A.given(index=0,value=1) )
+        self.assertTrue( mvar.givenVector(self.A,index=0,value=1j)==self.A.given(index=0,value=1j) )
+        self.assertTrue( mvar.givenVector(self.A,index=0,value=1+1j)==self.A.given(index=0,value=1+1j) )
 
 class chainTester(myTests):
     def testBasic(self):
