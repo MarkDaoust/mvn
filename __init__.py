@@ -703,7 +703,8 @@ class Mvar(Plane):
         """
         #convert the inputs
         value=Mvar.fromData(value)
-        index=binindex(index,self.ndim)
+        fixed=binindex(index,self.ndim)
+        free = ~fixed
 
         Z=numpy.zeros
         meanType=(Z([],self.mean.dtype)+Z([],value.mean.dtype)).dtype
@@ -712,15 +713,15 @@ class Mvar(Plane):
 
         #create the mean, for the new object,and set the values of interest
         mean=numpy.zeros([1,self.shape[0]],dtype=meanType)
-        mean[:,index]=value.mean
+        mean[:,fixed]=value.mean
 
         #create empty vectors for the new object
         vectors=numpy.zeros([
             value.shape[0]+(self.ndim-value.ndim),
             self.ndim,
         ],dtype=vectorType)
-        vectors[0:value.shape[0],index]=value.vectors
-        vectors[value.shape[0]:,~index]=numpy.eye(self.ndim-value.ndim)
+        vectors[0:value.shape[0],fixed]=value.vectors
+        vectors[value.shape[0]:,free]=numpy.eye(self.ndim-value.ndim)
         
         #create the variance for the new object
         var=numpy.zeros(vectors.shape[0],dtype=varType)
