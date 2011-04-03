@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 
+#todo: Mvar.real & imag?
 #todo: consider removing the autosquare if you ever want to speed things up, 
 #         I bet it would help. it would also allow other factorizations.
 #todo: wikipedia/kalmanfiltering#information filter
@@ -16,6 +17,7 @@
 #todo: cleanup my 'square' function (now that it is clear that it's an SVD)
 #todo: entropy
 #todo: quadratic forms (ref: http://en.wikipedia.org/wiki/Quadratic_form_(statistics))
+#todo: implement transpose and dot product, related to bilinear forms?
 #todo: split the class into two levels: "fast" and 'safe'? <- "if __debug__" ?
 #      maybe have the 'safe' class inherit from 'fast' and a add a variance-free 'plane' class?
 #todo: understand the EM and K-means algorithms (available in scipy)
@@ -525,8 +527,11 @@ class Mvar(Plane):
         this method is supplied because the determinant can be calculated 
         easily from the variances in the object
         
-        >>> assert Matrix(A.det())== numpy.linalg.det(A.cov)
-        >>> assert Matrix(A.det()) == (
+        >>> assert A.det()== numpy.linalg.det(A.cov)
+        
+        >>> assert Matrix((A*B).det()) ==A.det() * B.det()
+
+        >>> assert A.det() == (
         ...     0 if 
         ...     A.shape[0]!=A.shape[1] else 
         ...     numpy.prod(A.var)
@@ -547,19 +552,29 @@ class Mvar(Plane):
         
         >>> assert Matrix(A.trace()) == numpy.trace(A.cov)
         >>> assert Matrix(A.trace()) == A.var.sum()
+
+        >>> assert Matrix((A+B).trace()) == A.trace()+B.trace()
+        
+        >>> assert Matrix((A*B).trace()) == (B*A).trace() 
+        >>> assert Matrix((A*B.transform()).trace()) == (B*A.transform()).trace() 
         """
         return self.var.sum()
     
-    def quad(self,matrix):
+    def quad(self,matrix=None):
         """
         place holder for quadratic forum
-        
-        this looks a lot like a route towards implementing Mvar.T
-        and Mvar*Mvar.T
-       
+
         """
-        #todo: implement quadratic forms
-        assert 1==0
+        if matrix is not None:
+            matrix=(matrix+matrix.H)/2
+
+        transformed = self if matrix is None else self*matrix
+        flattened   = transformed*self.mean.H
+
+        result=Mvar(
+            mean=flattened.mean+numpy.trace(matrix*sef.cov),
+            var=4.0*flattened.var+2.0*numpy.trace(transformed.cov*self.cov),
+        )
 
     def entropy(self):
         """
@@ -1373,7 +1388,7 @@ class Mvar(Plane):
         
             >>> assert K1*A == A*K1
         
-            but it matters a lot for Matrix/Mvar multiplication
+            but it matters a qlot for Matrix/Mvar multiplication
         
             >>> assert isinstance(A*M,Mvar)
             >>> assert isinstance(M.H*A,Matrix)
