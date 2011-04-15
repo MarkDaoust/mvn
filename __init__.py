@@ -355,7 +355,25 @@ class Mvar(Plane):
             >>> assert abs(A).cov==A.scaled.H*A.scaled
         """
     )
-    
+
+    @property
+    def corr(self):
+        """
+        scale the mvar so that all marginalals (on the current set of axes) have unit variance.
+        
+        >>> for n in range(A.ndim):
+        ...    assert A[n].var == 1
+
+        this is very different from 
+
+        >>> assert Matrix((A**0).var) == 1
+
+        because doing it with power scales along the eigenvectrs, this scales along the axes
+        """
+        S=numpy.array(self.scaled)
+        return self*numpy.diagflat((S.conj*S).sum(0)**(-0.5))
+
+
     @property
     def scaled(self):
         """
@@ -381,6 +399,14 @@ class Mvar(Plane):
         >>> assert A.ndim==A.mean.size
         """
         return self.mean.size
+
+    @property
+    def rank(self):
+        """
+        get the number of dimensions of the space covered by the mvar
+        >>> assert A.rank == A.var.size
+        """
+        return self.mean.size
     
     @property
     def shape(self):
@@ -391,6 +417,7 @@ class Mvar(Plane):
             
         >>> assert A.vectors.shape == A.shape
         >>> assert (A.var.size,A.mean.size)==A.shape
+        >>> assert A.shape[0]==A.rank
         >>> assert A.shape[1]==A.ndim
         """
         return self.vectors.shape
@@ -767,7 +794,7 @@ class Mvar(Plane):
         over the indexed dimensions,
         """
         #todo: consider also indexing by eigenvalue
-        #only makes sense if you havee a self.sort, or self.sorted
+        #only makes sense if you have a self.sort, or self.sorted
         return Mvar(
             mean=self.mean[:,index],
             vectors=self.vectors[:,index],
