@@ -915,6 +915,37 @@ class Mvar(Plane):
             cov(SFvectors,SFvar) == cov(OFvectors,SFvar) and
             SIvectors.H*SIvectors == OIvectors.H*OIvectors
         )
+
+    def __gt__(self,lower):
+        self = self-lower
+        lower = Matrix.zeros(self.mean.shape)
+
+        return self.inBox(lower,Matrix.infs(lower.shape))
+        
+    def __ge__(self,lower):
+        return self>lower
+
+    def __le__(self,upper):
+        self = self-upper
+        upper = Matrix.zeros(self.mean.shape)
+
+        return self.inBox(-Matrix.infs(lower.shape),upper)
+   
+    def __lt__(self,upper):
+        return self<other
+
+    def inBox(self,lower,upper):
+        lower=lower-self.mean
+        upper=upper-self.mean
+
+        stretch=numpy.diagflat(self.width()**-1)
+
+        self=self*stretch
+        lower = (lower*stretch).flatten()
+        upper = (upper*stretch).flatten()
+
+        return mvstdnormcdf(lower,upper,self.cov)
+        
         
     def __abs__(self):
         """
