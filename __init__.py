@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
-#todo: Mvar.real & imag?
+#todo: wiki: Complex Normal Distribution (I knew there was something underconstrained about these)
+#todo: Mvar.real & imag?,  
 #todo: consider removing the autosquare if you ever want to speed things up, 
 #         I bet it would help. it would also allow other factorizations.
 #todo: wikipedia/kalmanfiltering#information filter
@@ -33,11 +34,11 @@ Mvar is the main idea of the module: Multivariate normal distributions
     packaged to act like a vector. Perfect for kalman filtering, sensor fusion, 
     (and maybe Expectation Maximization)  
 
-wiki is just to demonstrate the equivalency between my blending algorithm, 
-    and the wikipedia version of it.
+there are also a couple of loose functions like 'wiki', which is just to demonstrate 
+the equivalency between my blending algorithm, and the wikipedia version of it.
         http://en.wikipedia.org/wiki/Kalman_filtering#Update
 
-The docstrings are full of examples. The objects used in theexamples are created 
+The docstrings are full of examples. The objects used in the examples are created 
 by test.sh, and stored in test_objects.pkl. You can get the most recent versions of them by 
 importing testObjects.py, which will give you a module containing the objects used
 
@@ -65,8 +66,21 @@ import operator
 ## 3rd party
 import numpy
 
-## maybe imports: third party things that we can live without
-from maybe import Ellipse
+## optional
+try:
+    from matplotlib.patches import Ellipse
+except ImportError,message:
+    def Ellipse(*args,**kwargs):
+        raise ImportError(message)
+
+try: 
+    from scipy.stats.mvn import mvndst
+    del(mvndst)
+except ImportError,message:
+    def mvstdnormcdf(*args,**kwargs):
+        raise ImportError(message)
+else:
+    from mvncdf import mvstdnormcdf
 
 ## local
 #helpers
@@ -357,24 +371,6 @@ class Mvar(Plane):
     )
 
     @property
-    def corr(self):
-        """
-        scale the mvar so that all marginalals (on the current set of axes) have unit variance.
-        
-        >>> for n in range(A.ndim):
-        ...    assert A[n].var == 1
-
-        this is very different from 
-
-        >>> assert Matrix((A**0).var) == 1
-
-        because doing it with power scales along the eigenvectrs, this scales along the axes
-        """
-        S=numpy.array(self.scaled)
-        return self*numpy.diagflat((S.conj*S).sum(0)**(-0.5))
-
-
-    @property
     def scaled(self):
         """
         get the vectors, scaled by the standard deviations. 
@@ -554,9 +550,7 @@ class Mvar(Plane):
         this method is supplied because the determinant can be calculated 
         easily from the variances in the object
         
-        >>> assert A.det()== numpy.linalg.det(A.cov)
-        
-        >>> assert Matrix((A*B).det()) ==A.det() * B.det()
+        >>> assert Matrix(A.det())== numpy.linalg.det(A.cov)
 
         >>> assert A.det() == (
         ...     0 if 
@@ -587,6 +581,28 @@ class Mvar(Plane):
         """
         return self.var.sum()
     
+    def width(self):
+        """
+        return the standard deviations of the mvar, along each coordinate-axis.
+        (not eigen-axes).
+        
+        >>> assert Matrix([A[n].var[0] for n in range(A.ndim)]) == A.width()**2
+
+        >>> norm = A*Matrix(numpy.diagflat(A.width()**(-1)))
+        >>> corr = norm.cov
+        >>> assert Matrix(corr.diagonal()) == Matrix.ones
+        >>> assert Matrix([norm[n].var[0] for n in range(norm.ndim)]) == Matrix.ones
+
+        this is very different from 
+
+        >>> assert Matrix((A**0).var) == Matrix.ones
+
+        because doing it with power scales along the eigenvectrs, this scales along the axes
+        """
+        S=numpy.array(self.scaled)
+        return (S.conj()*S).sum(0)**(0.5)
+
+
     def quad(self,matrix=None):
         """
         place holder for quadratic forum
@@ -793,6 +809,7 @@ class Mvar(Plane):
         return the marginal distribution,
         over the indexed dimensions,
         """
+        index = numpy.asarray(index)
         #todo: consider also indexing by eigenvalue
         #only makes sense if you have a self.sort, or self.sorted
         return Mvar(
