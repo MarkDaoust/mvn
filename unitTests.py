@@ -493,11 +493,11 @@ class chainTester(myTests):
 
     def testAnd(self):
         """
-        __and__ is a shortcut over mvar.chain and mvar.given
+        __and__ is a shortcut across mvar.chain and mvar.given
         this is to show the relationship
 
-        I haven't figured yet out how a the transform works with __and__.
-        it probably involves the psudo-inverse of the transform 
+        I haven't figured yet out how a the 'transform' parameter to chain works 
+        with __and__, it probably involves the psudo-inverse of the transform. 
 
         I think the answer is on the wikipedia kalman-filtering page
         """
@@ -553,8 +553,6 @@ class inversionTester(myTests):
         P.var=P.var/0.0
         self.assertTrue( P==(self.A & ~self.A) )
 
-
-
 class blendTester(myTests):
     def testCommutativity(self):
         self.assertTrue( self.A & self.B == self.B & self.A)
@@ -585,7 +583,6 @@ class blendTester(myTests):
             self.assertTrue( (self.A & self.B) & self.C == self.A & (self.B & self.C))
 
 
-
     def testKnownValues1(self):
         L1=Mvar(mean=[1,0],vectors=[0,1],var=numpy.inf)
         L2=Mvar(mean=[0,1],vectors=[1,0],var=numpy.inf) 
@@ -604,6 +601,123 @@ class blendTester(myTests):
         self.assertTrue( (L1&L2).mean==[0,1])
         self.assertTrue( (L1&L2).var==1)
         self.assertTrue( (L1&L2).vectors==[1,0])
+
+
+class dotTester(myTests):
+    def testDerivation(self):
+        A=self.A
+        B=self.B
+
+        Na = 20
+        Nb = 10
+
+        N=Na*Nb
+
+        #get some data from A and B
+        Da=A.sample(Na)
+        Db=B.sample(Nb)
+
+        #and remake the multivariates based on the samples you just took
+        A=Mvar.fromData(Da)
+        B=Mvar.fromData(Db)
+
+        # take every possible combination of dot products
+        dot=numpy.array(Da*Db.H)
+
+        #the population mean
+        Mean = Matrix(dot.mean())
+        #the population variance
+        Var = Matrix(dot.var())
+
+        #should equal the distribution mean
+        self.assertTrue( Mean == A.mean*B.mean.H )
+
+        #definition of variance
+        self.assertTrue( Var == (numpy.array(Mean -dot)**2).mean() )
+
+        #expand it
+        self.assertTrue( Var == (Mean**2 - 2*numpy.array(Mean)*dot + dot**2 ).mean() )
+
+        #diftribute the calls to mean()
+        self.assertTrue( Var == Mean**2 - 2*Mean*dot.mean() + (dot**2).mean() )
+
+        #but Mean == dot.mean(), so
+        self.assertTrue( Var == (dot**2).mean() - Mean**2 )
+
+        dot = Matrix(dot)
+
+        self.assertTrue( Var == numpy.trace(dot*dot.H)/N - Mean**2 )
+        
+        #factor everything
+        self.assertTrue( Var == numpy.trace(Da*Db.H*Db*Da.H)/Na/Nb - (A.mean*B.mean.H)**2 )
+
+
+        #rotate the trace
+        self.assertTrue( Var == numpy.trace(Da.H*Da*Db.H*Db)/Na/Nb - (A.mean*B.mean.H)**2 )
+
+        #group the data's
+        self.assertTrue( Var == numpy.trace((Da.H*Da)*(Db.H*Db))/Na/Nb - (A.mean*B.mean.H)**2 )
+
+        #distribute the N's
+        self.assertTrue( Var == numpy.trace((Da.H*Da)/Na*(Db.H*Db)/Nb) - (A.mean*B.mean.H)**2 )
+
+        #from the definition of mean and cov
+        self.assertTrue( A.cov+A.mean.H*A.mean == (Da.H*Da)/Na )
+        self.assertTrue( B.cov+B.mean.H*B.mean == (Db.H*Db)/Nb )
+
+        #replace
+        self.assertTrue( Var == numpy.trace((A.cov+A.mean.H*A.mean)*(B.cov+B.mean.H*B.mean))-(A.mean*B.mean.H)**2 )
+
+
+        #multiply it out
+        self.assertTrue( Var == 
+            numpy.trace(
+                A.cov*B.cov + 
+                A.mean.H*A.mean*B.cov + 
+                A.cov*B.mean.H*B.mean + 
+                A.mean.H*A.mean*B.mean.H*B.mean
+            ) - (A.mean*B.mean.H)**2 )
+
+        #distribute the calls to tracea
+        self.assertTrue( Var == 
+            numpy.trace(A.cov*B.cov) + 
+            numpy.trace(A.mean.H*A.mean*B.cov) + 
+            numpy.trace(A.cov*B.mean.H*B.mean) +
+            numpy.trace(A.mean.H*A.mean*B.mean.H*B.mean) - 
+            (A.mean*B.mean.H)**2
+        )
+
+        #rotate traces
+        self.assertTrue( Var ==
+            numpy.trace(A.cov*B.cov) + 
+            numpy.trace(A.mean*B.cov*A.mean.H) + 
+            numpy.trace(B.mean*A.cov*B.mean.H) +
+            numpy.trace(A.mean*B.mean.H*B.mean*A.mean.H) - 
+            (A.mean*B.mean.H)**2
+        )
+
+        #remove traces for scalars
+        self.assertTrue( Var == 
+            numpy.trace(A.cov*B.cov) + 
+            A.mean*B.cov*A.mean.H + 
+            B.mean*A.cov*B.mean.H +
+            (A.mean*B.mean.H)*(B.mean*A.mean.H) - 
+            (A.mean*B.mean.H)**2
+        )
+
+        #cancel means
+        self.assertTrue( Var == 
+            numpy.trace(A.cov*B.cov) + 
+            A.mean*B.cov*A.mean.H + 
+            B.mean*A.cov*B.mean.H
+        )
+
+        #avoid covariance matrixes
+        self.assertTrue( Var == 
+            (A*B).trace() + 
+            (B*A.mean.H).trace() + 
+            (A*B.mean.H).trace()
+        )
 
 def getTests(fixture=None):
     testCases= [

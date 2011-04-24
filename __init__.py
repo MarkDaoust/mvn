@@ -603,6 +603,7 @@ class Mvar(Plane):
         return (S.conj()*S).sum(0)**(0.5)
 
 
+
     def quad(self,matrix=None):
         """
         place holder for quadratic forum
@@ -809,7 +810,7 @@ class Mvar(Plane):
         return the marginal distribution,
         over the indexed dimensions,
         """
-        index = numpy.asarray(index)
+        index = numpy.asarray(index) if hasattr(index,'__iter__') else index
         #todo: consider also indexing by eigenvalue
         #only makes sense if you have a self.sort, or self.sorted
         return Mvar(
@@ -917,24 +918,39 @@ class Mvar(Plane):
         )
 
     def __gt__(self,lower):
+        """
+        see doc for Mvar.inbox
+        """
         self = self-lower
         lower = Matrix.zeros(self.mean.shape)
 
         return self.inBox(lower,Matrix.infs(lower.shape))
         
     def __ge__(self,lower):
+        """
+        see doc for Mvar.inbox
+        """
         return self>lower
 
     def __le__(self,upper):
+        """
+        see doc for Mvar.inbox
+        """
         self = self-upper
         upper = Matrix.zeros(self.mean.shape)
 
         return self.inBox(-Matrix.infs(lower.shape),upper)
    
     def __lt__(self,upper):
+        """
+        see doc for Mvar.inbox
+        """
         return self<other
 
     def inBox(self,lower,upper):
+        """
+        
+        """
         lower=lower-self.mean
         upper=upper-self.mean
 

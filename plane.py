@@ -31,3 +31,6 @@ class Plane(object):
         #unpack the stack into the object's parameters
         self.mean = numpy.real_if_close(stack[-1,1:])
         self.vectors = numpy.real_if_close(stack[:-1,1:])
+
+
+
