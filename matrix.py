@@ -1,14 +1,25 @@
+#! /usr/bin/env python
 import numpy
 import collections
 import itertools
 import functools
 import re
 
-from helpers import sign
+import helpers            
+
+from trydecorate import decorator
+
+@decorator
+def expandCallable(fun,self,other):
+    return (
+        fun(self,other(self.shape))
+        if callable(other) else
+        fun(self,other)
+    )
 
 class Matrix(numpy.matrix):
     """
-    Imporved version of the martix class.
+    'Imporved' version of the martix class.
     the only modifications are:
         division (and rdiv) doesn't try to do elementwise division, it tries to multiply 
             by the inverse of the other
@@ -22,18 +33,23 @@ class Matrix(numpy.matrix):
             >>> assert Matrix([[0,0],[0,0],[0,0]]) == numpy.zeros
             >>> assert Matrix([[1,0],[0,1]]) == Matrix.eye
     """
+    rtol = 1e-5
+    atol = 1e-8
+    
+    sign = helpers.sign
+
     def __new__(cls,data,dtype=None,copy=True):
         self=numpy.matrix(data,dtype,copy)
         self.__class__=cls
         return self
 
+    @expandCallable
     def __eq__(self,other):
-        if callable(other):
-            other=other(self.shape)
-        
         other=Matrix(other)
-        assert self.size==other.size,('can only compare two matrixes with the same size')
-        return numpy.allclose(self,other)
+        if self.shape==other.shape:
+            return numpy.allclose(self,other,self.rtol,self.atol)
+        else:
+            ValueError('shape miss-match')
 
     def __ne__(self,other):
         return not(self ==  other)
@@ -44,14 +60,10 @@ class Matrix(numpy.matrix):
     def __rdiv__(self,other):
         return other*self**(-1)
 
+    @expandCallable
     def __add__(self,other):
-        if isinstance(other,numpy.matrix):
-            assert self.shape == other.shape,'can only add matrixes with the same shape'
-            return numpy.matrix.__add__(self,other)
-        
         return numpy.matrix.__add__(self,other)
             
-
     def __repr__(self):
         return 'M'+numpy.matrix.__repr__(self)[1:]
 
@@ -93,9 +105,15 @@ class Matrix(numpy.matrix):
     def infs(*args,**kwargs):
         return numpy.inf*Matrix.ones(*args,**kwargs)
 
-
     @staticmethod
     def nans(*args,**kwargs):
         return numpy.nan*Matrix.ones(*args,**kwargs)
 
-Matrix.sign=sign
+    @staticmethod
+    def rand(*args,**kwargs):
+        return numpy.random.rand(*args,**kwargs)
+
+
+    @staticmethod
+    def randn(*args,**kwargs):
+        return numpy.random.randn(*args,**kwargs)
