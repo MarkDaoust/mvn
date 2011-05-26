@@ -1,10 +1,15 @@
 #! /usr/bin/env python
 
+#todo: use array multiply for scale?
+#todo: clarify the difference between get methods and properties
+#todo: type handling- be more uniform, arrays work element wize, matrixes get converted to Mvars ?
 #todo: wiki: Complex Normal Distribution (I knew there was something underconstrained about these)
 #todo: Mvar.real & imag?,  
 #todo: consider removing the autosquare if you ever want to speed things up, 
-#         I bet it would help. it would also allow other factorizations.
-#todo: wikipedia/kalmanfiltering#information filter
+#         I bet it would help. it would also allow other factorizations (like cholsky) 
+#todo: wikipedia/kalmanfiltering#information filter    !!   the mvar and it's 
+#       inverse are different things, maybe the linear algebra should go in a 
+#       super class, and all the covariance/information filter stuff in two sub classes 
 #todo: better type handling, multimethods? many things that accept an mvar should 
 #        accept Mvar.eye, Mvar.zeros, Mvar.infs 
 #todo: error handling
@@ -12,12 +17,10 @@
 #todo: understand transforms composed of Mvars as the component vectors, and 
 #          whether it is meaningful to consider mvars in both the rows and columns
 #todo: implement a transpose,for the above 
-#todo: chi*2 distribution (other distributions)
+#todo: chi*2 distribution for the lengths (other distributions)
 #todo: see if div should mtlab like matlab backwards divide added
 #todo: impliment collectionss so that or '|'  is meaningful
 #todo: cleanup my 'square' function (now that it is clear that it's an SVD)
-#todo: entropy
-#todo: quadratic forms (ref: http://en.wikipedia.org/wiki/Quadratic_form_(statistics))
 #todo: implement transpose and dot product, related to bilinear forms?
 #todo: split the class into two levels: "fast" and 'safe'? <- "if __debug__" ?
 #      maybe have the 'safe' class inherit from 'fast' and a add a variance-free 'plane' class?
@@ -75,6 +78,7 @@ except ImportError,message:
 
 try: 
     from scipy.stats.mvn import mvndst
+    from scipy.stats import norm
     del(mvndst)
 except ImportError,message:
     def mvstdnormcdf(*args,**kwargs):
@@ -557,6 +561,9 @@ class Mvar(Plane):
         ...     A.shape[0]!=A.shape[1] else 
         ...     numpy.prod(A.var)
         ... )
+
+        if you want the pseudo-det use self.var.prod()
+        (ref: http://en.wikipedia.org/wiki/Pseudo-determinant)
         """
         shape=self.shape
         return (
@@ -576,7 +583,8 @@ class Mvar(Plane):
 
         >>> assert Matrix((A+B).trace()) == A.trace()+B.trace()
         
-        >>> assert Matrix((A*B).trace()) == (B*A).trace() 
+        >>> assert Matrix((A*B).trace()) == (B*A).trace()
+        >>> assert Matrix((A.cov*B.cov).trace()) == (A*B).trace() 
         >>> assert Matrix((A*B.transform()).trace()) == (B*A.transform()).trace() 
         """
         return self.var.sum()
@@ -605,9 +613,20 @@ class Mvar(Plane):
 
 
     def quad(self,matrix=None):
+        #todo: Chi & Chi2 distribution gives the *real* distribution of the length & length^2
+        #       this gust has the right mean and variance
         """
-        place holder for quadratic forum
+        ref: http://en.wikipedia.org/wiki/Quadratic_form_(statistics)
 
+        use this to dot an mvar with itself like (rand())**2 
+        (use dot is like rand()*rand())
+
+        if you're creative with the marix transform you can put together 
+        just about any 
+
+        todo: Chi & Chi2 distribution gives the *real* distribution of the length & length^2
+                this has the right mean and variance so it's like a maximul entropy model
+                (ref: http://en.wikipedia.org/wiki/Principle_of_maximum_entropy )
         """
         if matrix is not None:
             matrix=(matrix+matrix.H)/2
@@ -615,17 +634,29 @@ class Mvar(Plane):
         transformed = self if matrix is None else self*matrix
         flattened   = transformed*self.mean.H
 
-        result=Mvar(
-            mean=flattened.mean+numpy.trace(matrix*sef.cov),
+        return Mvar(
+            mean=flattened.mean+numpy.trace(matrix*self.cov),
             var=4.0*flattened.var+2.0*numpy.trace(transformed.cov*self.cov),
         )
 
-    def entropy(self):
+    #add a test case to show why quad and dot are different
+    def dot(self,other):
         """
-        place holder for entroppy function...
-        """
-        #todo: impliment entropy function
-        assert 1==0
+        >>> assert A.dot(B) == B.dot(A)
+
+        use this to dot product two mvars together, dot is like rand()*rand()
+        be careful dot producting something with itself: 
+            there you might want (rand())**2
+            (use mvar.quad for that)
+        """        
+        return Mvar(
+            mean=self.mean*other.mean.H,
+            var=(
+                (self*other).trace() + 
+                (other*self.mean.H).trace() + 
+                (self*other.mean.H).trace()
+            )
+        )
     
     def chain(self,sensor=None,transform=None):
         """
@@ -696,26 +727,22 @@ class Mvar(Plane):
         """
         return the square of the mahalabois distance from the Mvar to each vector.
         the vectors should be along the last dimension of the array.
+   
+        >>> N=1000
+        ... Z=3
+        ... dist = A.dist2(A.sample(N))
+        ... assert (dist.mean()-A.ndm)**2 < (Z**2)*(dist.var()/N)
 
-        >>> if A.flat:
-        ...     assert helpers.approx(
-        ...         (A**0).dist2(numpy.zeros((1,ndim))),
-        ...         helpers.mag2((A**0).mean)
-        ...     )
+        
         """
         #make sure the mean is a flat numpy array
         mean=numpy.array(self.mean).squeeze()
         #and subtract it from the locations (vectors aligned to the last dimension)
-        locations=numpy.array(locations)-mean
-        #rotate each location to eigen-space
-        rotated=numpy.dot(locations,numpy.array(self.vectors.H))
-        #get the square of the magnitude of each component
-        squared=rotated.conjugate()*rotated
-        #su over the last dimension
-        return numpy.real_if_close((
-                squared*(self.var**-1)
-            ).sum(axis = locations.ndim-1)
-        )
+        deltas=numpy.array(locations)-mean
+        
+        scaled=numpy.array(numpy.inner(deltas,(self**-1).scaled))
+        return (scaled*scaled.conjugate()).sum(axis=locations.ndim-1)
+
         
     ############## indexing
     
@@ -763,6 +790,9 @@ class Mvar(Plane):
         #convert the inputs
         value=Mvar.fromData(value)
         fixed=binindex(index,self.ndim)
+        if fixed.all():
+            return Mvar.fromData(value)
+
         free = ~fixed
 
         Z=numpy.zeros
@@ -852,10 +882,6 @@ class Mvar(Plane):
             >>> assert Mvar.zeros(n) == Mvar.zeros
             >>> assert Mvar.eye(n) == Mvar.eye
             >>> assert Mvar.infs(n) == Mvar.infs
-
-
-            
-
         """
         if not isinstance(other,Mvar):
             if callable(other):
@@ -919,12 +945,18 @@ class Mvar(Plane):
 
     def __gt__(self,lower):
         """
+        >>> assert (A > Matrix.infs(A.ndim)) == 0
+        >>> assert (A > -Matrix.infs(A.ndim)) == 1
+        
+        >>> AV = A*A.vectors.H
+        >>> assert Matrix(AV>AV.mean) == 2**-AV.ndim 
+
         see doc for Mvar.inbox
         """
-        self = self-lower
-        lower = Matrix.zeros(self.mean.shape)
-
-        return self.inBox(lower,Matrix.infs(lower.shape))
+        return self.inBox(
+            lower,
+            numpy.inf*numpy.ones(self.mean.size)
+        )
         
     def __ge__(self,lower):
         """
@@ -932,36 +964,65 @@ class Mvar(Plane):
         """
         return self>lower
 
+    def __lt__(self,upper):
+        """
+        >>> assert (A < Matrix.infs(A.ndim)) == 1
+        >>> assert (A < -Matrix.infs(A.ndim)) == 0
+        
+        >>> AV = A*A.vectors.H
+        >>> assert Matrix(AV<AV.mean) == 2**-AV.ndim 
+
+        see doc for Mvar.inbox
+        """
+        return self.inBox(
+            -numpy.inf*numpy.ones(self.mean.size),
+            upper,
+        )
+
     def __le__(self,upper):
         """
         see doc for Mvar.inbox
         """
-        self = self-upper
-        upper = Matrix.zeros(self.mean.shape)
-
-        return self.inBox(-Matrix.infs(lower.shape),upper)
-   
-    def __lt__(self,upper):
-        """
-        see doc for Mvar.inbox
-        """
-        return self<other
+        return self<upper
 
     def inBox(self,lower,upper):
         """
-        
+        returns the probability that all components of a sampe are between the 
+        lower and upper limits 
+
+        todo: this could (should) be expanded to return a gaussian mixture, with one (Mvar) component instead of just a  weight...
         """
+        #todo: vectorize?
         lower=lower-self.mean
         upper=upper-self.mean
 
-        stretch=numpy.diagflat(self.width()**-1)
+        if isinstance(lower,Mvar):
+            l=lower.mean
+            lower.mean=Matrix.zeros
+            self = self+lower
+            lower=l
+        if isinstance(upper,Mvar):
+            u=upper.mean
+            upper.mean=Matrix.zeros
+            self = self+upper
+            upper=u
 
-        self=self*stretch
-        lower = (lower*stretch).flatten()
-        upper = (upper*stretch).flatten()
+        lower=numpy.array(lower).flatten()
+        upper=numpy.array(upper).flatten()
 
-        return mvstdnormcdf(lower,upper,self.cov)
-        
+        if self.ndim == 1:
+            self=norm(0,self.var**0.5)
+            return self.cdf(upper)-self.cdf(lower)
+
+        #maybe there should be a scale function for things like this.
+        Iwidth=self.width()**-1
+        stretch=numpy.diagflat(Iwidth)
+
+        self = self*stretch
+        lower = lower*Iwidth
+        upper = upper*Iwidth        
+
+        mvstdnormcdf(lower,upper,self.cov)
         
     def __abs__(self):
         """
@@ -992,7 +1053,6 @@ class Mvar(Plane):
             
         so:
             >>> assert (~A).mean == A.mean
-
             >>> assert Matrix((~A).var) == (-A).var 
             >>> assert Matrix((~A).var) == -(A.var)
 
@@ -1597,19 +1657,75 @@ class Mvar(Plane):
         )
         
     ################# Non-Math python internals
-    def __call__(self,locations):
-         """
+    def __call__(self,data):
+        """
         self(locations)
 
-         Returns the probability density in the specified locations, 
-         The vectors should be aligned onto the last dimension
-         That last dimension is squeezed out during the calculation
- 
-         If spacial dimensions have been flattened out of the mvar the result is always 1/0
-         since the probablilities will have dimensions of hits/length**ndim 
-         """
-         return numpy.exp(self.dist2(self,locations))/2/numpy.pi/sqrt(self.det(self))
- 
+        Returns the probability density in the specified locations, 
+        The vectors should be aligned onto the last dimension
+        That last dimension is squeezed out during the calculation
+        """
+        return numpy.exp(-self.info(data)) 
+    
+    def info(self,data=None,base=numpy.e):
+        """
+        >>> S=A.sample(1000)   
+        ... assert Matrix(-numpy.log(A(S))) == A.info(S)
+        """
+        if data is None:
+            data = self
+
+        if isinstance(data,Mvar):
+            pass #!
+        else:
+            baseE=(
+                self.dist2(data)+
+                self.ndim*numpy.log(2*numpy.pi)+
+                numpy.log(self.det())
+            )/2
+
+        return baseE/numpy.log(base)
+        
+
+    def entropy(self,base=numpy.e):
+        """
+        default is in base e
+
+        >>> m=numpy.random.randn()
+        ... assert A.entropy()+numpy.log(abs(numpy.linalg.det(m))) == (A*(m)).entropy()
+
+        >>> assert (
+        ...     numpy.array([
+        ...         A[dim].entropy() 
+        ...         for dim in range(A.ndim)
+        ...     ]).sum() >= A.entropy() 
+        ... )
+
+        http://en.wikipedia.org/wiki/Multivariate_normal_distribution
+        """
+        baseE= numpy.log(self.det()*(2*numpy.pi*numpy.e)**self.ndim)/2
+        return baseE/numpy.log(base)
+
+    def KLdiv(self,other,base=numpy.e):
+        """
+        default is in base e
+
+        >>> assert A.KLdiv(A)== 0
+        >>> assert A.KLdiv(B) > 0
+
+        http://en.wikipedia.org/wiki/Multivariate_normal_distribution#Kullback.E2.80.93Leibler_divergence
+        """
+        baseE= (
+            (self/other).trace()+
+            ((other**-1)*(other.mean-self.mean).H).cov-
+            numpy.log(self.det()/other.det())-
+            self.ndim
+        )/2
+        return baseE/numpy.log(base)
+
+
+
+
     def __repr__(self):
         """
         print self
@@ -1716,6 +1832,9 @@ def givenVector(self,index,value):
     >>> assert givenVector(A,index=0,value=1)==A.given(index=0,value=1)
     """
     fixed=binindex(index,self.ndim)
+    if fixed.all():
+        return Mvar.fromData(value)
+
     free=~fixed
 
     Mu = self[free]
@@ -1799,11 +1918,10 @@ if __name__=='__main__':
     mooreGiven(A,index=0,value=1)==A.given(index=0,value=1)
     mooreGiven(A,index=0,value=1j)==A.given(index=0,value=1j)
 
-
     L1=Mvar(mean=[0,0],vectors=[[1,1],[1,-1]], var=[numpy.inf,0.5])
     L2=Mvar(mean=[1,0],vectors=[0,1],var=numpy.inf) 
     assert ( L1.given(index=0,value=1) == L1&L2 )
     self.assertTrue( (L1&L2).mean==[1,1] )
     self.assertTrue( (L1&L2).cov==[[0,0],[0,2]] )
 
-
+    
