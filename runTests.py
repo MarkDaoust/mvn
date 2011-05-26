@@ -21,7 +21,7 @@ def getSuite(new=None,**kwargs):
         testFixture=testObjects.makeObjects(**kwargs)        
     else:
         assert not Params,'you cant set parameters without creating new objects'
-        testFixture=testObjects.testObjects
+        testFixture=testObjects.testDict
     
     suite.addTests(unitTests.getTests(testFixture))
     suite.addTests(docTests.getTests(mvar,testFixture))

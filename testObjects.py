@@ -93,7 +93,7 @@ def makeObjects(dtype=None,flat=None,ndim=None,seed=None):
 
     N=randint(-3,3)
 
-    testObjects={
+    testDict={
         'ndim':ndim,
         'A':A,'B':B,'C':C,
         'M':M,'M2':M2,'E':E,
@@ -103,12 +103,12 @@ def makeObjects(dtype=None,flat=None,ndim=None,seed=None):
     }
 
     
-    pickle.dump(testObjects,open(pickleName,'w'))
+    pickle.dump(testDict,open(pickleName,'w'))
 
-    return testObjects
+    return testDict
 
 try:
-    testObjects=pickle.load(open(pickleName,"r"))
+    testDict=pickle.load(open(pickleName,"r"))
 except EOFError:
     pass
 except IOError:
@@ -116,7 +116,7 @@ except IOError:
 except ValueError:
     pass
 else:
-    locals().update(testObjects)
+    locals().update(testDict)
 
 
 

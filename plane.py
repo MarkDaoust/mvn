@@ -13,7 +13,7 @@ from matrix import Matrix
 @automath
 class Plane(object):
     """
-    plane class, meant to factor out some code, and utility from the Mvar class
+    plane class, meant to (eventually) factor out some code, and utility from the Mvar class
     """
     def __init__(
         self,
