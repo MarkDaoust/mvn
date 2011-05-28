@@ -21,8 +21,8 @@ class Matrix(numpy.matrix):
     """
     'Imporved' version of the martix class.
     the only modifications are:
-        division (and rdiv) doesn't try to do elementwise division, it tries to multiply 
-            by the inverse of the other
+        division (and rdiv) doesn't try to do elementwise division, it tries to 
+            multiply by the inverse of the other
             
         The equality operator, ==, has also been modified to run numpy.allclose
         (good enough for me), so the matrix is treated as one thing, not 
@@ -94,26 +94,25 @@ class Matrix(numpy.matrix):
         return Matrix(numpy.eye(*args,**kwargs))
 
     @staticmethod
-    def ones(*args,**kwargs):
-        return Matrix(numpy.ones(*args,**kwargs))
+    def ones(shape,dtype=None,order='C'):
+        return Matrix(numpy.ones(shape,dtype=None,order='C'))
 
     @staticmethod
-    def zeros(*args,**kwargs):
-        return Matrix(numpy.zeros(*args,**kwargs))
+    def zeros(shape,dtype=None,order='C'):
+        return Matrix(numpy.zeros(shape,dtype=None,order='C'))
 
     @staticmethod
-    def infs(*args,**kwargs):
-        return numpy.inf*Matrix.ones(*args,**kwargs)
+    def infs(shape,dtype=None,order='C'):
+        return numpy.inf*Matrix.ones(shape,dtype=None,order='C')
 
     @staticmethod
-    def nans(*args,**kwargs):
-        return numpy.nan*Matrix.ones(*args,**kwargs)
+    def nans(shape,dtype=None,order='C'):
+        return numpy.nan*Matrix.ones(shape,dtype=None,order='C')
 
     @staticmethod
-    def rand(*args,**kwargs):
-        return numpy.random.rand(*args,**kwargs)
-
+    def rand(shape):
+        return numpy.random.rand(*shape)
 
     @staticmethod
-    def randn(*args,**kwargs):
-        return numpy.random.randn(*args,**kwargs)
+    def randn(shape):
+        return numpy.random.randn(*shape)

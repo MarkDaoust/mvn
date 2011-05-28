@@ -214,7 +214,7 @@ class Mvar(Plane):
         data with each row being a sample and each column being a dimenson
         
         remember numpy's default covariance calculation divides by (n-1) not 
-        (n) set bias = 1 to use N,
+        (n) set bias = false to use n-1,
         """
         
         if isinstance(data,Mvar):
@@ -223,8 +223,8 @@ class Mvar(Plane):
         data=Matrix(data)
 
         
-        #todo: implement these
-        assert weights is None,'weights not implemented'
+
+        #todo: implement this
         assert data.dtype is not numpy.dtype('object'),'not iplementd for "dtype=object" yet'
         
         #get the number of samples, subtract 1 if un-biased
