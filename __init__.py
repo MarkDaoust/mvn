@@ -96,6 +96,26 @@ from matrix import Matrix
 #base class
 from plane import Plane
 
+#multimethod
+from multimethod import MultiMethod
+
+from trydecorate import decorator
+@decorator
+def convertOther(F,self,other):
+    A=numpy.array(other)
+    
+    if A.ndim == 0:
+        pass
+    elif A.ndim == 1:
+        other=A
+    elif A.ndim == 2:
+        other=numpy.asmatrix(A)
+        other.__class__=Matrix
+    else:
+        other = A
+
+    return F(self,other)
+
 class Mvar(Plane):
     """
     Multivariate normal distributions packaged to act like a vector 
@@ -216,7 +236,6 @@ class Mvar(Plane):
         remember numpy's default covariance calculation divides by (n-1) not 
         (n) set bias = false to use n-1,
         """
-        
         if isinstance(data,Mvar):
             return data.copy()
         
@@ -1324,8 +1343,12 @@ class Mvar(Plane):
             ),
             square=False#bool(numpy.imag(power)),
         )
-        
-        
+
+    
+    def __mul__(self,other):
+        other=mulconvert(other)
+
+    @multimethod(None,None)
     def __mul__(self,other):        
         """
         self*other
@@ -1423,8 +1446,8 @@ class Mvar(Plane):
         assert Matrix((A**0.0).trace()) == A.shape[0]
         """
         other=self._mulConvert(other)
-        return self._multipliers[type(other)](self,other) 
-    
+        return self.__mul__(self,other) 
+    @
     def _scalarMul(self,scalar):
         """
         self*scalar
@@ -1435,7 +1458,7 @@ class Mvar(Plane):
             from eachother.  
             
             For this to be a properly defined vector space scalar 
-            multiplication must fit with addition, and addition here is 
+            multiplication must match with addition, and addition here is 
             defined so it can be used in the kalman noise addition step so: 
             
             >>> assert (A+A)==(2*A)
