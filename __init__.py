@@ -13,7 +13,7 @@
 #todo: better type handling, multimethods? many things that accept an mvar should 
 #        accept Mvar.eye, Mvar.zeros, Mvar.infs 
 #todo: error handling
-#todo: do something about mvars with zero dimensions
+#todo: do something about mvars with zero dimensions ?
 #todo: understand transforms composed of Mvars as the component vectors, and 
 #          whether it is meaningful to consider mvars in both the rows and columns
 #todo: implement a transpose,for the above 
@@ -97,9 +97,12 @@ from matrix import Matrix
 from plane import Plane
 
 #multimethod
-from multimethod import MultiMethod
+from decorator import decorator
 
-from trydecorate import decorator
+import multimethod
+from multimethod import MultiMethod
+from prop import prop
+
 @decorator
 def convertOther(F,self,other):
     A=numpy.array(other)
@@ -116,6 +119,7 @@ def convertOther(F,self,other):
 
     return F(self,other)
 
+@multimethod.sign
 class Mvar(Plane):
     """
     Multivariate normal distributions packaged to act like a vector 
@@ -377,58 +381,65 @@ class Mvar(Plane):
 
     
     ############ setters/getters -> properties
-    
-    cov = property(
-        fget=lambda self:self.vectors.H*numpy.diagflat(self.var)*self.vectors, 
-        fset=lambda self,cov:self.copy(
-            Mvar.fromCov(
+    @prop
+    class cov():
+        """
+        get or set the covariance matrix used by the object
+        
+        >>> assert A.cov==A.vectors.H*numpy.diagflat(A.var)*A.vectors
+        >>> assert abs(A).cov==A.scaled.H*A.scaled
+        """
+        def fget(self):
+            return self.vectors.H*numpy.diagflat(self.var)*self.vectors
+
+        def fset(self,cov):
+            new=Mvar.fromCov(
                 mean=self.mean,
                 cov=cov,
-        )),
-        doc="""
-            get or set the covariance matrix used by the object
-        
-            >>> assert A.cov==A.vectors.H*numpy.diagflat(A.var)*A.vectors
-            >>> assert abs(A).cov==A.scaled.H*A.scaled
-        """
-    )
+            )
+            self.copy(new)
+    
 
-    @property
-    def scaled(self):
+    @prop
+    class scaled():
         """
         get the vectors, scaled by the standard deviations. 
         Useful for transforming from unit-eigen-space, to data-space
 
         >>> assert A.vectors.H*A.scaled==A.transform()
         """
-        return Matrix(numpy.diagflat(sqrt(self.var)))*self.vectors
+        def fget(self):
+            return Matrix(numpy.diagflat(sqrt(self.var)))*self.vectors
         
     
-    @property
-    def flat(self):
+    @prop
+    class flat():
         """
         >>> assert bool(A.flat) == bool(A.vectors.shape[1] > A.vectors.shape[0]) 
         """
-        return max(self.vectors.shape[1] - self.vectors.shape[0],0)
+        def fget(self):
+            return max(self.vectors.shape[1] - self.vectors.shape[0],0)
 
-    @property
-    def ndim(self):
+    @prop
+    class ndim():
         """
         get the number of dimensions of the space the mvar exists in
         >>> assert A.ndim==A.mean.size
         """
-        return self.mean.size
+        def fget(self):
+            return self.mean.size
 
-    @property
-    def rank(self):
+    @prop
+    class rank():
         """
         get the number of dimensions of the space covered by the mvar
         >>> assert A.rank == A.var.size
         """
-        return self.mean.size
+        def fget(self):
+            return self.mean.size
     
-    @property
-    def shape(self):
+    @prop
+    class shape():
         """
         get the shape of the vectors,the first element is the number of 
         vectors, the second is their lengths: the number of dimensions of 
@@ -439,7 +450,8 @@ class Mvar(Plane):
         >>> assert A.shape[0]==A.rank
         >>> assert A.shape[1]==A.ndim
         """
-        return self.vectors.shape
+        def fget(self):
+            return self.vectors.shape
 
 
     def transform(self,power=1):
@@ -1348,7 +1360,8 @@ class Mvar(Plane):
     def __mul__(self,other):
         other=mulconvert(other)
 
-    @multimethod(None,None)
+    @convertOther
+    @MultiMethod
     def __mul__(self,other):        
         """
         self*other
@@ -1445,12 +1458,65 @@ class Mvar(Plane):
 
         assert Matrix((A**0.0).trace()) == A.shape[0]
         """
-        other=self._mulConvert(other)
-        return self.__mul__(self,other) 
-    @
+        return NotImplemented
+
+    @convertOther
+    @MultiMethod    
+    def __rmul__(self,other):
+        """
+        other*self
+        
+        multiplication order doesn't matter for constants
+        
+            >>> assert K1*A == A*K1
+        
+            but it matters a lot for Matrix/Mvar multiplication
+        
+            >>> assert isinstance(A*M,Mvar)
+            >>> assert isinstance(M.H*A,Matrix)
+        
+        be careful with right multiplying:
+            Because power must fit with multiplication
+        
+            it was designed to satisfy
+            >>> assert A*A==A**2
+        
+            The most obvious way to treat right multiplication by a matrix is 
+            to do exactly the same thing we're dong in Mvar*Mvar, which is 
+            convert the right Mvar to the square root of its covariance matrix
+            and continue normally,this yields a matrix, not an Mvar.
+            
+            this conversion is not applied when multiplied by a constant.
+        
+        martix*Mvar
+            >>> assert M.H*A==M.H*A.transform()
+
+        Mvar*constant==constant*Mvar
+            >>> assert A*K1 == K1*A
+        
+        A/?
+        
+        see __mul__ and __pow__
+        it would be immoral to overload power and multiply but not divide 
+            >>> m=M*M2.H
+            >>> assert A/B == A*(B**(-1))
+            >>> assert A/m == A*(m**(-1))
+            >>> assert A/K1 == A*(K1**(-1))
+
+        ?/A
+        
+        see __rmul__ and __pow__
+            >>> assert K1/A == K1*(A**(-1))
+            >>> assert M.H/A==M.H*(A**(-1))
+        """
+        return NotImplemented
+
+    
+    @__mul__.register(None)
+    @__rmul__.register(None)
     def _scalarMul(self,scalar):
         """
-        self*scalar
+        self*scalar, scalar*self
 
         >>> assert A*K1 == K1*A
 
@@ -1490,6 +1556,7 @@ class Mvar(Plane):
             square = not numpy.isreal(scalar),
         )
 
+    @__mul__.register(None,Matrix)
     def _matrixMul(self,matrix):
         """
         self*matrix
@@ -1516,6 +1583,12 @@ class Mvar(Plane):
             vectors=self.vectors*matrix,
         )
 
+    @__rmul__.register(None,Matrix)
+    def _rmatrixMul(self,matrix):
+        return matrix*self.transform()
+
+    @__mul__.register(None,None)
+    @__rmul__.register(None,None)
     def _mvarMul(self,mvar):
         """
         self*mvar
@@ -1539,87 +1612,6 @@ class Mvar(Plane):
         )
 
         return result/2
-
-    @staticmethod
-    def _mulConvert(
-        item,
-        helper=lambda item: Matrix(item) if item.ndim else item
-    ):
-        return (
-            item if 
-            isinstance(item,Mvar) else 
-            helper(numpy.array(item))
-        )
-
-    def __rmul__(
-        self,
-        other,
-    ):
-        """
-        other*self
-        
-        multiplication order doesn't matter for constants
-        
-            >>> assert K1*A == A*K1
-        
-            but it matters a qlot for Matrix/Mvar multiplication
-        
-            >>> assert isinstance(A*M,Mvar)
-            >>> assert isinstance(M.H*A,Matrix)
-        
-        be careful with right multiplying:
-            Because power must fit with multiplication
-        
-            it was designed to satisfy
-            >>> assert A*A==A**2
-        
-            The most obvious way to treat right multiplication by a matrix is 
-            to do exactly the same thing we're dong in Mvar*Mvar, which is 
-            convert the right Mvar to the square root of its covariance matrix
-            and continue normally,this yields a matrix, not an Mvar.
-            
-            this conversion is not applied when multiplied by a constant.
-        
-        martix*Mvar
-            >>> assert M.H*A==M.H*A.transform()
-
-        Mvar*constant==constant*Mvar
-            >>> assert A*K1 == K1*A
-        
-        A/?
-        
-        see __mul__ and __pow__
-        it would be immoral to overload power and multiply but not divide 
-            >>> m=M*M2.H
-            >>> assert A/B == A*(B**(-1))
-            >>> assert A/m == A*(m**(-1))
-            >>> assert A/K1 == A*(K1**(-1))
-
-        ?/A
-        
-        see __rmul__ and __pow__
-            >>> assert K1/A == K1*(A**(-1))
-            >>> assert M.H/A==M.H*(A**(-1))
-        """
-        (transform,other)= self._rmulConvert(other)
-        return self._rmultipliers[type(other)](transform,other)
-
-    def _rmulConvert(self,other,
-        helper=lambda self,other:(
-            self.transform() if other.ndim else self,
-            Matrix(other) if other.ndim else other,
-        )
-    ):
-        return helper(self,numpy.array(other))
-
-    _rmultipliers={
-        #if the left operand is a matrix, the mvar has been converted to
-        #to a matrix -> use matrix multiply
-        (Matrix):lambda self,other:other*self,
-        #if the left operand is a constant use scalar multiply
-        (numpy.ndarray):_scalarMul
-    }
-
 
     
     def __add__(self,other):
