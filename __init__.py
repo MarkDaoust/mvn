@@ -1,7 +1,6 @@
 #! /usr/bin/env python
 
-#todo: use array multiply for scale?
-#todo: clarify the difference between get methods and properties
+#todo: merge chain and  sensor.measure
 #todo: type handling- be more uniform, arrays work element wize, matrixes get converted to Mvars ?
 #todo: wiki: Complex Normal Distribution (I knew there was something underconstrained about these)
 #todo: Mvar.real & imag?,  
@@ -19,7 +18,7 @@
 #todo: implement a transpose,for the above 
 #todo: chi*2 distribution for the lengths (other distributions)
 #todo: see if div should mtlab like matlab backwards divide added
-#todo: impliment collectionss so that or '|'  is meaningful
+#todo: impliment collections so that '|' is meaningful
 #todo: cleanup my 'square' function (now that it is clear that it's an SVD)
 #todo: implement transpose and dot product, related to bilinear forms?
 #todo: split the class into two levels: "fast" and 'safe'? <- "if __debug__" ?
@@ -65,6 +64,7 @@ import itertools
 import collections 
 import copy
 import operator
+import types
 
 ## 3rd party
 import numpy
@@ -87,39 +87,157 @@ else:
     from mvncdf import mvstdnormcdf
 
 ## local
-#helpers
 import helpers
 from helpers import sqrt
 from square import square
 from matrix import Matrix
 
+from decorate import MultiMethod,underConstruction,prop,prepare
+
 #base class
 from plane import Plane
 
-#multimethod
-from decorator import decorator
+Mvar=underConstruction()
 
-import multimethod
-from multimethod import MultiMethod
-from prop import prop
-
-@decorator
-def convertOther(F,self,other):
+def format(other):
+    '''
+    take an arraylike object and return a Matrix, array, or the object 
+    (unmodified), depending on the dimensionality of the input 
+    '''
     A=numpy.array(other)
-    
-    if A.ndim == 0:
-        pass
-    elif A.ndim == 1:
-        other=A
-    elif A.ndim == 2:
+                 
+    if A.ndim == 2:
         other=numpy.asmatrix(A)
         other.__class__=Matrix
-    else:
-        other = A
+    elif A.ndim == 1:
+        other=A
+    
 
-    return F(self,other)
+    return other
 
-@multimethod.sign
+
+@prepare(lambda data:[format(data)])
+@MultiMethod
+def fromData(data,**kwargs):
+    """
+    optional arguments:
+        mean - array like, (1,ndim) 
+        weights - array like, (N,) 
+        bias - bool
+
+        anything else is passed through to from cov
+
+    >>> assert Mvar.fromData(A)==A 
+    
+    >>> data=[1,2,3]
+    >>> new=Mvar.fromData(data)
+    >>> assert new.mean == data
+    >>> assert Matrix(new.var) == Matrix.zeros
+    >>> assert new.vectors == Matrix.zeros
+    >>> assert new.cov == Matrix.zeros
+    
+    bias is passed to numpy's cov function.
+    
+    any kwargs are just passed on the Mvar constructor.
+    
+    this creates an Mvar with the same mean and covariance as the supplied 
+    data with each row being a sample and each column being a dimenson
+    
+    remember numpy's default covariance calculation divides by (n-1) not 
+    (n) set bias = false to use n-1,
+    """
+    return fromMatrix(Matrix(data),**kwargs)
+
+@fromData.register(Mvar)
+def fromMvar(data,mean=None):
+    if mean is None:
+        return data.copy(deep = True)
+
+    subVectors=data.vectors 
+    subWeights=data.var
+
+    vectors=data.mean-mean
+     
+    return Mvar(
+        mean = mean,
+        var = numpy.concatenate([[1],subWeights]),
+        vectors = numpy.concatenate([data,subVectors]),
+    )
+
+@fromData.register(numpy.ndarray)
+def fromArray(data,weights=None,mean=None,bias=True):
+    if data.dtype is not numpy.dtype('object'):
+        return fromMatrix(Matrix(data),weights=weights,mean=mean,bias=bias)
+
+    N=getN(data,weights)-(not bias)
+
+    ismvar=numpy.array([isinstance(vector,Mvar) for vector in data])    
+    mvars=data[ismvar]
+
+    data=numpy.array([
+        vector.mean if mvar else numpy.squeeze(vector)
+        for mvar,vector 
+        in zip(ismvar,data)
+    ])
+
+    mean=getMean(weights,data)
+    weights=getWeights(weights,data)
+    
+    subVectors=numpy.vstack([
+        mvar.vectors 
+        for mvar in mvars
+    ])
+
+    subWeights=numpy.concatenate([
+        w*mvar.var
+        for mvar in zip(weights[ismvar],mvars)
+    ])
+
+    vectors=data-mean
+
+    return Mvar(
+        mean = mean,
+        var = numpy.concatenate([weights,subWeights]),
+        vectors = numpy.concatenate([vectors,subVectors]),
+    )
+
+def getN(data,weights):
+    return (
+        data.shape[0] 
+        if weights is None 
+        else weights.sum()
+    )
+
+def getMean(weights,data):
+    return (
+        data.mean(0)
+        if weights is None
+        else numpy.mulyiply(weights[:,None],data).mean(0)
+    )
+
+def getWeights(weights,data):
+    return (
+        numpy.ones(data.shape[0])
+        if weights is None 
+        else weights
+    )
+
+
+@fromData.register(Matrix)
+def fromMatrix(data,weights=None,mean=None,bias=True,**kwargs):
+    N=getN(data,weights)-(not bias)
+    mean=getMean(weights,data) if mean is None else mean
+    weights=getWeights(weights,data)/N
+    data=data-mean
+
+    return Mvar(
+        mean=mean,
+        var=weights,
+        vectors=data,
+    )
+
+
+@MultiMethod.sign(Mvar)
 class Mvar(Plane):
     """
     Multivariate normal distributions packaged to act like a vector 
@@ -147,13 +265,15 @@ class Mvar(Plane):
         
     Properties:
         ndim: the number of dimensions of the space we're working in
-        cov : get or set the covariance matrix    
+        cov : get or set
+ the covariance matrix    
         scaled: get the vectors, scaled by one standard deviation (transforms from unit-eigen-space to data-space) 
       
     No work has been done to make things fast, because until they work at all 
     speed is not worth working on.  
     """
-    
+    fromData=staticmethod(fromData)    
+
     ############## Creation
     def __init__(self,
         vectors=Matrix.eye,
@@ -169,7 +289,7 @@ class Mvar(Plane):
         var: (variance) defaults to ones
         mean: defaults to zeros
         
-        >>> assert A.vectors.H*numpy.diagflat(A.var)*A.vectors == A.cov
+        >>> assert A.var*numpy.array(A.vectors.H)*A.vectors == A.cov
                 
         set 'square' to false if you know your vectors already form a unitary matrix. 
         set 'squeeze' to false if you don't want small variances, <1e-12, to  automatically removed
@@ -217,57 +337,7 @@ class Mvar(Plane):
             square=False,
             **kwargs
         )
-    
-    @staticmethod
-    def fromData(data,mean=None,weights=None, bias=True, **kwargs):
-        """
-        >>> assert Mvar.fromData(A)==A 
-        
-        >>> data=[1,2,3]
-        >>> new=Mvar.fromData(data)
-        >>> assert new.mean == data
-        >>> assert (new.var == numpy.zeros([0])).all()
-        >>> assert new.vectors == numpy.zeros([0,3])
-        >>> assert new.cov == numpy.zeros([3,3])
-        
-        bias is passed to numpy's cov function.
-        
-        any kwargs are just passed on the Mvar constructor.
-        
-        this creates an Mvar with the same mean and covariance as the supplied 
-        data with each row being a sample and each column being a dimenson
-        
-        remember numpy's default covariance calculation divides by (n-1) not 
-        (n) set bias = false to use n-1,
-        """
-        if isinstance(data,Mvar):
-            return data.copy()
-        
-        data=Matrix(data)
 
-        
-
-        #todo: implement this
-        assert data.dtype is not numpy.dtype('object'),'not iplementd for "dtype=object" yet'
-        
-        #get the number of samples, subtract 1 if un-biased
-        N=data.shape[0] if bias else data.shape[0]-1
-        
-        #get the mean of the data
-        if mean is None:
-            mean=numpy.mean(data,axis=0)
-
-        if weights is None:
-        
-            cov=(data.H*data)/N-mean.H*mean
-        
-            #create the mvar from the mean and covariance of the data
-            return Mvar.fromCov(
-                cov = cov,
-                mean= mean,
-                **kwargs
-            )
-    
     @staticmethod
     def zeros(n=1):
         """
@@ -386,11 +456,11 @@ class Mvar(Plane):
         """
         get or set the covariance matrix used by the object
         
-        >>> assert A.cov==A.vectors.H*numpy.diagflat(A.var)*A.vectors
+        >>> assert A.cov==A.var*numpy.array(A.vectors.H)*A.vectors
         >>> assert abs(A).cov==A.scaled.H*A.scaled
         """
         def fget(self):
-            return self.vectors.H*numpy.diagflat(self.var)*self.vectors
+            return self.var*numpy.array(self.vectors.H)*self.vectors
 
         def fset(self,cov):
             new=Mvar.fromCov(
@@ -409,7 +479,7 @@ class Mvar(Plane):
         >>> assert A.vectors.H*A.scaled==A.transform()
         """
         def fget(self):
-            return Matrix(numpy.diagflat(sqrt(self.var)))*self.vectors
+            return Matrix(sqrt(self.var[:,None])*numpy.array(self.vectors))
         
     
     @prop
@@ -492,11 +562,7 @@ class Mvar(Plane):
             varP=numpy.real_if_close(self.var[keep]**(power/2.0))
             vectors=self.vectors[keep,:]
 
-        return (
-            vectors.H*
-            numpy.diagflat(varP)*
-            vectors
-        )
+        return varP*numpy.array(vectors.H)*vectors
 
     def sign(self):
         return helpers.sign(self.var)
@@ -627,7 +693,7 @@ class Mvar(Plane):
         
         >>> assert Matrix([A[n].var[0] for n in range(A.ndim)]) == A.width()**2
 
-        >>> norm = A*Matrix(numpy.diagflat(A.width()**(-1)))
+        >>> norm = A/A.width()
         >>> corr = norm.cov
         >>> assert Matrix(corr.diagonal()) == Matrix.ones
         >>> assert Matrix([norm[n].var[0] for n in range(norm.ndim)]) == Matrix.ones
@@ -966,7 +1032,7 @@ class Mvar(Plane):
         OFvectors = other.vectors[Ofinite]
         OFvar = other.var[Ofinite]
 
-        cov=lambda vectors,var: vectors.H*numpy.diagflat(var)*vectors
+        cov=lambda vectors,var: var*numpy.array(vectors.H)*vectors
 
         #compare the finite and infinite covariances 
         return (
@@ -1045,15 +1111,13 @@ class Mvar(Plane):
             self=norm(0,self.var**0.5)
             return self.cdf(upper)-self.cdf(lower)
 
-        #maybe there should be a scale function for things like this.
         Iwidth=self.width()**-1
-        stretch=numpy.diagflat(Iwidth)
-
-        self = self*stretch
+        
+        self = self*Iwidth
         lower = lower*Iwidth
-        upper = upper*Iwidth        
+        upper = upper*Iwidth       
 
-        mvstdnormcdf(lower,upper,self.cov)
+        return mvstdnormcdf(lower,upper,self.cov)
         
     def __abs__(self):
         """
@@ -1360,7 +1424,7 @@ class Mvar(Plane):
     def __mul__(self,other):
         other=mulconvert(other)
 
-    @convertOther
+    @prepare(lambda self,other:(self,format(other)))
     @MultiMethod
     def __mul__(self,other):        
         """
@@ -1396,6 +1460,11 @@ class Mvar(Plane):
             This is different from multiplication by a scale matrix which gives
                 >>> assert (A*(K1*E)).mean == K1*A.mean
                 >>> assert (A*(K1*E)).cov == A.cov*abs(K1)**2
+
+            1d arrays in a multipliction are interpreted as the diagonal in 
+            a matrix multiply
+                >>> assert (A*(K1*E)).mean == (A*[K1]).mean
+                >>> assert (A*(K1*E)).cov == (A*[K1]).cov
 
             constants still commute:          
                 >>> assert K1*A*M == A*K1*M 
@@ -1460,7 +1529,7 @@ class Mvar(Plane):
         """
         return NotImplemented
 
-    @convertOther
+    @prepare(lambda self,other:(self,format(other)))
     @MultiMethod    
     def __rmul__(self,other):
         """
@@ -1512,8 +1581,8 @@ class Mvar(Plane):
         return NotImplemented
 
     
-    @__mul__.register(None)
-    @__rmul__.register(None)
+    @__mul__.register(Mvar)
+    @__rmul__.register(Mvar)
     def _scalarMul(self,scalar):
         """
         self*scalar, scalar*self
@@ -1556,7 +1625,7 @@ class Mvar(Plane):
             square = not numpy.isreal(scalar),
         )
 
-    @__mul__.register(None,Matrix)
+    @__mul__.register(Mvar,Matrix)
     def _matrixMul(self,matrix):
         """
         self*matrix
@@ -1568,11 +1637,11 @@ class Mvar(Plane):
             >>> assert A*E==A
             >>> assert (-A)*E==-A 
             
-            simple scale is like this:
-            >>> assert (A*(E*K1)).mean==A.mean*K1
-            >>> assert (A*(E*K1)).cov ==(E*K1).H*A.cov*(E*K1)
+            there is a shortcut for diagonal matrixes:
+            >>> assert A*(E*K1)== A*[K1]
+            >>> assert A*(numpy.diagflat(1/A.width())) == A/A.width()
             
-            or with a more general transform()
+            or with a more general transform
             >>> assert (A*M).cov==M.H*A.cov*M
             >>> assert (A*M).mean==A.mean*M
 
@@ -1583,12 +1652,12 @@ class Mvar(Plane):
             vectors=self.vectors*matrix,
         )
 
-    @__rmul__.register(None,Matrix)
+    @__rmul__.register(Mvar,Matrix)
     def _rmatrixMul(self,matrix):
         return matrix*self.transform()
 
-    @__mul__.register(None,None)
-    @__rmul__.register(None,None)
+    @__mul__.register(Mvar,Mvar)
+    @__rmul__.register(Mvar,Mvar)
     def _mvarMul(self,mvar):
         """
         self*mvar
@@ -1613,7 +1682,19 @@ class Mvar(Plane):
 
         return result/2
 
-    
+    @__mul__.register(Mvar,numpy.ndarray)
+    @__rmul__.register(Mvar,numpy.ndarray)
+    def __vectorMul__(self,vector):
+        assert (vector.ndim == 1), 'vector multiply, only accepts 1d arrays' 
+        assert (vector.size == 1 or  vector.size == self.ndim),'vector multiply, vector.size must match mvar.ndim'
+        
+        return Mvar(
+            mean=numpy.multiply(self.mean,vector),
+            vectors=numpy.multiply(self.vectors,vector),
+            var=self.var,
+        )
+            
+
     def __add__(self,other):
         """
         self+other
@@ -1654,6 +1735,11 @@ class Mvar(Plane):
             >>> assert (A+B*(-E)).mean == A.mean - B.mean
             >>> assert (A+B*(-E)).cov== A.cov + B.cov
 
+        use arraymultiply as a shortcut for and diagonal matrix multiply
+            >>> assert -1*A==-A
+            >>> assert -A != A*(-E)
+            >>> assert A*(-E) == [-1]*A
+
         __sub__ should also fit with __neg__, __add__, and scalar multiplication.
         
             >>> assert B+(-A) == B+(-1)*A == B-A
@@ -1684,7 +1770,7 @@ class Mvar(Plane):
     
     def info(self,data=None,base=numpy.e):
         """
-        >>> S=A.sample(1000)   
+        >>> S=A.sample(100)   
         ... assert Matrix(-numpy.log(A(S))) == A.info(S)
         """
         if data is None:
@@ -1858,7 +1944,7 @@ def givenVector(self,index,value):
     u=self.vectors[:,free]
     v=self.vectors[:,fixed]
 
-    uv = u.H*numpy.diagflat(self.var)*v
+    uv = self.var*numpy.array(u.H)*v
 
     result = Mu-(Mv-value)**-1*uv.H
 
