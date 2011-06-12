@@ -12,7 +12,7 @@ from matrix import Matrix
 def square(vectors,var=None,full=False):
     """
     calculates the eigen-vectors and eigen-values of the covariance matrix that 
-    would be produced by multiplying out vectors.H*numpy.diagflat(var)*vectors 
+    would be produced by multiplying out A.var*numpy.array(A.vectors.H)*A.vectors 
     without necessarily calculating the covariance matrix itself.
 
     It is also setup to handle vectors with infinite variances.
@@ -125,7 +125,7 @@ def _subSquare(vectors,var,full=False):
     )
 
     if shape[0]>=shape[1] or full or not vectors.any() or not numpy.isreal(var).all():
-        scaled=Matrix(numpy.diagflat(var))*vectors
+        scaled=Matrix(var[:,None]*numpy.array(vectors))
         
         cov=vectors.H*scaled
         (val,vec)=eig(cov)
@@ -138,7 +138,7 @@ def _subSquare(vectors,var,full=False):
         val=numpy.zeros(vec.shape[0])    
 
     else:
-        scaled=Matrix(numpy.diagflat(scipy.sqrt(var)))*vectors
+        scaled=Matrix(scipy.sqrt(var)[:,None]*numpy.array(vectors))
         Xcov=vectors*vectors.H
         if Xcov == Matrix.eye:
             return (var,vectors)

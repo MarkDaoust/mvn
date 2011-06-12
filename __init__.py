@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-#todo: merge chain and  sensor.measure
+#todo: merge chain and  sensor.measure??
 #todo: type handling- be more uniform, arrays work element wize, matrixes get converted to Mvars ?
 #todo: wiki: Complex Normal Distribution (I knew there was something underconstrained about these)
 #todo: Mvar.real & imag?,  
@@ -53,10 +53,10 @@ in the doc examples
 
 remember: circular logic works because circluar logic works.
     a lot of the examples are demonstrations of what the code is doing, or expected
-    invariants. they don't prove I'm right, but only that I'm being consistant
+    invariants. They don't prove I'm right, but only that I'm being consistant
  
 """
-
+__all__=["Mvar"]
 ############  imports
 
 ## builtins
@@ -109,16 +109,15 @@ def format(other):
     if A.ndim == 2:
         other=numpy.asmatrix(A)
         other.__class__=Matrix
-    elif A.ndim == 1:
+    elif A.ndim != 0:
         other=A
     
-
     return other
 
 
-@prepare(lambda data:[format(data)])
+@prepare(lambda data,mean:[format(data),format(mean)])
 @MultiMethod
-def fromData(data,**kwargs):
+def fromData(data,mean=None,**kwargs):
     """
     optional arguments:
         mean - array like, (1,ndim) 
@@ -148,24 +147,54 @@ def fromData(data,**kwargs):
     """
     return fromMatrix(Matrix(data),**kwargs)
 
+@fromData.register(Mvar,type(None))
+def fromMvar(self,mean=None):
+        """
+        >>> assert fromData(A)==A
+        """
+        return self.copy(deep = True)
+
 @fromData.register(Mvar)
-def fromMvar(data,mean=None):
-    if mean is None:
-        return data.copy(deep = True)
+def fromMvarOffset(self,mean=Matrix.zeros):
+    """
+    think paralell axis theorem
+    
+    >>> a=A[0]
+    >>> assert fromData(a,mean=0).mean == Matrix.zeros
+    >>> assert fromData(a,mean=0).cov == a.cov+a.mean.H*a.mean
 
-    subVectors=data.vectors 
-    subWeights=data.var
+    >>> assert fromData(A,mean=[0,0,0]).mean == Matrix.zeros
+    >>> assert fromData(A,mean=[0,0,0]).cov == A.cov+A.mean.H*A.mean
 
-    vectors=data.mean-mean
+    >>> assert fromData(A,mean=[[0,0,0]]).mean == Matrix.zeros
+    >>> assert fromData(A,mean=[[0,0,0]]).cov == A.cov+A.mean.H*A.mean
+
+    >>> assert fromData(A,mean=Matrix.zeros).mean == Matrix.zeros
+    >>> assert fromData(A,mean=Matrix.zeros).cov == A.cov+A.mean.H*A.mean
+    """
+    if callable(mean):
+        mean=mean(self.ndim)
+
+    delta=(self-mean)
+
+    vectors = delta.mean
+
+    subVectors=delta.vectors 
+    subWeights=delta.var
      
     return Mvar(
         mean = mean,
         var = numpy.concatenate([[1],subWeights]),
-        vectors = numpy.concatenate([data,subVectors]),
+        vectors = numpy.concatenate([vectors,subVectors]),
     )
 
 @fromData.register(numpy.ndarray)
-def fromArray(data,weights=None,mean=None,bias=True):
+def fromArray(data,mean=None,weights=None,bias=True):
+    """
+    >>> assert Mvar.fromData([A,B],Matrix.zeros) == (
+    ...     Mvar.fromData(A,Matrix.zeros)+Mvar.fromData(B,Matrix.zeros)
+    ... )
+    """
     if data.dtype is not numpy.dtype('object'):
         return fromMatrix(Matrix(data),weights=weights,mean=mean,bias=bias)
 
@@ -175,12 +204,16 @@ def fromArray(data,weights=None,mean=None,bias=True):
     mvars=data[ismvar]
 
     data=numpy.array([
-        vector.mean if mvar else numpy.squeeze(vector)
+        numpy.squeeze(vector.mean if mvar else vector)
         for mvar,vector 
         in zip(ismvar,data)
     ])
 
-    mean=getMean(weights,data)
+    if mean is None:
+        mean = getMean(weights,data)
+    elif callable(mean):
+        mean = mean(mvars[0].ndim)
+
     weights=getWeights(weights,data)
     
     subVectors=numpy.vstack([
@@ -190,7 +223,7 @@ def fromArray(data,weights=None,mean=None,bias=True):
 
     subWeights=numpy.concatenate([
         w*mvar.var
-        for mvar in zip(weights[ismvar],mvars)
+        for w,mvar in zip(weights[ismvar],mvars)
     ])
 
     vectors=data-mean
@@ -224,7 +257,7 @@ def getWeights(weights,data):
 
 
 @fromData.register(Matrix)
-def fromMatrix(data,weights=None,mean=None,bias=True,**kwargs):
+def fromMatrix(data,mean=None,weights=None,bias=True,**kwargs):
     N=getN(data,weights)-(not bias)
     mean=getMean(weights,data) if mean is None else mean
     weights=getWeights(weights,data)/N
@@ -1758,7 +1791,7 @@ class Mvar(Plane):
         )
         
     ################# Non-Math python internals
-    def __call__(self,data):
+    def density(self,locations):
         """
         self(locations)
 
@@ -1766,7 +1799,7 @@ class Mvar(Plane):
         The vectors should be aligned onto the last dimension
         That last dimension is squeezed out during the calculation
         """
-        return numpy.exp(-self.info(data)) 
+        return numpy.exp(-self.info(locations)) 
     
     def info(self,data=None,base=numpy.e):
         """
