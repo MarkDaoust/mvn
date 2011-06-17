@@ -57,6 +57,7 @@ remember: circular logic works because circluar logic works.
  
 """
 __all__=["Mvar"]
+
 ############  imports
 
 ## builtins
@@ -298,8 +299,7 @@ class Mvar(Plane):
         
     Properties:
         ndim: the number of dimensions of the space we're working in
-        cov : get or set
- the covariance matrix    
+        cov : get or set the covariance matrix    
         scaled: get the vectors, scaled by one standard deviation (transforms from unit-eigen-space to data-space) 
       
     No work has been done to make things fast, because until they work at all 
@@ -788,6 +788,7 @@ class Mvar(Plane):
             )
         )
     
+    #todo: merge with sensor.measure
     def chain(self,sensor=None,transform=None):
         """
         given a distribution of actual values and an Mvar to act as a sensor 
@@ -825,9 +826,7 @@ class Mvar(Plane):
         >>> assert a.chain(transform=M) == Mvar.fromData(dataA*numpy.hstack([E,M]))
         >>> assert a.chain(transform=M) == Mvar.fromData(numpy.hstack([dataA,dataA*M]))
         
-
         >>> assert a.chain(B*M,M) == a.chain(transform=M)+Mvar.stack(Mvar.zeros(a.ndim),B*M)
-
 
         reference: andrew moore/data mining/gaussians
         """
@@ -1453,10 +1452,6 @@ class Mvar(Plane):
             square=False#bool(numpy.imag(power)),
         )
 
-    
-    def __mul__(self,other):
-        other=mulconvert(other)
-
     @prepare(lambda self,other:(self,format(other)))
     @MultiMethod
     def __mul__(self,other):        
@@ -1858,8 +1853,6 @@ class Mvar(Plane):
         return baseE/numpy.log(base)
 
 
-
-
     def __repr__(self):
         """
         print self
@@ -1926,12 +1919,6 @@ class Mvar(Plane):
             #while transmitting any kwargs.
             **kwargs
         )
-
-Mvar._multipliers={
-    Mvar:Mvar._mvarMul,
-    Matrix:Mvar._matrixMul,
-    numpy.ndarray:Mvar._scalarMul
-}
 
 ## extras    
 
@@ -2009,8 +1996,6 @@ def mooreChain(self,sensor,transform=None):
 
         the, optional, transform parameter describes how to transform from actual
         space to sensor space
-        
-       
         """
 
         if transform is None:
