@@ -7,7 +7,7 @@ import re
 
 import helpers            
 
-from trydecorate import decorator
+from decorator import decorator
 
 @decorator
 def expandCallable(fun,self,other):

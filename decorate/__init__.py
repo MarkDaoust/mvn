@@ -7,6 +7,10 @@ import itertools
 import collections
 
 from decorator import decorator
+from automath import automath
+from copyable import copyable
+from inplace import inplace
+from right import right
 
 def curry(fun,*args):
     """

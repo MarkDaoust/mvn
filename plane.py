@@ -2,15 +2,13 @@
 
 import numpy
 
-from automath import automath
-from right import right
-from inplace import inplace
+import decorate
 
 from matrix import Matrix 
 
-@right
-@inplace
-@automath
+@decorate.right
+@decorate.inplace
+@decorate.automath
 class Plane(object):
     """
     plane class, meant to (eventually) factor out some code, and utility from the Mvar class
