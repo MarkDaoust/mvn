@@ -56,36 +56,10 @@ remember: circular logic works because circluar logic works.
     invariants. They don't prove I'm right, but only that I'm being consistant
  
 """
-__all__=["Mvar"]
-
 ############  imports
-
-## builtins
-import itertools
-import collections 
-import copy
-import operator
-import types
 
 ## 3rd party
 import numpy
-
-## optional
-try:
-    from matplotlib.patches import Ellipse
-except ImportError,message:
-    def Ellipse(*args,**kwargs):
-        raise ImportError(message)
-
-try: 
-    from scipy.stats.mvn import mvndst
-    from scipy.stats import norm
-    del(mvndst)
-except ImportError,message:
-    def mvstdnormcdf(*args,**kwargs):
-        raise ImportError(message)
-else:
-    from mvncdf import mvstdnormcdf
 
 ## local
 import helpers
@@ -93,31 +67,33 @@ from helpers import sqrt
 from square import square
 from matrix import Matrix
 
-from decorate import MultiMethod,underConstruction,prop,prepare
+#decorations
+import decorate
 
 #base class
 from plane import Plane
 
-Mvar=underConstruction()
 
-def format(other):
+Mvar=decorate.underConstruction()
+
+def format(something):
     '''
     take an arraylike object and return a Matrix, array, or the object 
     (unmodified), depending on the dimensionality of the input 
     '''
-    A=numpy.array(other)
+    A=numpy.array(something)
                  
     if A.ndim == 2:
-        other=numpy.asmatrix(A)
-        other.__class__=Matrix
+        something=numpy.asmatrix(A)
+        something.__class__=Matrix
     elif A.ndim != 0:
-        other=A
+        something=A
     
-    return other
+    return something
 
 
-@prepare(lambda data,mean:[format(data),format(mean)])
-@MultiMethod
+@decorate.prepare(lambda data,mean:[format(data),format(mean)])
+@decorate.MultiMethod
 def fromData(data,mean=None,**kwargs):
     """
     optional arguments:
@@ -150,10 +126,10 @@ def fromData(data,mean=None,**kwargs):
 
 @fromData.register(Mvar,type(None))
 def fromMvar(self,mean=None):
-        """
-        >>> assert fromData(A)==A
-        """
-        return self.copy(deep = True)
+    """
+    >>> assert fromData(A)==A
+    """
+    return self.copy(deep = True)
 
 @fromData.register(Mvar)
 def fromMvarOffset(self,mean=Matrix.zeros):
@@ -163,12 +139,6 @@ def fromMvarOffset(self,mean=Matrix.zeros):
     >>> a=A[0]
     >>> assert fromData(a,mean=0).mean == Matrix.zeros
     >>> assert fromData(a,mean=0).cov == a.cov+a.mean.H*a.mean
-
-    >>> assert fromData(A,mean=[0,0,0]).mean == Matrix.zeros
-    >>> assert fromData(A,mean=[0,0,0]).cov == A.cov+A.mean.H*A.mean
-
-    >>> assert fromData(A,mean=[[0,0,0]]).mean == Matrix.zeros
-    >>> assert fromData(A,mean=[[0,0,0]]).cov == A.cov+A.mean.H*A.mean
 
     >>> assert fromData(A,mean=Matrix.zeros).mean == Matrix.zeros
     >>> assert fromData(A,mean=Matrix.zeros).cov == A.cov+A.mean.H*A.mean
@@ -192,14 +162,26 @@ def fromMvarOffset(self,mean=Matrix.zeros):
 @fromData.register(numpy.ndarray)
 def fromArray(data,mean=None,weights=None,bias=True):
     """
-    >>> assert Mvar.fromData([A,B],Matrix.zeros) == (
-    ...     Mvar.fromData(A,Matrix.zeros)+Mvar.fromData(B,Matrix.zeros)
-    ... )
+    >>> data1 = numpy.random.randn(100,2)+5*numpy.random.randn(1,2)
+    >>> data2 = numpy.random.randn(100,2)+5*numpy.random.randn(1,2)
+    >>>
+    >>> mvar1 = Mvar.fromData(data1)
+    >>> mvar2 = Mvar.fromData(data2)
+    >>>
+    >>> assert Mvar.fromData([mvar1,mvar2]) == Mvar.fromData(numpy.vstack([data1,data2]))
+
+    >>> N1=1000
+    >>> N2=10
+    >>> data1 = numpy.random.randn(N1,2)+5*numpy.random.randn(1,2)
+    >>> data2 = numpy.random.randn(N2,2)+5*numpy.random.randn(1,2)
+    >>>
+    >>> mvar1 = Mvar.fromData(data1)
+    >>> mvar2 = Mvar.fromData(data2)
+    >>>
+    >>> assert Mvar.fromData([mvar1,mvar2],weights=[N1,N2]) == Mvar.fromData(numpy.vstack([data1,data2]))
     """
     if data.dtype is not numpy.dtype('object'):
         return fromMatrix(Matrix(data),weights=weights,mean=mean,bias=bias)
-
-    N=getN(data,weights)-(not bias)
 
     ismvar=numpy.array([isinstance(vector,Mvar) for vector in data])    
     mvars=data[ismvar]
@@ -210,13 +192,10 @@ def fromArray(data,mean=None,weights=None,bias=True):
         in zip(ismvar,data)
     ])
 
-    if mean is None:
-        mean = getMean(weights,data)
-    elif callable(mean):
-        mean = mean(mvars[0].ndim)
+    N=getN(data,weights)-(not bias)
+    weights=getWeights(weights,data,N)
+    mean = getMean(data,mean,weights)
 
-    weights=getWeights(weights,data)
-    
     subVectors=numpy.vstack([
         mvar.vectors 
         for mvar in mvars
@@ -227,7 +206,7 @@ def fromArray(data,mean=None,weights=None,bias=True):
         for w,mvar in zip(weights[ismvar],mvars)
     ])
 
-    vectors=data-mean
+    vectors=data-numpy.array(mean)
 
     return Mvar(
         mean = mean,
@@ -239,39 +218,55 @@ def getN(data,weights):
     return (
         data.shape[0] 
         if weights is None 
-        else weights.sum()
+        else numpy.sum(weights)
     )
 
-def getMean(weights,data):
-    return (
-        data.mean(0)
-        if weights is None
-        else numpy.mulyiply(weights[:,None],data).mean(0)
-    )
 
-def getWeights(weights,data):
+def getWeights(weights,data,N):
     return (
         numpy.ones(data.shape[0])
         if weights is None 
-        else weights
-    )
+        else numpy.array(weights)
+    )/float(N)
+
+def getMean(data,mean,weights):
+    if mean is None:
+        mean = numpy.multiply(weights[:,None],data).sum(0)
+    elif callable(mean):
+        mean = mean(data.shape[1])
+
+    mean = numpy.asmatrix(mean)
+
+    return mean
+
 
 
 @fromData.register(Matrix)
 def fromMatrix(data,mean=None,weights=None,bias=True,**kwargs):
-    N=getN(data,weights)-(not bias)
-    mean=getMean(weights,data) if mean is None else mean
-    weights=getWeights(weights,data)/N
-    data=data-mean
+    """
+    >>> D=Mvar.fromData([[0],[2]])
+    >>> assert D.mean == 1
+    >>> assert D.var == 1
+
+    >>> D=Mvar.fromData([[0],[2]],mean=[0])
+    >>> assert D.mean == 0
+    >>> assert D.var == 2
+
+    """
+    N = getN(data,weights)-(not bias)
+    weights = getWeights(weights,data,N)
+    mean = getMean(data,mean,weights)
+
+    vectors=data-mean
 
     return Mvar(
         mean=mean,
         var=weights,
-        vectors=data,
+        vectors=vectors,
     )
 
 
-@MultiMethod.sign(Mvar)
+@decorate.MultiMethod.sign(Mvar)
 class Mvar(Plane):
     """
     Multivariate normal distributions packaged to act like a vector 
@@ -302,8 +297,7 @@ class Mvar(Plane):
         cov : get or set the covariance matrix    
         scaled: get the vectors, scaled by one standard deviation (transforms from unit-eigen-space to data-space) 
       
-    No work has been done to make things fast, because until they work at all 
-    speed is not worth working on.  
+    No work has been done to make things fast, because there is no point until they work at all 
     """
     fromData=staticmethod(fromData)    
 
@@ -484,7 +478,7 @@ class Mvar(Plane):
 
     
     ############ setters/getters -> properties
-    @prop
+    @decorate.prop
     class cov():
         """
         get or set the covariance matrix used by the object
@@ -503,7 +497,7 @@ class Mvar(Plane):
             self.copy(new)
     
 
-    @prop
+    @decorate.prop
     class scaled():
         """
         get the vectors, scaled by the standard deviations. 
@@ -515,7 +509,7 @@ class Mvar(Plane):
             return Matrix(sqrt(self.var[:,None])*numpy.array(self.vectors))
         
     
-    @prop
+    @decorate.prop
     class flat():
         """
         >>> assert bool(A.flat) == bool(A.vectors.shape[1] > A.vectors.shape[0]) 
@@ -523,7 +517,7 @@ class Mvar(Plane):
         def fget(self):
             return max(self.vectors.shape[1] - self.vectors.shape[0],0)
 
-    @prop
+    @decorate.prop
     class ndim():
         """
         get the number of dimensions of the space the mvar exists in
@@ -532,7 +526,7 @@ class Mvar(Plane):
         def fget(self):
             return self.mean.size
 
-    @prop
+    @decorate.prop
     class rank():
         """
         get the number of dimensions of the space covered by the mvar
@@ -541,7 +535,7 @@ class Mvar(Plane):
         def fget(self):
             return self.mean.size
     
-    @prop
+    @decorate.prop
     class shape():
         """
         get the shape of the vectors,the first element is the number of 
@@ -1149,7 +1143,14 @@ class Mvar(Plane):
         lower = lower*Iwidth
         upper = upper*Iwidth       
 
-        return mvstdnormcdf(lower,upper,self.cov)
+        
+        try: 
+            mvs = mvstdnormcdf
+        except NameError:
+            from mvncdf import mvstdnormcdf as mvs
+            globals().update({'mvstdnormcdf':mvs})
+
+        return mvs(lower,upper,self.cov)
         
     def __abs__(self):
         """
@@ -1277,6 +1278,7 @@ class Mvar(Plane):
         ...     assert A & B == 1/(1/A+1/B)
 
         >>> if not (A.flat or B.flat or C.flat):
+        ...     import operator
         ...     abc=numpy.random.permutation([A,B,C])
         ...     assert A & B & C == helpers.paralell(*abc)
         ...     assert A & B & C == reduce(operator.and_ ,abc)
@@ -1452,8 +1454,8 @@ class Mvar(Plane):
             square=False#bool(numpy.imag(power)),
         )
 
-    @prepare(lambda self,other:(self,format(other)))
-    @MultiMethod
+    @decorate.prepare(lambda self,other:(self,format(other)))
+    @decorate.MultiMethod
     def __mul__(self,other):        
         """
         self*other
@@ -1557,8 +1559,8 @@ class Mvar(Plane):
         """
         return NotImplemented
 
-    @prepare(lambda self,other:(self,format(other)))
-    @MultiMethod    
+    @decorate.prepare(lambda self,other:(self,format(other)))
+    @decorate.MultiMethod    
     def __rmul__(self,other):
         """
         other*self
@@ -1629,6 +1631,7 @@ class Mvar(Plane):
             >>> assert (A+A).mean==(2*A).mean
             >>> assert (A+A).mean==2*A.mean
             
+            >>> import itertools
             >>> assert sum(itertools.repeat(A,N-1),A) == A*(N) or N<=0
 
             after that the only things you're really guranteed here are:
@@ -1908,8 +1911,14 @@ class Mvar(Plane):
 
         width,height=2*wh
 
+        try:
+            E=Ellipse
+        except NameError:
+            from matplotlib.patches import Ellipse as E
+            globals().update({'Ellipse':E})
+
         #return an Ellipse patch
-        return Ellipse(
+        return E(
             #with the Mvar's mean at the centre 
             xy=tuple(self.mean.flatten()),
             #matching width and height
@@ -1919,6 +1928,7 @@ class Mvar(Plane):
             #while transmitting any kwargs.
             **kwargs
         )
+
 
 ## extras    
 
@@ -2026,21 +2036,21 @@ def binindex(index,numel):
 
     return binindex
 
-        
 
-if __name__=='__main__':    
+
+if __name__ == '__main__':
     #overwrite everything we just created with the copy that was 
     #created when we imported mvar; there can only be one.
     #from testObjects import *
-    A=Mvar.fromCov([[2,1j],[1j,2]],mean=[1j,1j])
-    
-    mooreGiven(A,index=0,value=1)==A.given(index=0,value=1)
-    mooreGiven(A,index=0,value=1j)==A.given(index=0,value=1j)
 
-    L1=Mvar(mean=[0,0],vectors=[[1,1],[1,-1]], var=[numpy.inf,0.5])
-    L2=Mvar(mean=[1,0],vectors=[0,1],var=numpy.inf) 
-    assert ( L1.given(index=0,value=1) == L1&L2 )
-    self.assertTrue( (L1&L2).mean==[1,1] )
-    self.assertTrue( (L1&L2).cov==[[0,0],[0,2]] )
-
+    N1=1000
+    N2=10
+    data1 = numpy.random.randn(N1,2)+5*numpy.random.randn(1,2)
+    data2 = numpy.random.randn(N2,2)+5*numpy.random.randn(1,2)
     
+    A = Mvar.fromData(data1)
+    B = Mvar.fromData(data2)
+
+    print Mvar.fromData([A,B],Matrix.zeros) 
+    print Mvar.fromData(A,Matrix.zeros)+Mvar.fromData(B,Matrix.zeros)
+

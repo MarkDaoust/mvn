@@ -8,7 +8,11 @@ from __init__ import Mvar
 from matrix import Matrix
 import helpers
 
-pickleName='testObjects.pkl'
+import os
+
+(dir,_) = os.path.split(os.path.abspath(__file__))
+
+pickleName=os.path.join(dir,'testObjects.pkl')
 
 def makeObjects(dtype=None,flat=None,ndim=None,seed=None):
     rand=numpy.random.rand
