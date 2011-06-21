@@ -73,7 +73,6 @@ import decorate
 #base class
 from plane import Plane
 
-
 Mvar=decorate.underConstruction()
 
 def format(something):
@@ -410,8 +409,8 @@ class Mvar(Plane):
     ##### 'cosmetic' manipulations
     def inflate(self):
         """
-        add the zero length direction vectors so no information is lost during 
-        rotations
+        add the zero length direction vectors so no information is lost when using 
+        the vectors parameter
 
         >>> if A.shape[0] == A.shape[1]:
         ...     assert A*A.vectors.H*A.vectors==A
@@ -431,15 +430,14 @@ class Mvar(Plane):
         if missing == 0:
             return result
         elif missing<0:
-            return result.square()
+            result = result.square()
 
-
-        result.var = numpy.concatenate([result.var,numpy.zeros(missing)])
-        
         result.vectors = numpy.vstack(
             [self.vectors,numpy.zeros((missing,shape[1]))]
         )
 
+        result.var = numpy.concatenate([result.var,numpy.zeros(missing)])
+        
         result = result.square()
 
         zeros=helpers.approx(result.var)
@@ -534,22 +532,6 @@ class Mvar(Plane):
         """
         def fget(self):
             return self.mean.size
-    
-    @decorate.prop
-    class shape():
-        """
-        get the shape of the vectors,the first element is the number of 
-        vectors, the second is their lengths: the number of dimensions of 
-        the space they are embedded in
-            
-        >>> assert A.vectors.shape == A.shape
-        >>> assert (A.var.size,A.mean.size)==A.shape
-        >>> assert A.shape[0]==A.rank
-        >>> assert A.shape[1]==A.ndim
-        """
-        def fget(self):
-            return self.vectors.shape
-
 
     def transform(self,power=1):
         """
@@ -1861,10 +1843,13 @@ class Mvar(Plane):
         print self
         """
         return '\n'.join([
-            'Mvar(',
-            '    mean=',8*' '+self.mean.__repr__().replace('\n','\n'+8*' ')+',',
-            '    var=',8*' '+self.var.__repr__().replace('\n','\n'+8*' ')+',',
-            '    vectors=',8*' '+self.vectors.__repr__().replace('\n','\n'+8*' ')+',',
+            '%s(' % self.__class__.name,
+            '    mean=',
+            '        %s,' % self.mean.__repr__().replace('\n','\n'+8*' '),
+            '    var='
+            '        %s,' % self.var.__repr__().replace('\n','\n'+8*' '),
+            '    vectors='
+            '        %s' % self.vectors.__repr__().replace('\n','\n'+8*' '),
             ')',
         ])
         
