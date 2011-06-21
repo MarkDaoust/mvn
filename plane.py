@@ -2,9 +2,10 @@
 
 import numpy
 
+import helpers
 import decorate
-
 from matrix import Matrix 
+from square import square
 
 @decorate.right
 @decorate.inplace
@@ -20,60 +21,85 @@ class Plane(object):
     ):
         mean= mean if callable(mean) else numpy.array(mean).flatten()[None,:]
         vectors= vectors if callable(vectors) else Matrix(vectors)
-        
+
         stack=Matrix(helpers.autostack([
             [vectors],
             [mean   ],
         ]))
         
         #unpack the stack into the object's parameters
-        self.mean = numpy.real_if_close(stack[-1,1:])
-        self.vectors = numpy.real_if_close(stack[:-1,1:])
+        self.mean = numpy.real_if_close(stack[-1])
+        self.vectors = numpy.real_if_close(stack[:-1])
 
-def __and__(self,other):
+    def __repr__(self):
+        """
+        print self
+        """
+        return '\n'.join([
+            '%s(' % self.__class__.__name__,
+            '    mean=',
+            '        %s,' % self.mean.__repr__().replace('\n','\n'+8*' '),
+            '    vectors=',
+            '        %s' % self.vectors.__repr__().replace('\n','\n'+8*' '),
+            ')',
+        ])
+
+    __str__ = __repr__
+
+    @decorate.prop
+    class shape():
+        """
+        get the shape of the vectors,the first element is the number of 
+        vectors, the second is their lengths: the number of dimensions of 
+        the space they are embedded in
+            
+        >>> assert A.vectors.shape == A.shape
+        >>> assert (A.var.size,A.mean.size)==A.shape
+        >>> assert A.shape[0]==A.rank
+        >>> assert A.shape[1]==A.ndim
+        """
+        def fget(self):
+            return self.vectors.shape
+
+    def __pow__(self,other):
+        assert other==-1
+        return ~self
+
+    def __invert__(self):
+        """
+        switch between vectors along the plane and vectors across the plane
+        
+        """
+        shape=self.shape        
+
+        result = self.copy()
+
+        missing = shape[1]-shape[0]
+
+        result.vectors = numpy.vstack(
+            [self.vectors,numpy.zeros((missing,shape[1]))]
+        )
+
+        var,vectors = square(result.vectors)
+
+        zeros=helpers.approx(var)
+
+        result.vectors = vectors[zeros]
+
+        return result
+
+    def __add__(self,other):
+        return Plane(
+            mean=self.mean+other.mean,
+            vectors=numpy.vstack([self.vectors,other.vectors])
+        )
+
+    def square(self):
+        pass
+
+    def __and__(self,other):
         """
         plane intersection
         """
-        assert 1==0, "this is just copied from mvar"
-
-        #check if they both fill the space
-        if (
-            self.mean.size == (self.var!=0).sum() and 
-            other.mean.size == (other.var!=0).sum()
-        ):
-            #then this is a standard paralell operation
-            return (self**(-1)+other**(-1))**(-1) 
-        
-        #otherwise there is more work to do
-        
-        #inflate each object
-        self=self.inflate()
-        other=other.inflate()
-        #collect the null vectors
-        Nself=self.vectors[self.var==0,:]
-        Nother=other.vectors[other.var==0,:] 
-
-        #and stack them
-        null=numpy.vstack([
-            Nself,
-            Nother,
-        ])
-
-        #get length of the component of the means along each null vector
-        r=numpy.hstack([self.mean*Nself.H,other.mean*Nother.H])
-
-        #square up the null vectors
-        (s,v,d)=numpy.linalg.svd(null,full_matrices=False)
-
-        #discard any very small components
-        nonZero = ~helpers.approx(v**2)
-        s=s[:,nonZero]
-        v=v[nonZero]
-        d=d[nonZero,:]
-        
-        #calculate the mean component in the direction of the new null vectors
-        Dmean=r*s*numpy.diagflat(v**-1)*d
-        
-        #do the blending, while compensating for the mean of the working plane
-        return ((self-Dmean)**-1+(other-Dmean)**-1)**-1+Dmean
+        return (self**(-1)+other**(-1))**(-1) 
 
