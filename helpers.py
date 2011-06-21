@@ -1,5 +1,6 @@
 import itertools
 import copy
+import operator
 
 import numpy
 
@@ -121,65 +122,52 @@ def autostack(rows,default=0):
             [ 1.,  0.,  0.,  1.],
             [ 0.,  1.,  0.,  1.]])
     """
-    
-    #convert the data items into an object array 
-    data = numpy.array( 
-        [   #it's strange that I have to chain on these zeros to have the 
-            #to get numpy to unpack 1 element lists into the array 
-            list(itertools.chain([0],row)) 
-            for row in rows
-        ],
-        dtype = object
-    )[:,1:]
-    
-    #store the shape ofthe data
+    #first make sure everything is a 2 dimensional array
+    data = [
+        [[numpy.array(item,ndmin=2),callable(item)] for item in row]
+        for row in rows      
+    ]
+
+    #make a 2d numpy array out of the data blocks
+    data = numpy.array([
+        list(itertools.chain([[None,None]],row)) 
+        for row in data
+    ],dtype = object
+    )[:,1:,:]
+
+    rows = data[...,0]
+    calls = numpy.asarray(data[...,1],dtype = bool)
+
+    #store the shape of the data
     shape=data.shape
-
-    #and the type of the first numpy thing
-    types=[type(item) for item in data.flatten() if isinstance(item,numpy.ndarray)]
-    
-    #make a matrix of the callable status of each item
-    calls=numpy.array([callable(item) for item in data.flatten()]).reshape(shape)
-
-    #convert all the non-callable elements to matrixes
-    data=numpy.array([
-        item if call else numpy.matrix(item) 
-        for call,item in zip(calls.flat,data.flat)
-    ],dtype=object).reshape(shape)
 
     #if anything is callable
     if calls.any():
         #make an array of shapes
-        shapes = numpy.array([
-            (-numpy.inf,-numpy.inf) if call else item.shape 
-            for call,item in zip(calls.flatten(),data.flatten())
-        ]).reshape(shape+(2,))
-        
-        #the first sheet is the heights
-        heights=shapes[...,0]
-        #the second is the widths
-        widths=shapes[...,1]
-        
-        #the heights should be the same along each row
-        #except for the -inf's that  we have for the callables
+
+        [heights,widths] = numpy.vectorize(lambda item:item.shape)(rows)
+
+        heights[calls]= -1
+        widths[calls]= -1
+
         maxheight=heights.max(1)
         maxwidth=widths.max(0)
         
-        #replace the -inf's with the default value
-        maxheight[maxheight==-numpy.inf] = default
-        maxwidth[maxwidth==-numpy.inf] = default
-        
+        #replace the -1 with the default value
+        maxheight[maxheight==-1] = default
+        maxwidth[maxwidth==-1] = default
+
         for (down,right) in numpy.argwhere(calls):
             #call the callable with (height,width) as the only argument
             #and drop it into the data slot,
-            data[down,right] = numpy.matrix(data[down,right](
+            rows[down,right] = numpy.matrix(rows[down,right][0,0](
                 (maxheight[down],maxwidth[right])
             ))
         
     #do the stacking    
     return numpy.vstack([
         numpy.hstack(row) 
-        for row in data
+        for row in rows
     ])
 
 
