@@ -540,11 +540,15 @@ class inversionTester(myTests):
 
     def testParadoxes(self):
         self.assertTrue( (self.A & ~self.A) == Mvar(mean=self.A.mean, vectors=self.A.vectors, var=Matrix.infs) )
+        self.assertTrue( (self.A & ~self.A)*self.A.vectors.H == Mvar.infs )
+
         self.assertTrue(  self.A &(self.B & ~self.B) == self.A & Mvar(mean=self.B.mean, vectors=self.B.vectors, var=Matrix.infs) )
+
+        if not self.B.flat:        
+            self.assertTrue( self.A == self.A & (self.B & ~self.B) )
+        
         self.assertTrue( (self.A&~self.B) & self.B == (self.A&self.B) & ~self.B )
 
-        self.assertTrue( (self.A & ~self.A) == Mvar(mean=numpy.zeros(self.A.ndim))**-1 )
-        self.assertTrue( self.A == self.A & (self.B & ~self.B) )
         self.assertTrue( (self.A&self.B) & ~self.B == self.A & (self.B&~self.B) )
 
         self.assertTrue( not numpy.isfinite((self.A & ~self.A).var).any() )

@@ -14,6 +14,47 @@ import os
 
 pickleName=os.path.join(dir,'testObjects.pkl')
 
+testDict={}
+try:
+    testDict=pickle.load(open(pickleName,"r"))
+    locals().update(testDict['last'])
+except EOFError:
+    pass
+except IOError: 
+    pass
+except ValueError:
+    pass
+except KeyError:
+    pass
+
+
+
+def getObjects(values):
+    filter = ['new','x','seed']
+    frozenValues=frozenset(
+        (key,value) 
+        for (key,value) in values.__dict__.iteritems() 
+        if key not in filter
+    )
+
+    objects=None
+    if not values.new:
+        try:
+            objects=testDict[frozenValues]
+        except KeyError:
+            pass
+
+    if objects is None:
+        objects = makeObjects(values.dtype,values.flat,values.ndim,values.seed)
+        
+    testDict[frozenValues] = objects
+    testDict['last']=objects
+    globals().update(objects)
+
+    pickle.dump(testDict,open(pickleName,'w'))
+
+    return objects
+
 def makeObjects(dtype=None,flat=None,ndim=None,seed=None):
     rand=numpy.random.rand
     randn=numpy.random.randn
@@ -105,36 +146,7 @@ def makeObjects(dtype=None,flat=None,ndim=None,seed=None):
         'N':N,
         'seed':seed,
     }
-
     
-    pickle.dump(testDict,open(pickleName,'w'))
-
     return testDict
 
-try:
-    testDict=pickle.load(open(pickleName,"r"))
-except EOFError:
-    pass
-except IOError:
-    pass
-except ValueError:
-    pass
-else:
-    locals().update(testDict)
 
-
-
-
-#    #create random test objects
-#    A=Mvar(
-#        mean=5*randn()*rvec(),
-#        vectors=5*randn()*rvec(num()),
-#    )
-#    B=Mvar.fromCov(
-#        mean=5*randn()*rvec(),
-#        cov=(lambda x:x.H*x)(5*randn()*rvec(num()))
-#    )
-#    C=Mvar.fromData(
-#        rvec(num()+1)
-#    )
-#   A,B,C=numpy.random.permutation([A,B,C])

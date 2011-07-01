@@ -1,0 +1,290 @@
+.......................F.......F....F.................EE.......F.F..F.FF...................F...............
+======================================================================
+ERROR: testDerivation (unitTests.dotTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 622, in testDerivation
+    Db=B.sample(Nb)
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 631, in sample
+    return Matrix(numpy.array(units*self.scaled.T)+self.mean)
+ValueError: shape mismatch: objects cannot be broadcast to a single shape
+
+======================================================================
+ERROR: testAnd (unitTests.chainTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 511, in testAnd
+    measured[self.ndim:]=measurment
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 955, in __setitem__
+    self.copy(self.given(index,value))
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 925, in given
+    mean[:,fixed]=value.mean
+IndexError: index (20) out of range (0<=index<19) in dimension 1
+
+======================================================================
+FAIL: testSub (unitTests.signTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 180, in testSub
+    self.assertTrue( self.A+(self.B-self.B)==self.A )
+AssertionError
+
+======================================================================
+FAIL: testRight (unitTests.commuteTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 32, in testRight
+    self.assertTrue( self.A/self.B == (self.B**-1)*self.A )
+AssertionError
+
+======================================================================
+FAIL: testParadoxes (unitTests.inversionTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 545, in testParadoxes
+    self.assertTrue(  self.A &(self.B & ~self.B) == self.A & Mvar(mean=self.B.mean, vectors=self.B.vectors, var=Matrix.infs) )
+AssertionError
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.KLdiv
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.KLdiv
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1810, in KLdiv
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1815, in __init__.Mvar.KLdiv
+Failed example:
+    assert A.KLdiv(B) > 0
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.KLdiv[1]>", line 1, in <module>
+        assert A.KLdiv(B) > 0
+    AssertionError
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.__add__
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.__add__
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1698, in __add__
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1747, in __init__.Mvar.__add__
+Failed example:
+    assert A+(B-B)==A
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__add__[16]>", line 1, in <module>
+        assert A+(B-B)==A
+    AssertionError
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.__gt__
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.__gt__
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1066, in __gt__
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1068, in __init__.Mvar.__gt__
+Failed example:
+    assert (A > Matrix.infs(A.ndim)) == 0
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__gt__[0]>", line 1, in <module>
+        assert (A > Matrix.infs(A.ndim)) == 0
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1078, in __gt__
+        numpy.inf*numpy.ones(self.mean.size)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1150, in inBox
+        return mvs(lower,upper,self.cov)
+      File "/home/olpc/personal-projects/mvar/mvncdf.py", line 189, in mvstdnormcdf
+        lowinf = np.isneginf(lower)
+      File "/usr/lib/python2.6/dist-packages/numpy/lib/ufunclike.py", line 173, in isneginf
+        nx.logical_and(nx.isinf(x), nx.signbit(x), y)
+    TypeError: function not supported for these types, and can't coerce safely to supported types
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1069, in __init__.Mvar.__gt__
+Failed example:
+    assert (A > -Matrix.infs(A.ndim)) == 1
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__gt__[1]>", line 1, in <module>
+        assert (A > -Matrix.infs(A.ndim)) == 1
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1078, in __gt__
+        numpy.inf*numpy.ones(self.mean.size)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1150, in inBox
+        return mvs(lower,upper,self.cov)
+      File "/home/olpc/personal-projects/mvar/mvncdf.py", line 189, in mvstdnormcdf
+        lowinf = np.isneginf(lower)
+      File "/usr/lib/python2.6/dist-packages/numpy/lib/ufunclike.py", line 173, in isneginf
+        nx.logical_and(nx.isinf(x), nx.signbit(x), y)
+    TypeError: function not supported for these types, and can't coerce safely to supported types
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1072, in __init__.Mvar.__gt__
+Failed example:
+    assert Matrix(AV>AV.mean) == 2**-AV.ndim 
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__gt__[3]>", line 1, in <module>
+        assert Matrix(AV>AV.mean) == 2**-AV.ndim
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1078, in __gt__
+        numpy.inf*numpy.ones(self.mean.size)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1150, in inBox
+        return mvs(lower,upper,self.cov)
+      File "/home/olpc/personal-projects/mvar/mvncdf.py", line 189, in mvstdnormcdf
+        lowinf = np.isneginf(lower)
+      File "/usr/lib/python2.6/dist-packages/numpy/lib/ufunclike.py", line 173, in isneginf
+        nx.logical_and(nx.isinf(x), nx.signbit(x), y)
+    TypeError: function not supported for these types, and can't coerce safely to supported types
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.__invert__
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.__invert__
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1167, in __invert__
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1208, in __init__.Mvar.__invert__
+Failed example:
+    assert  A &(B & ~B) == A & Mvar(mean=B.mean, vectors=B.vectors, var=Matrix.infs)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__invert__[14]>", line 1, in <module>
+        assert  A &(B & ~B) == A & Mvar(mean=B.mean, vectors=B.vectors, var=Matrix.infs)
+    AssertionError
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1211, in __init__.Mvar.__invert__
+Failed example:
+    assert (A&~B) & B == (A&B) & ~B
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__invert__[15]>", line 1, in <module>
+        assert (A&~B) & B == (A&B) & ~B
+    AssertionError
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.__lt__
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.__lt__
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1087, in __lt__
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1089, in __init__.Mvar.__lt__
+Failed example:
+    assert (A < Matrix.infs(A.ndim)) == 1
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__lt__[0]>", line 1, in <module>
+        assert (A < Matrix.infs(A.ndim)) == 1
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1099, in __lt__
+        upper,
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1150, in inBox
+        return mvs(lower,upper,self.cov)
+      File "/home/olpc/personal-projects/mvar/mvncdf.py", line 189, in mvstdnormcdf
+        lowinf = np.isneginf(lower)
+      File "/usr/lib/python2.6/dist-packages/numpy/lib/ufunclike.py", line 173, in isneginf
+        nx.logical_and(nx.isinf(x), nx.signbit(x), y)
+    TypeError: function not supported for these types, and can't coerce safely to supported types
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1090, in __init__.Mvar.__lt__
+Failed example:
+    assert (A < -Matrix.infs(A.ndim)) == 0
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__lt__[1]>", line 1, in <module>
+        assert (A < -Matrix.infs(A.ndim)) == 0
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1099, in __lt__
+        upper,
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1150, in inBox
+        return mvs(lower,upper,self.cov)
+      File "/home/olpc/personal-projects/mvar/mvncdf.py", line 189, in mvstdnormcdf
+        lowinf = np.isneginf(lower)
+      File "/usr/lib/python2.6/dist-packages/numpy/lib/ufunclike.py", line 173, in isneginf
+        nx.logical_and(nx.isinf(x), nx.signbit(x), y)
+    TypeError: function not supported for these types, and can't coerce safely to supported types
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1093, in __init__.Mvar.__lt__
+Failed example:
+    assert Matrix(AV<AV.mean) == 2**-AV.ndim 
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__lt__[3]>", line 1, in <module>
+        assert Matrix(AV<AV.mean) == 2**-AV.ndim
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1099, in __lt__
+        upper,
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1150, in inBox
+        return mvs(lower,upper,self.cov)
+      File "/home/olpc/personal-projects/mvar/mvncdf.py", line 189, in mvstdnormcdf
+        lowinf = np.isneginf(lower)
+      File "/usr/lib/python2.6/dist-packages/numpy/lib/ufunclike.py", line 173, in isneginf
+        nx.logical_and(nx.isinf(x), nx.signbit(x), y)
+    TypeError: function not supported for these types, and can't coerce safely to supported types
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.measure
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.measure
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 633, in measure
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 656, in __init__.Mvar.measure
+Failed example:
+    result = sensor1.measure(actual) & sensor2.measure(actual)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.measure[5]>", line 1, in <module>
+        result = sensor1.measure(actual) & sensor2.measure(actual)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 658, in measure
+        sample=self.sample(1)-self.mean
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 631, in sample
+        return Matrix(numpy.array(units*self.scaled.T)+self.mean)
+    ValueError: shape mismatch: objects cannot be broadcast to a single shape
+
+
+----------------------------------------------------------------------
+Ran 107 tests in 39.462s
+
+FAILED (failures=9, errors=2)
