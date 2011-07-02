@@ -6,17 +6,6 @@ import numpy
 import pylab
 
 
-def basic():
-    data = numpy.matrix(numpy.random.randn(1000,2))*numpy.random.randn(2,2)+numpy.random.randn(2)
-
-    pylab.scatter(data[:,0],data[:,1])
-
-    A=pylab.gca()
-
-    A.add_artist(mvar.Mvar.fromData(data).patch())
-
-    pylab.show()
-
 def double():
     data1 = numpy.matrix(numpy.random.randn(100,2))*numpy.random.randn(2,2)+10*numpy.random.randn(2)
     data2 = numpy.matrix(numpy.random.randn(100,2))*numpy.random.randn(2,2)+10*numpy.random.randn(2)
@@ -38,13 +27,11 @@ def double():
     M3 = mvar.Mvar.fromData(merged)
     M4 = mvar.Mvar.fromData([M1,M2])
 
-    A.add_artist(M3.patch(facecolor='m'))
-    A.add_artist(M4.patch(facecolor='g'))
+    assert M3 == M4
 
-    print M3
-    print M4
+    A.add_artist(M3.patch(facecolor='m'))
 
     pylab.show()
 
-
-double()
+if __name__ == '__main__':
+    double()

@@ -24,7 +24,6 @@
 #todo: cleanup my 'square' function (now that it is clear that it's an SVD)
 #todo: implement transpose and dot product, related to bilinear forms?
 #todo: split the class into two levels: "fast" and 'safe'? <- "if __debug__" ?
-#      maybe have the 'safe' class inherit from 'fast' and a add a variance-free 'plane' class?
 #todo: understand the EM and K-means algorithms (available in scipy)
 #todo: understans what complex numbers imply with these.
 #todo: understand the relationship between these and a hessian matrix.
@@ -1851,6 +1850,14 @@ class Mvar(Plane):
     __str__=__repr__
 
     ################ Art
+
+    def plot(self,axis=None,**kwargs):
+        import pylab
+        
+        if axis is None:
+            axis=pylab.gca()
+
+        axis.add_artist(self.patch(**kwargs))
     
     def patch(self,nstd=2,alpha='auto',slope=1,minalpha=0.05,**kwargs):
         """
@@ -1871,18 +1878,30 @@ class Mvar(Plane):
                 'slope' controls how quickly the the alpha drops to zero
                 'minalpha' is used to make sure that very large elipses are not invisible.  
         """
-        if self.ndim != 2:
+        import matplotlib
+        import matplotlib.lines
+
+        shape = self.shape
+
+        if shape[1] != 2:
             raise ValueError(
                 'this method can only produce patches for 2d data'
             )
         
-        #lazy import
-        try:
-            E=Ellipse
-        except NameError:
-            from matplotlib.patches import Ellipse as E
-            globals().update({'Ellipse':E})
 
+        if shape[0] == 0:
+            if 'marker' not in kwargs:
+                kwargs['marker'] = 'o'
+            return matplotlib.lines.Line2D(self.mean[:,0],self.mean[:,1],**kwargs)
+        elif shape[0] == 1:
+            delta=nstd*self.scaled
+            front=self.mean+delta
+            back=self.mean-delta
+            data = numpy.vstack([front,back])
+            if 'marker' not in kwargs:
+                kwargs['marker'] = 'o'
+            return matplotlib.lines.Line2D(data[:,0],data[:,1],**kwargs)
+            
 
         if alpha=='auto':
             kwargs['alpha']=numpy.max([
@@ -1899,7 +1918,7 @@ class Mvar(Plane):
         width,height=2*wh
 
         #return an Ellipse patch
-        return E(
+        return patches.Ellipse(
             #with the Mvar's mean at the centre 
             xy=tuple(self.mean.flatten()),
             #matching width and height
