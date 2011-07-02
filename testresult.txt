@@ -1,4 +1,79 @@
-.......................F.......F....F.................EE.......F.F..F.FF...................F...............
+test values: {'ndim': 3, 'flat': None, 'dtype': 'i', 'seed': None, 'x': True, 'flatness': (False, False, False), 'new': False}
+.................F...F.FE..F........F........EE.......EE.......F.F..F.FF.F...F........F....F.F...........F..................F...F.FEF.F........F........EE.......FE.......F.F..F.FF..............F...F..F....F......F.......................................................EE.......F....F..F...................F.......................................EF.F.................EE.......EE..E....F..............F.......F.F..F.F....F......F..............F.F.........E.F..F.....F........EE.......EE..E....F....unexpected array size: new_size=1, got array with arr_size=0
+F..unexpected array size: new_size=1, got array with arr_size=0
+F.FF.F.F.......F.F.FF.F....FF.....F..............F.F........F..F..F.....F........EE.......EE..E....F....unexpected array size: new_size=1, got array with arr_size=0
+F..unexpected array size: new_size=1, got array with arr_size=0
+FFFFFF.F.......F.F..F.F.....F.....F.
+======================================================================
+ERROR: testComplexPowers (unitTests.powerTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 336, in testComplexPowers
+    self.assertFalse( self.A**self.K1/self.A**self.K2 == self.A**(self.K1-self.K2))
+  File "/home/olpc/personal-projects/mvar/decorate/automath.py", line 71, in __div__
+    return self*other**(-1)
+  File "<string>", line 2, in __mul__
+  File "/home/olpc/personal-projects/mvar/decorate/__init__.py", line 50, in F
+    return decorated(*before(*args),**kwargs)
+  File "<string>", line 2, in __mul__
+  File "/home/olpc/personal-projects/mvar/decorate/__init__.py", line 140, in caller
+    return found(*args,**kwargs)
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1676, in _mvarMul
+    result = (self*mvar.transform()+mvar*self.transform())
+  File "<string>", line 2, in __mul__
+  File "/home/olpc/personal-projects/mvar/decorate/__init__.py", line 50, in F
+    return decorated(*before(*args),**kwargs)
+  File "<string>", line 2, in __mul__
+  File "/home/olpc/personal-projects/mvar/decorate/__init__.py", line 140, in caller
+    return found(*args,**kwargs)
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1652, in _matrixMul
+    vectors=self.vectors*matrix,
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 344, in __init__
+    self.copy(self.square())
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 478, in square
+    var=self.var,
+  File "/home/olpc/personal-projects/mvar/square.py", line 74, in square
+    (var,vectors) = _subSquare(vectors,var)
+  File "/home/olpc/personal-projects/mvar/square.py", line 131, in _subSquare
+    (val,vec)=eig(cov)
+  File "/usr/lib/python2.6/dist-packages/numpy/linalg/linalg.py", line 790, in eig
+    _assertFinite(a)
+  File "/usr/lib/python2.6/dist-packages/numpy/linalg/linalg.py", line 118, in _assertFinite
+    raise LinAlgError, "Array must not contain infs or NaNs"
+LinAlgError: Array must not contain infs or NaNs
+
+======================================================================
+ERROR: testGivenScalar (unitTests.givenTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 425, in testGivenScalar
+    a = self.A.given(index=0,value=1)
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 944, in given
+    vectors=vectors,
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 335, in __init__
+    [1  ,mean   ],
+  File "/home/olpc/personal-projects/mvar/helpers.py", line 170, in autostack
+    for row in rows
+  File "/usr/lib/python2.6/dist-packages/numpy/lib/shape_base.py", line 461, in vstack
+    return _nx.concatenate(map(atleast_2d,tup),0)
+ValueError: array dimensions must agree except for d_0
+
+======================================================================
+ERROR: testGivenVector (unitTests.givenTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 448, in testGivenVector
+    self.assertTrue( mvar.givenVector(self.A,index=0,value=1)==self.A.given(index=0,value=1) )
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 944, in given
+    vectors=vectors,
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 335, in __init__
+    [1  ,mean   ],
+  File "/home/olpc/personal-projects/mvar/helpers.py", line 170, in autostack
+    for row in rows
+  File "/usr/lib/python2.6/dist-packages/numpy/lib/shape_base.py", line 461, in vstack
+    return _nx.concatenate(map(atleast_2d,tup),0)
+ValueError: array dimensions must agree except for d_0
+
 ======================================================================
 ERROR: testDerivation (unitTests.dotTester)
 ----------------------------------------------------------------------
@@ -19,30 +94,372 @@ Traceback (most recent call last):
     self.copy(self.given(index,value))
   File "/home/olpc/personal-projects/mvar/__init__.py", line 925, in given
     mean[:,fixed]=value.mean
-IndexError: index (20) out of range (0<=index<19) in dimension 1
+IndexError: index (3) out of range (0<=index<0) in dimension 1
+
+======================================================================
+ERROR: testComplexPowers (unitTests.powerTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 336, in testComplexPowers
+    self.assertFalse( self.A**self.K1/self.A**self.K2 == self.A**(self.K1-self.K2))
+  File "/home/olpc/personal-projects/mvar/decorate/automath.py", line 71, in __div__
+    return self*other**(-1)
+  File "<string>", line 2, in __mul__
+  File "/home/olpc/personal-projects/mvar/decorate/__init__.py", line 50, in F
+    return decorated(*before(*args),**kwargs)
+  File "<string>", line 2, in __mul__
+  File "/home/olpc/personal-projects/mvar/decorate/__init__.py", line 140, in caller
+    return found(*args,**kwargs)
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1676, in _mvarMul
+    result = (self*mvar.transform()+mvar*self.transform())
+  File "<string>", line 2, in __mul__
+  File "/home/olpc/personal-projects/mvar/decorate/__init__.py", line 50, in F
+    return decorated(*before(*args),**kwargs)
+  File "<string>", line 2, in __mul__
+  File "/home/olpc/personal-projects/mvar/decorate/__init__.py", line 140, in caller
+    return found(*args,**kwargs)
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1652, in _matrixMul
+    vectors=self.vectors*matrix,
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 344, in __init__
+    self.copy(self.square())
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 478, in square
+    var=self.var,
+  File "/home/olpc/personal-projects/mvar/square.py", line 74, in square
+    (var,vectors) = _subSquare(vectors,var)
+  File "/home/olpc/personal-projects/mvar/square.py", line 131, in _subSquare
+    (val,vec)=eig(cov)
+  File "/usr/lib/python2.6/dist-packages/numpy/linalg/linalg.py", line 790, in eig
+    _assertFinite(a)
+  File "/usr/lib/python2.6/dist-packages/numpy/linalg/linalg.py", line 118, in _assertFinite
+    raise LinAlgError, "Array must not contain infs or NaNs"
+LinAlgError: Array must not contain infs or NaNs
+
+======================================================================
+ERROR: testGivenScalar (unitTests.givenTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 425, in testGivenScalar
+    a = self.A.given(index=0,value=1)
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 944, in given
+    vectors=vectors,
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 335, in __init__
+    [1  ,mean   ],
+  File "/home/olpc/personal-projects/mvar/helpers.py", line 170, in autostack
+    for row in rows
+  File "/usr/lib/python2.6/dist-packages/numpy/lib/shape_base.py", line 461, in vstack
+    return _nx.concatenate(map(atleast_2d,tup),0)
+ValueError: array dimensions must agree except for d_0
+
+======================================================================
+ERROR: testGivenVector (unitTests.givenTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 448, in testGivenVector
+    self.assertTrue( mvar.givenVector(self.A,index=0,value=1)==self.A.given(index=0,value=1) )
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 944, in given
+    vectors=vectors,
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 335, in __init__
+    [1  ,mean   ],
+  File "/home/olpc/personal-projects/mvar/helpers.py", line 170, in autostack
+    for row in rows
+  File "/usr/lib/python2.6/dist-packages/numpy/lib/shape_base.py", line 461, in vstack
+    return _nx.concatenate(map(atleast_2d,tup),0)
+ValueError: array dimensions must agree except for d_0
+
+======================================================================
+ERROR: testAnd (unitTests.chainTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 511, in testAnd
+    measured[self.ndim:]=measurment
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 955, in __setitem__
+    self.copy(self.given(index,value))
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 925, in given
+    mean[:,fixed]=value.mean
+IndexError: index (4) out of range (0<=index<3) in dimension 1
+
+======================================================================
+ERROR: testDerivation (unitTests.dotTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 622, in testDerivation
+    Db=B.sample(Nb)
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 631, in sample
+    return Matrix(numpy.array(units*self.scaled.T)+self.mean)
+ValueError: shape mismatch: objects cannot be broadcast to a single shape
+
+======================================================================
+ERROR: testAnd (unitTests.chainTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 511, in testAnd
+    measured[self.ndim:]=measurment
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 955, in __setitem__
+    self.copy(self.given(index,value))
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 925, in given
+    mean[:,fixed]=value.mean
+IndexError: index (5) out of range (0<=index<4) in dimension 1
+
+======================================================================
+ERROR: testComplexPowers (unitTests.powerTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 336, in testComplexPowers
+    self.assertFalse( self.A**self.K1/self.A**self.K2 == self.A**(self.K1-self.K2))
+  File "/home/olpc/personal-projects/mvar/decorate/automath.py", line 71, in __div__
+    return self*other**(-1)
+  File "<string>", line 2, in __mul__
+  File "/home/olpc/personal-projects/mvar/decorate/__init__.py", line 50, in F
+    return decorated(*before(*args),**kwargs)
+  File "<string>", line 2, in __mul__
+  File "/home/olpc/personal-projects/mvar/decorate/__init__.py", line 140, in caller
+    return found(*args,**kwargs)
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1676, in _mvarMul
+    result = (self*mvar.transform()+mvar*self.transform())
+  File "<string>", line 2, in __mul__
+  File "/home/olpc/personal-projects/mvar/decorate/__init__.py", line 50, in F
+    return decorated(*before(*args),**kwargs)
+  File "<string>", line 2, in __mul__
+  File "/home/olpc/personal-projects/mvar/decorate/__init__.py", line 140, in caller
+    return found(*args,**kwargs)
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1652, in _matrixMul
+    vectors=self.vectors*matrix,
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 344, in __init__
+    self.copy(self.square())
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 478, in square
+    var=self.var,
+  File "/home/olpc/personal-projects/mvar/square.py", line 74, in square
+    (var,vectors) = _subSquare(vectors,var)
+  File "/home/olpc/personal-projects/mvar/square.py", line 131, in _subSquare
+    (val,vec)=eig(cov)
+  File "/usr/lib/python2.6/dist-packages/numpy/linalg/linalg.py", line 790, in eig
+    _assertFinite(a)
+  File "/usr/lib/python2.6/dist-packages/numpy/linalg/linalg.py", line 118, in _assertFinite
+    raise LinAlgError, "Array must not contain infs or NaNs"
+LinAlgError: Array must not contain infs or NaNs
+
+======================================================================
+ERROR: testGivenScalar (unitTests.givenTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 425, in testGivenScalar
+    a = self.A.given(index=0,value=1)
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 944, in given
+    vectors=vectors,
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 335, in __init__
+    [1  ,mean   ],
+  File "/home/olpc/personal-projects/mvar/helpers.py", line 170, in autostack
+    for row in rows
+  File "/usr/lib/python2.6/dist-packages/numpy/lib/shape_base.py", line 461, in vstack
+    return _nx.concatenate(map(atleast_2d,tup),0)
+ValueError: array dimensions must agree except for d_0
+
+======================================================================
+ERROR: testGivenVector (unitTests.givenTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 448, in testGivenVector
+    self.assertTrue( mvar.givenVector(self.A,index=0,value=1)==self.A.given(index=0,value=1) )
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 944, in given
+    vectors=vectors,
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 335, in __init__
+    [1  ,mean   ],
+  File "/home/olpc/personal-projects/mvar/helpers.py", line 170, in autostack
+    for row in rows
+  File "/usr/lib/python2.6/dist-packages/numpy/lib/shape_base.py", line 461, in vstack
+    return _nx.concatenate(map(atleast_2d,tup),0)
+ValueError: array dimensions must agree except for d_0
+
+======================================================================
+ERROR: testDerivation (unitTests.dotTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 621, in testDerivation
+    Da=A.sample(Na)
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 631, in sample
+    return Matrix(numpy.array(units*self.scaled.T)+self.mean)
+ValueError: shape mismatch: objects cannot be broadcast to a single shape
+
+======================================================================
+ERROR: testAnd (unitTests.chainTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 511, in testAnd
+    measured[self.ndim:]=measurment
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 955, in __setitem__
+    self.copy(self.given(index,value))
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 925, in given
+    mean[:,fixed]=value.mean
+IndexError: index (5) out of range (0<=index<4) in dimension 1
+
+======================================================================
+ERROR: testStacks (unitTests.chainTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 467, in testStacks
+    dataA=self.A.sample(100)
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 631, in sample
+    return Matrix(numpy.array(units*self.scaled.T)+self.mean)
+ValueError: shape mismatch: objects cannot be broadcast to a single shape
+
+======================================================================
+ERROR: testIntPowers (unitTests.powerTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 324, in testIntPowers
+    self.assertTrue( self.A.transform(self.N)== self.A.transform()**self.N )
+  File "/usr/lib/python2.6/dist-packages/numpy/core/defmatrix.py", line 303, in __pow__
+    return matrix_power(self, other)
+  File "/usr/lib/python2.6/dist-packages/numpy/core/defmatrix.py", line 130, in matrix_power
+    M = inv(M)
+  File "/usr/lib/python2.6/dist-packages/numpy/linalg/linalg.py", line 355, in inv
+    return wrap(solve(a, identity(a.shape[0], dtype=a.dtype)))
+  File "/usr/lib/python2.6/dist-packages/numpy/linalg/linalg.py", line 254, in solve
+    raise LinAlgError, 'Singular matrix'
+LinAlgError: Singular matrix
+
+======================================================================
+ERROR: testGivenScalar (unitTests.givenTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 425, in testGivenScalar
+    a = self.A.given(index=0,value=1)
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 925, in given
+    mean[:,fixed]=value.mean
+IndexError: invalid index
+
+======================================================================
+ERROR: testGivenVector (unitTests.givenTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 448, in testGivenVector
+    self.assertTrue( mvar.givenVector(self.A,index=0,value=1)==self.A.given(index=0,value=1) )
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 925, in given
+    mean[:,fixed]=value.mean
+IndexError: invalid index
+
+======================================================================
+ERROR: testDerivation (unitTests.dotTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 621, in testDerivation
+    Da=A.sample(Na)
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 631, in sample
+    return Matrix(numpy.array(units*self.scaled.T)+self.mean)
+ValueError: shape mismatch: objects cannot be broadcast to a single shape
+
+======================================================================
+ERROR: testAnd (unitTests.chainTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 511, in testAnd
+    measured[self.ndim:]=measurment
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 955, in __setitem__
+    self.copy(self.given(index,value))
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 925, in given
+    mean[:,fixed]=value.mean
+IndexError: index (3) out of range (0<=index<1) in dimension 1
+
+======================================================================
+ERROR: testStacks (unitTests.chainTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 467, in testStacks
+    dataA=self.A.sample(100)
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 631, in sample
+    return Matrix(numpy.array(units*self.scaled.T)+self.mean)
+ValueError: shape mismatch: objects cannot be broadcast to a single shape
+
+======================================================================
+ERROR: testGivenScalar (unitTests.givenTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 425, in testGivenScalar
+    a = self.A.given(index=0,value=1)
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 925, in given
+    mean[:,fixed]=value.mean
+IndexError: invalid index
+
+======================================================================
+ERROR: testGivenVector (unitTests.givenTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 448, in testGivenVector
+    self.assertTrue( mvar.givenVector(self.A,index=0,value=1)==self.A.given(index=0,value=1) )
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 925, in given
+    mean[:,fixed]=value.mean
+IndexError: invalid index
+
+======================================================================
+ERROR: testDerivation (unitTests.dotTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 621, in testDerivation
+    Da=A.sample(Na)
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 631, in sample
+    return Matrix(numpy.array(units*self.scaled.T)+self.mean)
+ValueError: shape mismatch: objects cannot be broadcast to a single shape
+
+======================================================================
+ERROR: testAnd (unitTests.chainTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 511, in testAnd
+    measured[self.ndim:]=measurment
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 955, in __setitem__
+    self.copy(self.given(index,value))
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 925, in given
+    mean[:,fixed]=value.mean
+IndexError: invalid index
+
+======================================================================
+ERROR: testStacks (unitTests.chainTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 467, in testStacks
+    dataA=self.A.sample(100)
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 631, in sample
+    return Matrix(numpy.array(units*self.scaled.T)+self.mean)
+ValueError: shape mismatch: objects cannot be broadcast to a single shape
+
+======================================================================
+FAIL: testAdd (unitTests.signTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 151, in testAdd
+    self.assertTrue( sum(itertools.repeat(self.A,n),Mvar.zeros(self.A.ndim)) == self.A*n )
+AssertionError
+
+======================================================================
+FAIL: testPlus (unitTests.signTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 128, in testPlus
+    self.assertTrue( self.A+self.A+self.A == 3*self.A )
+AssertionError
 
 ======================================================================
 FAIL: testSub (unitTests.signTester)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/olpc/personal-projects/mvar/unitTests.py", line 180, in testSub
-    self.assertTrue( self.A+(self.B-self.B)==self.A )
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 169, in testSub
+    self.assertTrue( (self.B-self.A)+self.A==self.B )
 AssertionError
 
 ======================================================================
-FAIL: testRight (unitTests.commuteTester)
+FAIL: testRealPow (unitTests.powerTester)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/olpc/personal-projects/mvar/unitTests.py", line 32, in testRight
-    self.assertTrue( self.A/self.B == (self.B**-1)*self.A )
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 382, in testRealPow
+    self.assertTrue( self.A/self.A**-1 == self.A**2 )
 AssertionError
 
 ======================================================================
 FAIL: testParadoxes (unitTests.inversionTester)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/olpc/personal-projects/mvar/unitTests.py", line 545, in testParadoxes
-    self.assertTrue(  self.A &(self.B & ~self.B) == self.A & Mvar(mean=self.B.mean, vectors=self.B.vectors, var=Matrix.infs) )
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 542, in testParadoxes
+    self.assertTrue( (self.A & ~self.A) == Mvar(mean=self.A.mean, vectors=self.A.vectors, var=Matrix.infs) )
 AssertionError
 
 ======================================================================
@@ -54,6 +471,457 @@ Traceback (most recent call last):
 AssertionError: Failed doctest test for __init__.Mvar.KLdiv
   File "/home/olpc/personal-projects/mvar/__init__.py", line 1810, in KLdiv
 
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1814, in __init__.Mvar.KLdiv
+Failed example:
+    assert A.KLdiv(A)== 0
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.KLdiv[0]>", line 1, in <module>
+        assert A.KLdiv(A)== 0
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1822, in KLdiv
+        numpy.log(self.det()/other.det())-
+    ZeroDivisionError: integer division or modulo by zero
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1815, in __init__.Mvar.KLdiv
+Failed example:
+    assert A.KLdiv(B) > 0
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.KLdiv[1]>", line 1, in <module>
+        assert A.KLdiv(B) > 0
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1822, in KLdiv
+        numpy.log(self.det()/other.det())-
+    ZeroDivisionError: integer division or modulo by zero
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.__add__
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.__add__
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1698, in __add__
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1728, in __init__.Mvar.__add__
+Failed example:
+    assert A-A == Mvar(mean=numpy.zeros_like(A.mean))
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__add__[5]>", line 1, in <module>
+        assert A-A == Mvar(mean=numpy.zeros_like(A.mean))
+    AssertionError
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.__gt__
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.__gt__
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1066, in __gt__
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1072, in __init__.Mvar.__gt__
+Failed example:
+    assert Matrix(AV>AV.mean) == 2**-AV.ndim 
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__gt__[3]>", line 1, in <module>
+        assert Matrix(AV>AV.mean) == 2**-AV.ndim
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1078, in __gt__
+        numpy.inf*numpy.ones(self.mean.size)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1134, in inBox
+        self=norm(0,self.var**0.5)
+    NameError: global name 'norm' is not defined
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.__invert__
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.__invert__
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1167, in __invert__
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1197, in __init__.Mvar.__invert__
+Failed example:
+    assert (A & ~A) == Mvar(mean=A.mean, vectors=A.vectors, var=Matrix.infs)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__invert__[11]>", line 1, in <module>
+        assert (A & ~A) == Mvar(mean=A.mean, vectors=A.vectors, var=Matrix.infs)
+    AssertionError
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1224, in __init__.Mvar.__invert__
+Failed example:
+    assert not numpy.isfinite((A & ~A).var).any()
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__invert__[17]>", line 1, in <module>
+        assert not numpy.isfinite((A & ~A).var).any()
+    AssertionError
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1228, in __init__.Mvar.__invert__
+Failed example:
+    assert P==(A & ~A)       
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__invert__[20]>", line 1, in <module>
+        assert P==(A & ~A)
+    AssertionError
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.__lt__
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.__lt__
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1087, in __lt__
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1093, in __init__.Mvar.__lt__
+Failed example:
+    assert Matrix(AV<AV.mean) == 2**-AV.ndim 
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__lt__[3]>", line 1, in <module>
+        assert Matrix(AV<AV.mean) == 2**-AV.ndim
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1099, in __lt__
+        upper,
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1134, in inBox
+        self=norm(0,self.var**0.5)
+    NameError: global name 'norm' is not defined
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.__pow__
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.__pow__
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1332, in __pow__
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1378, in __init__.Mvar.__pow__
+Failed example:
+    if ((not A.flat) or (k1>=0 and k1>=0)):
+        assert (A**k1)*(A**k2)==A**(k1+k2) 
+        assert A**k1/A**k2==A**(k1-k2) 
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__pow__[11]>", line 2, in <module>
+        assert (A**k1)*(A**k2)==A**(k1+k2)
+    AssertionError
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar._scalarMul
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar._scalarMul
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1585, in _scalarMul
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1604, in __init__.Mvar._scalarMul
+Failed example:
+    assert sum(itertools.repeat(A,N-1),A) == A*(N) or N<=0
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar._scalarMul[5]>", line 1, in <module>
+        assert sum(itertools.repeat(A,N-1),A) == A*(N) or N<=0
+    AssertionError
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1614, in __init__.Mvar._scalarMul
+Failed example:
+    assert (B-A)+A==B
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar._scalarMul[9]>", line 1, in <module>
+        assert (B-A)+A==B
+    AssertionError
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.given
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.given
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 869, in given
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 880, in __init__.Mvar.given
+Failed example:
+    a = A.given(index=0,value=1)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.given[0]>", line 1, in <module>
+        a = A.given(index=0,value=1)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 944, in given
+        vectors=vectors,
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 335, in __init__
+        [1  ,mean   ],
+      File "/home/olpc/personal-projects/mvar/helpers.py", line 170, in autostack
+        for row in rows
+      File "/usr/lib/python2.6/dist-packages/numpy/lib/shape_base.py", line 461, in vstack
+        return _nx.concatenate(map(atleast_2d,tup),0)
+    ValueError: array dimensions must agree except for d_0
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 881, in __init__.Mvar.given
+Failed example:
+    assert a.mean[:,0]==1
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.given[1]>", line 1, in <module>
+        assert a.mean[:,0]==1
+    NameError: name 'a' is not defined
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 882, in __init__.Mvar.given
+Failed example:
+    assert a.vectors[:,0]==numpy.zeros
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.given[2]>", line 1, in <module>
+        assert a.vectors[:,0]==numpy.zeros
+    NameError: name 'a' is not defined
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 907, in __init__.Mvar.given
+Failed example:
+    a[0]=1
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.given[13]>", line 1, in <module>
+        a[0]=1
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 955, in __setitem__
+        self.copy(self.given(index,value))
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 944, in given
+        vectors=vectors,
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 335, in __init__
+        [1  ,mean   ],
+      File "/home/olpc/personal-projects/mvar/helpers.py", line 170, in autostack
+        for row in rows
+      File "/usr/lib/python2.6/dist-packages/numpy/lib/shape_base.py", line 461, in vstack
+        return _nx.concatenate(map(atleast_2d,tup),0)
+    ValueError: array dimensions must agree except for d_0
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 908, in __init__.Mvar.given
+Failed example:
+    assert a==A.given(index=0,value=1)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.given[14]>", line 1, in <module>
+        assert a==A.given(index=0,value=1)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 944, in given
+        vectors=vectors,
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 335, in __init__
+        [1  ,mean   ],
+      File "/home/olpc/personal-projects/mvar/helpers.py", line 170, in autostack
+        for row in rows
+      File "/usr/lib/python2.6/dist-packages/numpy/lib/shape_base.py", line 461, in vstack
+        return _nx.concatenate(map(atleast_2d,tup),0)
+    ValueError: array dimensions must agree except for d_0
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.measure
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.measure
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 633, in measure
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 656, in __init__.Mvar.measure
+Failed example:
+    result = sensor1.measure(actual) & sensor2.measure(actual)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.measure[5]>", line 1, in <module>
+        result = sensor1.measure(actual) & sensor2.measure(actual)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 658, in measure
+        sample=self.sample(1)-self.mean
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 631, in sample
+        return Matrix(numpy.array(units*self.scaled.T)+self.mean)
+    ValueError: shape mismatch: objects cannot be broadcast to a single shape
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.rank
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.rank
+  File "/home/olpc/personal-projects/mvar/__init__.py", line unknown line number, in rank
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line ?, in __init__.Mvar.rank
+Failed example:
+    assert A.rank == A.var.size
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.rank[0]>", line 1, in <module>
+        assert A.rank == A.var.size
+    AssertionError
+
+
+======================================================================
+FAIL: Doctest: __init__.givenVector
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.givenVector
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1932, in givenVector
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1937, in __init__.givenVector
+Failed example:
+    assert givenVector(A,index=0,value=1)==A.given(index=0,value=1)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.givenVector[0]>", line 1, in <module>
+        assert givenVector(A,index=0,value=1)==A.given(index=0,value=1)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 944, in given
+        vectors=vectors,
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 335, in __init__
+        [1  ,mean   ],
+      File "/home/olpc/personal-projects/mvar/helpers.py", line 170, in autostack
+        for row in rows
+      File "/usr/lib/python2.6/dist-packages/numpy/lib/shape_base.py", line 461, in vstack
+        return _nx.concatenate(map(atleast_2d,tup),0)
+    ValueError: array dimensions must agree except for d_0
+
+
+======================================================================
+FAIL: testAdd (unitTests.signTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 151, in testAdd
+    self.assertTrue( sum(itertools.repeat(self.A,n),Mvar.zeros(self.A.ndim)) == self.A*n )
+AssertionError
+
+======================================================================
+FAIL: testPlus (unitTests.signTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 128, in testPlus
+    self.assertTrue( self.A+self.A+self.A == 3*self.A )
+AssertionError
+
+======================================================================
+FAIL: testSub (unitTests.signTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 171, in testSub
+    self.assertTrue( self.A-self.A == Mvar(mean=numpy.zeros_like(self.A.mean)) )
+AssertionError
+
+======================================================================
+FAIL: testIntPowers (unitTests.powerTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 324, in testIntPowers
+    self.assertTrue( self.A.transform(self.N)== self.A.transform()**self.N )
+AssertionError
+
+======================================================================
+FAIL: testRealPow (unitTests.powerTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 382, in testRealPow
+    self.assertTrue( self.A/self.A**-1 == self.A**2 )
+AssertionError
+
+======================================================================
+FAIL: testParadoxes (unitTests.inversionTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 542, in testParadoxes
+    self.assertTrue( (self.A & ~self.A) == Mvar(mean=self.A.mean, vectors=self.A.vectors, var=Matrix.infs) )
+AssertionError
+
+======================================================================
+FAIL: testDerivation (unitTests.dotTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 640, in testDerivation
+    self.assertTrue( Var == (numpy.array(Mean -dot)**2).mean() )
+AssertionError
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.KLdiv
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.KLdiv
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1810, in KLdiv
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1814, in __init__.Mvar.KLdiv
+Failed example:
+    assert A.KLdiv(A)== 0
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.KLdiv[0]>", line 1, in <module>
+        assert A.KLdiv(A)== 0
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1822, in KLdiv
+        numpy.log(self.det()/other.det())-
+    ZeroDivisionError: integer division or modulo by zero
 ----------------------------------------------------------------------
 File "/home/olpc/personal-projects/mvar/__init__.py", line 1815, in __init__.Mvar.KLdiv
 Failed example:
@@ -77,15 +945,397 @@ AssertionError: Failed doctest test for __init__.Mvar.__add__
   File "/home/olpc/personal-projects/mvar/__init__.py", line 1698, in __add__
 
 ----------------------------------------------------------------------
-File "/home/olpc/personal-projects/mvar/__init__.py", line 1747, in __init__.Mvar.__add__
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1728, in __init__.Mvar.__add__
 Failed example:
-    assert A+(B-B)==A
+    assert A-A == Mvar(mean=numpy.zeros_like(A.mean))
 Exception raised:
     Traceback (most recent call last):
       File "/usr/lib/python2.6/doctest.py", line 1248, in __run
         compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.__add__[16]>", line 1, in <module>
-        assert A+(B-B)==A
+      File "<doctest __init__.Mvar.__add__[5]>", line 1, in <module>
+        assert A-A == Mvar(mean=numpy.zeros_like(A.mean))
+    AssertionError
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.__gt__
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.__gt__
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1066, in __gt__
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1068, in __init__.Mvar.__gt__
+Failed example:
+    assert (A > Matrix.infs(A.ndim)) == 0
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__gt__[0]>", line 1, in <module>
+        assert (A > Matrix.infs(A.ndim)) == 0
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1078, in __gt__
+        numpy.inf*numpy.ones(self.mean.size)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1150, in inBox
+        return mvs(lower,upper,self.cov)
+      File "/home/olpc/personal-projects/mvar/mvncdf.py", line 189, in mvstdnormcdf
+        lowinf = np.isneginf(lower)
+      File "/usr/lib/python2.6/dist-packages/numpy/lib/ufunclike.py", line 173, in isneginf
+        nx.logical_and(nx.isinf(x), nx.signbit(x), y)
+    TypeError: function not supported for these types, and can't coerce safely to supported types
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1069, in __init__.Mvar.__gt__
+Failed example:
+    assert (A > -Matrix.infs(A.ndim)) == 1
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__gt__[1]>", line 1, in <module>
+        assert (A > -Matrix.infs(A.ndim)) == 1
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1078, in __gt__
+        numpy.inf*numpy.ones(self.mean.size)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1150, in inBox
+        return mvs(lower,upper,self.cov)
+      File "/home/olpc/personal-projects/mvar/mvncdf.py", line 189, in mvstdnormcdf
+        lowinf = np.isneginf(lower)
+      File "/usr/lib/python2.6/dist-packages/numpy/lib/ufunclike.py", line 173, in isneginf
+        nx.logical_and(nx.isinf(x), nx.signbit(x), y)
+    TypeError: function not supported for these types, and can't coerce safely to supported types
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1072, in __init__.Mvar.__gt__
+Failed example:
+    assert Matrix(AV>AV.mean) == 2**-AV.ndim 
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__gt__[3]>", line 1, in <module>
+        assert Matrix(AV>AV.mean) == 2**-AV.ndim
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1078, in __gt__
+        numpy.inf*numpy.ones(self.mean.size)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1134, in inBox
+        self=norm(0,self.var**0.5)
+    NameError: global name 'norm' is not defined
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.__invert__
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.__invert__
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1167, in __invert__
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1197, in __init__.Mvar.__invert__
+Failed example:
+    assert (A & ~A) == Mvar(mean=A.mean, vectors=A.vectors, var=Matrix.infs)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__invert__[11]>", line 1, in <module>
+        assert (A & ~A) == Mvar(mean=A.mean, vectors=A.vectors, var=Matrix.infs)
+    AssertionError
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1224, in __init__.Mvar.__invert__
+Failed example:
+    assert not numpy.isfinite((A & ~A).var).any()
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__invert__[17]>", line 1, in <module>
+        assert not numpy.isfinite((A & ~A).var).any()
+    AssertionError
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1228, in __init__.Mvar.__invert__
+Failed example:
+    assert P==(A & ~A)       
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__invert__[20]>", line 1, in <module>
+        assert P==(A & ~A)
+    AssertionError
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.__lt__
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.__lt__
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1087, in __lt__
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1089, in __init__.Mvar.__lt__
+Failed example:
+    assert (A < Matrix.infs(A.ndim)) == 1
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__lt__[0]>", line 1, in <module>
+        assert (A < Matrix.infs(A.ndim)) == 1
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1099, in __lt__
+        upper,
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1150, in inBox
+        return mvs(lower,upper,self.cov)
+      File "/home/olpc/personal-projects/mvar/mvncdf.py", line 189, in mvstdnormcdf
+        lowinf = np.isneginf(lower)
+      File "/usr/lib/python2.6/dist-packages/numpy/lib/ufunclike.py", line 173, in isneginf
+        nx.logical_and(nx.isinf(x), nx.signbit(x), y)
+    TypeError: function not supported for these types, and can't coerce safely to supported types
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1090, in __init__.Mvar.__lt__
+Failed example:
+    assert (A < -Matrix.infs(A.ndim)) == 0
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__lt__[1]>", line 1, in <module>
+        assert (A < -Matrix.infs(A.ndim)) == 0
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1099, in __lt__
+        upper,
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1150, in inBox
+        return mvs(lower,upper,self.cov)
+      File "/home/olpc/personal-projects/mvar/mvncdf.py", line 189, in mvstdnormcdf
+        lowinf = np.isneginf(lower)
+      File "/usr/lib/python2.6/dist-packages/numpy/lib/ufunclike.py", line 173, in isneginf
+        nx.logical_and(nx.isinf(x), nx.signbit(x), y)
+    TypeError: function not supported for these types, and can't coerce safely to supported types
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1093, in __init__.Mvar.__lt__
+Failed example:
+    assert Matrix(AV<AV.mean) == 2**-AV.ndim 
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__lt__[3]>", line 1, in <module>
+        assert Matrix(AV<AV.mean) == 2**-AV.ndim
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1099, in __lt__
+        upper,
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1134, in inBox
+        self=norm(0,self.var**0.5)
+    NameError: global name 'norm' is not defined
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.given
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.given
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 869, in given
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 880, in __init__.Mvar.given
+Failed example:
+    a = A.given(index=0,value=1)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.given[0]>", line 1, in <module>
+        a = A.given(index=0,value=1)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 944, in given
+        vectors=vectors,
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 335, in __init__
+        [1  ,mean   ],
+      File "/home/olpc/personal-projects/mvar/helpers.py", line 170, in autostack
+        for row in rows
+      File "/usr/lib/python2.6/dist-packages/numpy/lib/shape_base.py", line 461, in vstack
+        return _nx.concatenate(map(atleast_2d,tup),0)
+    ValueError: array dimensions must agree except for d_0
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 881, in __init__.Mvar.given
+Failed example:
+    assert a.mean[:,0]==1
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.given[1]>", line 1, in <module>
+        assert a.mean[:,0]==1
+    NameError: name 'a' is not defined
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 882, in __init__.Mvar.given
+Failed example:
+    assert a.vectors[:,0]==numpy.zeros
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.given[2]>", line 1, in <module>
+        assert a.vectors[:,0]==numpy.zeros
+    NameError: name 'a' is not defined
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 907, in __init__.Mvar.given
+Failed example:
+    a[0]=1
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.given[13]>", line 1, in <module>
+        a[0]=1
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 955, in __setitem__
+        self.copy(self.given(index,value))
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 944, in given
+        vectors=vectors,
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 335, in __init__
+        [1  ,mean   ],
+      File "/home/olpc/personal-projects/mvar/helpers.py", line 170, in autostack
+        for row in rows
+      File "/usr/lib/python2.6/dist-packages/numpy/lib/shape_base.py", line 461, in vstack
+        return _nx.concatenate(map(atleast_2d,tup),0)
+    ValueError: array dimensions must agree except for d_0
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 908, in __init__.Mvar.given
+Failed example:
+    assert a==A.given(index=0,value=1)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.given[14]>", line 1, in <module>
+        assert a==A.given(index=0,value=1)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 944, in given
+        vectors=vectors,
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 335, in __init__
+        [1  ,mean   ],
+      File "/home/olpc/personal-projects/mvar/helpers.py", line 170, in autostack
+        for row in rows
+      File "/usr/lib/python2.6/dist-packages/numpy/lib/shape_base.py", line 461, in vstack
+        return _nx.concatenate(map(atleast_2d,tup),0)
+    ValueError: array dimensions must agree except for d_0
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.inner
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.inner
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 756, in inner
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 758, in __init__.Mvar.inner
+Failed example:
+    assert A.inner(B) == B.inner(A)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.inner[0]>", line 1, in <module>
+        assert A.inner(B) == B.inner(A)
+    AssertionError
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.rank
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.rank
+  File "/home/olpc/personal-projects/mvar/__init__.py", line unknown line number, in rank
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line ?, in __init__.Mvar.rank
+Failed example:
+    assert A.rank == A.var.size
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.rank[0]>", line 1, in <module>
+        assert A.rank == A.var.size
+    AssertionError
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.transform
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.transform
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 541, in transform
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 551, in __init__.Mvar.transform
+Failed example:
+    assert A.transform(N)== A.transform()**N  
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.transform[6]>", line 1, in <module>
+        assert A.transform(N)== A.transform()**N
+    AssertionError
+
+
+======================================================================
+FAIL: Doctest: __init__.givenVector
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.givenVector
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1932, in givenVector
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1937, in __init__.givenVector
+Failed example:
+    assert givenVector(A,index=0,value=1)==A.given(index=0,value=1)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.givenVector[0]>", line 1, in <module>
+        assert givenVector(A,index=0,value=1)==A.given(index=0,value=1)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 944, in given
+        vectors=vectors,
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 335, in __init__
+        [1  ,mean   ],
+      File "/home/olpc/personal-projects/mvar/helpers.py", line 170, in autostack
+        for row in rows
+      File "/usr/lib/python2.6/dist-packages/numpy/lib/shape_base.py", line 461, in vstack
+        return _nx.concatenate(map(atleast_2d,tup),0)
+    ValueError: array dimensions must agree except for d_0
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.KLdiv
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.KLdiv
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1810, in KLdiv
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1815, in __init__.Mvar.KLdiv
+Failed example:
+    assert A.KLdiv(B) > 0
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.KLdiv[1]>", line 1, in <module>
+        assert A.KLdiv(B) > 0
     AssertionError
 
 
@@ -155,39 +1405,6 @@ Exception raised:
       File "/usr/lib/python2.6/dist-packages/numpy/lib/ufunclike.py", line 173, in isneginf
         nx.logical_and(nx.isinf(x), nx.signbit(x), y)
     TypeError: function not supported for these types, and can't coerce safely to supported types
-
-
-======================================================================
-FAIL: Doctest: __init__.Mvar.__invert__
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
-    raise self.failureException(self.format_failure(new.getvalue()))
-AssertionError: Failed doctest test for __init__.Mvar.__invert__
-  File "/home/olpc/personal-projects/mvar/__init__.py", line 1167, in __invert__
-
-----------------------------------------------------------------------
-File "/home/olpc/personal-projects/mvar/__init__.py", line 1208, in __init__.Mvar.__invert__
-Failed example:
-    assert  A &(B & ~B) == A & Mvar(mean=B.mean, vectors=B.vectors, var=Matrix.infs)
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.__invert__[14]>", line 1, in <module>
-        assert  A &(B & ~B) == A & Mvar(mean=B.mean, vectors=B.vectors, var=Matrix.infs)
-    AssertionError
-----------------------------------------------------------------------
-File "/home/olpc/personal-projects/mvar/__init__.py", line 1211, in __init__.Mvar.__invert__
-Failed example:
-    assert (A&~B) & B == (A&B) & ~B
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.__invert__[15]>", line 1, in <module>
-        assert (A&~B) & B == (A&B) & ~B
-    AssertionError
 
 
 ======================================================================
@@ -284,7 +1501,1642 @@ Exception raised:
     ValueError: shape mismatch: objects cannot be broadcast to a single shape
 
 
+======================================================================
+FAIL: testIntPowers (unitTests.powerTester)
 ----------------------------------------------------------------------
-Ran 107 tests in 39.462s
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 324, in testIntPowers
+    self.assertTrue( self.A.transform(self.N)== self.A.transform()**self.N )
+AssertionError
 
-FAILED (failures=9, errors=2)
+======================================================================
+FAIL: testRealPow (unitTests.powerTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 382, in testRealPow
+    self.assertTrue( self.A/self.A**-1 == self.A**2 )
+AssertionError
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.KLdiv
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.KLdiv
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1810, in KLdiv
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1814, in __init__.Mvar.KLdiv
+Failed example:
+    assert A.KLdiv(A)== 0
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.KLdiv[0]>", line 1, in <module>
+        assert A.KLdiv(A)== 0
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1822, in KLdiv
+        numpy.log(self.det()/other.det())-
+    ZeroDivisionError: integer division or modulo by zero
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.chain
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.chain
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 783, in chain
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 814, in __init__.Mvar.chain
+Failed example:
+    dataA=A.sample(100)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.chain[4]>", line 1, in <module>
+        dataA=A.sample(100)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 631, in sample
+        return Matrix(numpy.array(units*self.scaled.T)+self.mean)
+    ValueError: shape mismatch: objects cannot be broadcast to a single shape
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 815, in __init__.Mvar.chain
+Failed example:
+    a=Mvar.fromData(dataA)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.chain[5]>", line 1, in <module>
+        a=Mvar.fromData(dataA)
+    NameError: name 'dataA' is not defined
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 816, in __init__.Mvar.chain
+Failed example:
+    assert a.chain()==Mvar.fromData(numpy.hstack([dataA,dataA]))        
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.chain[6]>", line 1, in <module>
+        assert a.chain()==Mvar.fromData(numpy.hstack([dataA,dataA]))
+    NameError: name 'a' is not defined
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 817, in __init__.Mvar.chain
+Failed example:
+    assert a.chain(transform=M) == Mvar.fromData(dataA*numpy.hstack([E,M]))
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.chain[7]>", line 1, in <module>
+        assert a.chain(transform=M) == Mvar.fromData(dataA*numpy.hstack([E,M]))
+    NameError: name 'a' is not defined
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 818, in __init__.Mvar.chain
+Failed example:
+    assert a.chain(transform=M) == Mvar.fromData(numpy.hstack([dataA,dataA*M]))
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.chain[8]>", line 1, in <module>
+        assert a.chain(transform=M) == Mvar.fromData(numpy.hstack([dataA,dataA*M]))
+    NameError: name 'a' is not defined
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 820, in __init__.Mvar.chain
+Failed example:
+    assert a.chain(B*M,M) == a.chain(transform=M)+Mvar.stack(Mvar.zeros(a.ndim),B*M)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.chain[9]>", line 1, in <module>
+        assert a.chain(B*M,M) == a.chain(transform=M)+Mvar.stack(Mvar.zeros(a.ndim),B*M)
+    NameError: name 'a' is not defined
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.given
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.given
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 869, in given
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 880, in __init__.Mvar.given
+Failed example:
+    a = A.given(index=0,value=1)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.given[0]>", line 1, in <module>
+        a = A.given(index=0,value=1)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 944, in given
+        vectors=vectors,
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 335, in __init__
+        [1  ,mean   ],
+      File "/home/olpc/personal-projects/mvar/helpers.py", line 170, in autostack
+        for row in rows
+      File "/usr/lib/python2.6/dist-packages/numpy/lib/shape_base.py", line 461, in vstack
+        return _nx.concatenate(map(atleast_2d,tup),0)
+    ValueError: array dimensions must agree except for d_0
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 881, in __init__.Mvar.given
+Failed example:
+    assert a.mean[:,0]==1
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.given[1]>", line 1, in <module>
+        assert a.mean[:,0]==1
+    NameError: name 'a' is not defined
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 882, in __init__.Mvar.given
+Failed example:
+    assert a.vectors[:,0]==numpy.zeros
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.given[2]>", line 1, in <module>
+        assert a.vectors[:,0]==numpy.zeros
+    NameError: name 'a' is not defined
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 907, in __init__.Mvar.given
+Failed example:
+    a[0]=1
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.given[13]>", line 1, in <module>
+        a[0]=1
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 955, in __setitem__
+        self.copy(self.given(index,value))
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 944, in given
+        vectors=vectors,
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 335, in __init__
+        [1  ,mean   ],
+      File "/home/olpc/personal-projects/mvar/helpers.py", line 170, in autostack
+        for row in rows
+      File "/usr/lib/python2.6/dist-packages/numpy/lib/shape_base.py", line 461, in vstack
+        return _nx.concatenate(map(atleast_2d,tup),0)
+    ValueError: array dimensions must agree except for d_0
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 908, in __init__.Mvar.given
+Failed example:
+    assert a==A.given(index=0,value=1)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.given[14]>", line 1, in <module>
+        assert a==A.given(index=0,value=1)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 944, in given
+        vectors=vectors,
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 335, in __init__
+        [1  ,mean   ],
+      File "/home/olpc/personal-projects/mvar/helpers.py", line 170, in autostack
+        for row in rows
+      File "/usr/lib/python2.6/dist-packages/numpy/lib/shape_base.py", line 461, in vstack
+        return _nx.concatenate(map(atleast_2d,tup),0)
+    ValueError: array dimensions must agree except for d_0
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.info
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.info
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1771, in info
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1773, in __init__.Mvar.info
+Failed example:
+    S=A.sample(100)   
+    assert Matrix(-numpy.log(A(S))) == A.info(S)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.info[0]>", line 1, in <module>
+        S=A.sample(100)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 631, in sample
+        return Matrix(numpy.array(units*self.scaled.T)+self.mean)
+    ValueError: shape mismatch: objects cannot be broadcast to a single shape
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.measure
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.measure
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 633, in measure
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 656, in __init__.Mvar.measure
+Failed example:
+    result = sensor1.measure(actual) & sensor2.measure(actual)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.measure[5]>", line 1, in <module>
+        result = sensor1.measure(actual) & sensor2.measure(actual)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 658, in measure
+        sample=self.sample(1)-self.mean
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 631, in sample
+        return Matrix(numpy.array(units*self.scaled.T)+self.mean)
+    ValueError: shape mismatch: objects cannot be broadcast to a single shape
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.rank
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.rank
+  File "/home/olpc/personal-projects/mvar/__init__.py", line unknown line number, in rank
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line ?, in __init__.Mvar.rank
+Failed example:
+    assert A.rank == A.var.size
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.rank[0]>", line 1, in <module>
+        assert A.rank == A.var.size
+    AssertionError
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.transform
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.transform
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 541, in transform
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 551, in __init__.Mvar.transform
+Failed example:
+    assert A.transform(N)== A.transform()**N  
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.transform[6]>", line 1, in <module>
+        assert A.transform(N)== A.transform()**N
+    AssertionError
+
+
+======================================================================
+FAIL: Doctest: __init__.givenVector
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.givenVector
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1932, in givenVector
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1937, in __init__.givenVector
+Failed example:
+    assert givenVector(A,index=0,value=1)==A.given(index=0,value=1)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.givenVector[0]>", line 1, in <module>
+        assert givenVector(A,index=0,value=1)==A.given(index=0,value=1)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 944, in given
+        vectors=vectors,
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 335, in __init__
+        [1  ,mean   ],
+      File "/home/olpc/personal-projects/mvar/helpers.py", line 170, in autostack
+        for row in rows
+      File "/usr/lib/python2.6/dist-packages/numpy/lib/shape_base.py", line 461, in vstack
+        return _nx.concatenate(map(atleast_2d,tup),0)
+    ValueError: array dimensions must agree except for d_0
+
+
+======================================================================
+FAIL: testMul (unitTests.productTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 201, in testMul
+    self.assertTrue( self.A**2==self.A*self.A )
+AssertionError
+
+======================================================================
+FAIL: testMvarMul (unitTests.productTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 218, in testMvarMul
+    self.assertTrue( self.A*self.A==self.A**2 )
+AssertionError
+
+======================================================================
+FAIL: testRealPow (unitTests.powerTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 381, in testRealPow
+    self.assertTrue( self.A*self.A==self.A**2 )
+AssertionError
+
+======================================================================
+FAIL: testZeroPow (unitTests.powerTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 360, in testZeroPow
+    self.assertTrue( self.A**0*self.A==self.A )
+AssertionError
+
+======================================================================
+FAIL: testParadoxes (unitTests.inversionTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 552, in testParadoxes
+    self.assertTrue( (self.A&self.B) & ~self.B == self.A & (self.B&~self.B) )
+AssertionError
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.KLdiv
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.KLdiv
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1810, in KLdiv
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1814, in __init__.Mvar.KLdiv
+Failed example:
+    assert A.KLdiv(A)== 0
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.KLdiv[0]>", line 1, in <module>
+        assert A.KLdiv(A)== 0
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1822, in KLdiv
+        numpy.log(self.det()/other.det())-
+    ZeroDivisionError: integer division or modulo by zero
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1815, in __init__.Mvar.KLdiv
+Failed example:
+    assert A.KLdiv(B) > 0
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.KLdiv[1]>", line 1, in <module>
+        assert A.KLdiv(B) > 0
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1822, in KLdiv
+        numpy.log(self.det()/other.det())-
+    ZeroDivisionError: integer division or modulo by zero
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.__gt__
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.__gt__
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1066, in __gt__
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1068, in __init__.Mvar.__gt__
+Failed example:
+    assert (A > Matrix.infs(A.ndim)) == 0
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__gt__[0]>", line 1, in <module>
+        assert (A > Matrix.infs(A.ndim)) == 0
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1078, in __gt__
+        numpy.inf*numpy.ones(self.mean.size)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1150, in inBox
+        return mvs(lower,upper,self.cov)
+      File "/home/olpc/personal-projects/mvar/mvncdf.py", line 189, in mvstdnormcdf
+        lowinf = np.isneginf(lower)
+      File "/usr/lib/python2.6/dist-packages/numpy/lib/ufunclike.py", line 173, in isneginf
+        nx.logical_and(nx.isinf(x), nx.signbit(x), y)
+    TypeError: function not supported for these types, and can't coerce safely to supported types
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1069, in __init__.Mvar.__gt__
+Failed example:
+    assert (A > -Matrix.infs(A.ndim)) == 1
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__gt__[1]>", line 1, in <module>
+        assert (A > -Matrix.infs(A.ndim)) == 1
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1078, in __gt__
+        numpy.inf*numpy.ones(self.mean.size)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1150, in inBox
+        return mvs(lower,upper,self.cov)
+      File "/home/olpc/personal-projects/mvar/mvncdf.py", line 189, in mvstdnormcdf
+        lowinf = np.isneginf(lower)
+      File "/usr/lib/python2.6/dist-packages/numpy/lib/ufunclike.py", line 173, in isneginf
+        nx.logical_and(nx.isinf(x), nx.signbit(x), y)
+    TypeError: function not supported for these types, and can't coerce safely to supported types
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1072, in __init__.Mvar.__gt__
+Failed example:
+    assert Matrix(AV>AV.mean) == 2**-AV.ndim 
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__gt__[3]>", line 1, in <module>
+        assert Matrix(AV>AV.mean) == 2**-AV.ndim
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1078, in __gt__
+        numpy.inf*numpy.ones(self.mean.size)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1150, in inBox
+        return mvs(lower,upper,self.cov)
+      File "/home/olpc/personal-projects/mvar/mvncdf.py", line 205, in mvstdnormcdf
+        error, cdfvalue, inform = mvndst(lower,upper,infin,correl,**kwds)
+    error: failed in converting 2nd argument `upper' of mvn.mvndst to C/Fortran array
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.__lt__
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.__lt__
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1087, in __lt__
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1089, in __init__.Mvar.__lt__
+Failed example:
+    assert (A < Matrix.infs(A.ndim)) == 1
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__lt__[0]>", line 1, in <module>
+        assert (A < Matrix.infs(A.ndim)) == 1
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1099, in __lt__
+        upper,
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1150, in inBox
+        return mvs(lower,upper,self.cov)
+      File "/home/olpc/personal-projects/mvar/mvncdf.py", line 189, in mvstdnormcdf
+        lowinf = np.isneginf(lower)
+      File "/usr/lib/python2.6/dist-packages/numpy/lib/ufunclike.py", line 173, in isneginf
+        nx.logical_and(nx.isinf(x), nx.signbit(x), y)
+    TypeError: function not supported for these types, and can't coerce safely to supported types
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1090, in __init__.Mvar.__lt__
+Failed example:
+    assert (A < -Matrix.infs(A.ndim)) == 0
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__lt__[1]>", line 1, in <module>
+        assert (A < -Matrix.infs(A.ndim)) == 0
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1099, in __lt__
+        upper,
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1150, in inBox
+        return mvs(lower,upper,self.cov)
+      File "/home/olpc/personal-projects/mvar/mvncdf.py", line 189, in mvstdnormcdf
+        lowinf = np.isneginf(lower)
+      File "/usr/lib/python2.6/dist-packages/numpy/lib/ufunclike.py", line 173, in isneginf
+        nx.logical_and(nx.isinf(x), nx.signbit(x), y)
+    TypeError: function not supported for these types, and can't coerce safely to supported types
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1093, in __init__.Mvar.__lt__
+Failed example:
+    assert Matrix(AV<AV.mean) == 2**-AV.ndim 
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__lt__[3]>", line 1, in <module>
+        assert Matrix(AV<AV.mean) == 2**-AV.ndim
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1099, in __lt__
+        upper,
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1150, in inBox
+        return mvs(lower,upper,self.cov)
+      File "/home/olpc/personal-projects/mvar/mvncdf.py", line 205, in mvstdnormcdf
+        error, cdfvalue, inform = mvndst(lower,upper,infin,correl,**kwds)
+    error: failed in converting 2nd argument `upper' of mvn.mvndst to C/Fortran array
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.__pow__
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.__pow__
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1332, in __pow__
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1367, in __init__.Mvar.__pow__
+Failed example:
+    assert A**0*A==A
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__pow__[6]>", line 1, in <module>
+        assert A**0*A==A
+    AssertionError
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1368, in __init__.Mvar.__pow__
+Failed example:
+    assert A*A**0==A
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__pow__[7]>", line 1, in <module>
+        assert A*A**0==A
+    AssertionError
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1378, in __init__.Mvar.__pow__
+Failed example:
+    if ((not A.flat) or (k1>=0 and k1>=0)):
+        assert (A**k1)*(A**k2)==A**(k1+k2) 
+        assert A**k1/A**k2==A**(k1-k2) 
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__pow__[11]>", line 2, in <module>
+        assert (A**k1)*(A**k2)==A**(k1+k2)
+    AssertionError
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1402, in __init__.Mvar.__pow__
+Failed example:
+    assert A**2==A*A
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__pow__[18]>", line 1, in <module>
+        assert A**2==A*A
+    AssertionError
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.__rmul__
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.__rmul__
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 25, in __rmul__
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 42, in __init__.Mvar.__rmul__
+Failed example:
+    assert A*A==A**2
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__rmul__[3]>", line 1, in <module>
+        assert A*A==A**2
+    AssertionError
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar._mvarMul
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar._mvarMul
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1661, in _mvarMul
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1667, in __init__.Mvar._mvarMul
+Failed example:
+    assert A*A==A**2
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar._mvarMul[0]>", line 1, in <module>
+        assert A*A==A**2
+    AssertionError
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.chain
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.chain
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 783, in chain
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 814, in __init__.Mvar.chain
+Failed example:
+    dataA=A.sample(100)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.chain[4]>", line 1, in <module>
+        dataA=A.sample(100)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 631, in sample
+        return Matrix(numpy.array(units*self.scaled.T)+self.mean)
+    ValueError: shape mismatch: objects cannot be broadcast to a single shape
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 815, in __init__.Mvar.chain
+Failed example:
+    a=Mvar.fromData(dataA)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.chain[5]>", line 1, in <module>
+        a=Mvar.fromData(dataA)
+    NameError: name 'dataA' is not defined
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 816, in __init__.Mvar.chain
+Failed example:
+    assert a.chain()==Mvar.fromData(numpy.hstack([dataA,dataA]))        
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.chain[6]>", line 1, in <module>
+        assert a.chain()==Mvar.fromData(numpy.hstack([dataA,dataA]))
+    NameError: name 'a' is not defined
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 817, in __init__.Mvar.chain
+Failed example:
+    assert a.chain(transform=M) == Mvar.fromData(dataA*numpy.hstack([E,M]))
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.chain[7]>", line 1, in <module>
+        assert a.chain(transform=M) == Mvar.fromData(dataA*numpy.hstack([E,M]))
+    NameError: name 'a' is not defined
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 818, in __init__.Mvar.chain
+Failed example:
+    assert a.chain(transform=M) == Mvar.fromData(numpy.hstack([dataA,dataA*M]))
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.chain[8]>", line 1, in <module>
+        assert a.chain(transform=M) == Mvar.fromData(numpy.hstack([dataA,dataA*M]))
+    NameError: name 'a' is not defined
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 820, in __init__.Mvar.chain
+Failed example:
+    assert a.chain(B*M,M) == a.chain(transform=M)+Mvar.stack(Mvar.zeros(a.ndim),B*M)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.chain[9]>", line 1, in <module>
+        assert a.chain(B*M,M) == a.chain(transform=M)+Mvar.stack(Mvar.zeros(a.ndim),B*M)
+    NameError: name 'a' is not defined
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.given
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.given
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 869, in given
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 880, in __init__.Mvar.given
+Failed example:
+    a = A.given(index=0,value=1)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.given[0]>", line 1, in <module>
+        a = A.given(index=0,value=1)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 925, in given
+        mean[:,fixed]=value.mean
+    IndexError: invalid index
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 881, in __init__.Mvar.given
+Failed example:
+    assert a.mean[:,0]==1
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.given[1]>", line 1, in <module>
+        assert a.mean[:,0]==1
+    NameError: name 'a' is not defined
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 882, in __init__.Mvar.given
+Failed example:
+    assert a.vectors[:,0]==numpy.zeros
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.given[2]>", line 1, in <module>
+        assert a.vectors[:,0]==numpy.zeros
+    NameError: name 'a' is not defined
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 907, in __init__.Mvar.given
+Failed example:
+    a[0]=1
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.given[13]>", line 1, in <module>
+        a[0]=1
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 955, in __setitem__
+        self.copy(self.given(index,value))
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 925, in given
+        mean[:,fixed]=value.mean
+    IndexError: invalid index
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 908, in __init__.Mvar.given
+Failed example:
+    assert a==A.given(index=0,value=1)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.given[14]>", line 1, in <module>
+        assert a==A.given(index=0,value=1)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 925, in given
+        mean[:,fixed]=value.mean
+    IndexError: invalid index
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.info
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.info
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1771, in info
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1773, in __init__.Mvar.info
+Failed example:
+    S=A.sample(100)   
+    assert Matrix(-numpy.log(A(S))) == A.info(S)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.info[0]>", line 1, in <module>
+        S=A.sample(100)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 631, in sample
+        return Matrix(numpy.array(units*self.scaled.T)+self.mean)
+    ValueError: shape mismatch: objects cannot be broadcast to a single shape
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.inner
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.inner
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 756, in inner
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 758, in __init__.Mvar.inner
+Failed example:
+    assert A.inner(B) == B.inner(A)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.inner[0]>", line 1, in <module>
+        assert A.inner(B) == B.inner(A)
+    AssertionError
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.measure
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.measure
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 633, in measure
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 656, in __init__.Mvar.measure
+Failed example:
+    result = sensor1.measure(actual) & sensor2.measure(actual)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.measure[5]>", line 1, in <module>
+        result = sensor1.measure(actual) & sensor2.measure(actual)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 658, in measure
+        sample=self.sample(1)-self.mean
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 631, in sample
+        return Matrix(numpy.array(units*self.scaled.T)+self.mean)
+    ValueError: shape mismatch: objects cannot be broadcast to a single shape
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.rank
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.rank
+  File "/home/olpc/personal-projects/mvar/__init__.py", line unknown line number, in rank
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line ?, in __init__.Mvar.rank
+Failed example:
+    assert A.rank == A.var.size
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.rank[0]>", line 1, in <module>
+        assert A.rank == A.var.size
+    AssertionError
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.transform
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.transform
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 541, in transform
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 551, in __init__.Mvar.transform
+Failed example:
+    assert A.transform(N)== A.transform()**N  
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.transform[6]>", line 1, in <module>
+        assert A.transform(N)== A.transform()**N
+      File "/usr/lib/python2.6/dist-packages/numpy/core/defmatrix.py", line 303, in __pow__
+        return matrix_power(self, other)
+      File "/usr/lib/python2.6/dist-packages/numpy/core/defmatrix.py", line 130, in matrix_power
+        M = inv(M)
+      File "/usr/lib/python2.6/dist-packages/numpy/linalg/linalg.py", line 355, in inv
+        return wrap(solve(a, identity(a.shape[0], dtype=a.dtype)))
+      File "/usr/lib/python2.6/dist-packages/numpy/linalg/linalg.py", line 254, in solve
+        raise LinAlgError, 'Singular matrix'
+    LinAlgError: Singular matrix
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.width
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.width
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 704, in width
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 709, in __init__.Mvar.width
+Failed example:
+    assert Matrix([A[n].var[0] for n in range(A.ndim)]) == A.width()**2
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.width[0]>", line 1, in <module>
+        assert Matrix([A[n].var[0] for n in range(A.ndim)]) == A.width()**2
+    IndexError: index out of bounds
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 713, in __init__.Mvar.width
+Failed example:
+    assert Matrix(corr.diagonal()) == Matrix.ones
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.width[3]>", line 1, in <module>
+        assert Matrix(corr.diagonal()) == Matrix.ones
+    AssertionError
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 714, in __init__.Mvar.width
+Failed example:
+    assert Matrix([norm[n].var[0] for n in range(norm.ndim)]) == Matrix.ones
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.width[4]>", line 1, in <module>
+        assert Matrix([norm[n].var[0] for n in range(norm.ndim)]) == Matrix.ones
+    IndexError: index out of bounds
+
+
+======================================================================
+FAIL: Doctest: __init__.givenVector
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.givenVector
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1932, in givenVector
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1937, in __init__.givenVector
+Failed example:
+    assert givenVector(A,index=0,value=1)==A.given(index=0,value=1)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.givenVector[0]>", line 1, in <module>
+        assert givenVector(A,index=0,value=1)==A.given(index=0,value=1)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 925, in given
+        mean[:,fixed]=value.mean
+    IndexError: invalid index
+
+
+======================================================================
+FAIL: testMul (unitTests.productTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 201, in testMul
+    self.assertTrue( self.A**2==self.A*self.A )
+AssertionError
+
+======================================================================
+FAIL: testMvarMul (unitTests.productTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 218, in testMvarMul
+    self.assertTrue( self.A*self.A==self.A**2 )
+AssertionError
+
+======================================================================
+FAIL: testComplexPowers (unitTests.powerTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 335, in testComplexPowers
+    self.assertFalse( self.A**self.K1*self.A**self.K2 == self.A**(self.K1+self.K2))
+AssertionError
+
+======================================================================
+FAIL: testRealPow (unitTests.powerTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 381, in testRealPow
+    self.assertTrue( self.A*self.A==self.A**2 )
+AssertionError
+
+======================================================================
+FAIL: testZeroPow (unitTests.powerTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 360, in testZeroPow
+    self.assertTrue( self.A**0*self.A==self.A )
+AssertionError
+
+======================================================================
+FAIL: testParadoxes (unitTests.inversionTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 552, in testParadoxes
+    self.assertTrue( (self.A&self.B) & ~self.B == self.A & (self.B&~self.B) )
+AssertionError
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.KLdiv
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.KLdiv
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1810, in KLdiv
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1814, in __init__.Mvar.KLdiv
+Failed example:
+    assert A.KLdiv(A)== 0
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.KLdiv[0]>", line 1, in <module>
+        assert A.KLdiv(A)== 0
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1822, in KLdiv
+        numpy.log(self.det()/other.det())-
+    ZeroDivisionError: integer division or modulo by zero
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1815, in __init__.Mvar.KLdiv
+Failed example:
+    assert A.KLdiv(B) > 0
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.KLdiv[1]>", line 1, in <module>
+        assert A.KLdiv(B) > 0
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1822, in KLdiv
+        numpy.log(self.det()/other.det())-
+    ZeroDivisionError: integer division or modulo by zero
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.__gt__
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.__gt__
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1066, in __gt__
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1068, in __init__.Mvar.__gt__
+Failed example:
+    assert (A > Matrix.infs(A.ndim)) == 0
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__gt__[0]>", line 1, in <module>
+        assert (A > Matrix.infs(A.ndim)) == 0
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1078, in __gt__
+        numpy.inf*numpy.ones(self.mean.size)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1150, in inBox
+        return mvs(lower,upper,self.cov)
+      File "/home/olpc/personal-projects/mvar/mvncdf.py", line 189, in mvstdnormcdf
+        lowinf = np.isneginf(lower)
+      File "/usr/lib/python2.6/dist-packages/numpy/lib/ufunclike.py", line 173, in isneginf
+        nx.logical_and(nx.isinf(x), nx.signbit(x), y)
+    TypeError: function not supported for these types, and can't coerce safely to supported types
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1069, in __init__.Mvar.__gt__
+Failed example:
+    assert (A > -Matrix.infs(A.ndim)) == 1
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__gt__[1]>", line 1, in <module>
+        assert (A > -Matrix.infs(A.ndim)) == 1
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1078, in __gt__
+        numpy.inf*numpy.ones(self.mean.size)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1150, in inBox
+        return mvs(lower,upper,self.cov)
+      File "/home/olpc/personal-projects/mvar/mvncdf.py", line 189, in mvstdnormcdf
+        lowinf = np.isneginf(lower)
+      File "/usr/lib/python2.6/dist-packages/numpy/lib/ufunclike.py", line 173, in isneginf
+        nx.logical_and(nx.isinf(x), nx.signbit(x), y)
+    TypeError: function not supported for these types, and can't coerce safely to supported types
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1072, in __init__.Mvar.__gt__
+Failed example:
+    assert Matrix(AV>AV.mean) == 2**-AV.ndim 
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__gt__[3]>", line 1, in <module>
+        assert Matrix(AV>AV.mean) == 2**-AV.ndim
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1078, in __gt__
+        numpy.inf*numpy.ones(self.mean.size)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1150, in inBox
+        return mvs(lower,upper,self.cov)
+      File "/home/olpc/personal-projects/mvar/mvncdf.py", line 205, in mvstdnormcdf
+        error, cdfvalue, inform = mvndst(lower,upper,infin,correl,**kwds)
+    error: failed in converting 2nd argument `upper' of mvn.mvndst to C/Fortran array
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.__lt__
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.__lt__
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1087, in __lt__
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1089, in __init__.Mvar.__lt__
+Failed example:
+    assert (A < Matrix.infs(A.ndim)) == 1
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__lt__[0]>", line 1, in <module>
+        assert (A < Matrix.infs(A.ndim)) == 1
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1099, in __lt__
+        upper,
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1150, in inBox
+        return mvs(lower,upper,self.cov)
+      File "/home/olpc/personal-projects/mvar/mvncdf.py", line 189, in mvstdnormcdf
+        lowinf = np.isneginf(lower)
+      File "/usr/lib/python2.6/dist-packages/numpy/lib/ufunclike.py", line 173, in isneginf
+        nx.logical_and(nx.isinf(x), nx.signbit(x), y)
+    TypeError: function not supported for these types, and can't coerce safely to supported types
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1090, in __init__.Mvar.__lt__
+Failed example:
+    assert (A < -Matrix.infs(A.ndim)) == 0
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__lt__[1]>", line 1, in <module>
+        assert (A < -Matrix.infs(A.ndim)) == 0
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1099, in __lt__
+        upper,
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1150, in inBox
+        return mvs(lower,upper,self.cov)
+      File "/home/olpc/personal-projects/mvar/mvncdf.py", line 189, in mvstdnormcdf
+        lowinf = np.isneginf(lower)
+      File "/usr/lib/python2.6/dist-packages/numpy/lib/ufunclike.py", line 173, in isneginf
+        nx.logical_and(nx.isinf(x), nx.signbit(x), y)
+    TypeError: function not supported for these types, and can't coerce safely to supported types
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1093, in __init__.Mvar.__lt__
+Failed example:
+    assert Matrix(AV<AV.mean) == 2**-AV.ndim 
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__lt__[3]>", line 1, in <module>
+        assert Matrix(AV<AV.mean) == 2**-AV.ndim
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1099, in __lt__
+        upper,
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1150, in inBox
+        return mvs(lower,upper,self.cov)
+      File "/home/olpc/personal-projects/mvar/mvncdf.py", line 205, in mvstdnormcdf
+        error, cdfvalue, inform = mvndst(lower,upper,infin,correl,**kwds)
+    error: failed in converting 2nd argument `upper' of mvn.mvndst to C/Fortran array
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.__mul__
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.__mul__
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 25, in __mul__
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 106, in __init__.Mvar.__mul__
+Failed example:
+    assert (A*B**0 + A*B**0).mean != (2*A*B**0).mean
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__mul__[29]>", line 1, in <module>
+        assert (A*B**0 + A*B**0).mean != (2*A*B**0).mean
+    AssertionError
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.__pow__
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.__pow__
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1332, in __pow__
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1367, in __init__.Mvar.__pow__
+Failed example:
+    assert A**0*A==A
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__pow__[6]>", line 1, in <module>
+        assert A**0*A==A
+    AssertionError
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1368, in __init__.Mvar.__pow__
+Failed example:
+    assert A*A**0==A
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__pow__[7]>", line 1, in <module>
+        assert A*A**0==A
+    AssertionError
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1402, in __init__.Mvar.__pow__
+Failed example:
+    assert A**2==A*A
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__pow__[18]>", line 1, in <module>
+        assert A**2==A*A
+    AssertionError
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.__rmul__
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.__rmul__
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 25, in __rmul__
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 42, in __init__.Mvar.__rmul__
+Failed example:
+    assert A*A==A**2
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__rmul__[3]>", line 1, in <module>
+        assert A*A==A**2
+    AssertionError
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar._matrixMul
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar._matrixMul
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1629, in _matrixMul
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1642, in __init__.Mvar._matrixMul
+Failed example:
+    assert A*(numpy.diagflat(1/A.width())) == A/A.width()
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar._matrixMul[3]>", line 1, in <module>
+        assert A*(numpy.diagflat(1/A.width())) == A/A.width()
+    AssertionError
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar._mvarMul
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar._mvarMul
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1661, in _mvarMul
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1667, in __init__.Mvar._mvarMul
+Failed example:
+    assert A*A==A**2
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar._mvarMul[0]>", line 1, in <module>
+        assert A*A==A**2
+    AssertionError
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.chain
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.chain
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 783, in chain
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 814, in __init__.Mvar.chain
+Failed example:
+    dataA=A.sample(100)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.chain[4]>", line 1, in <module>
+        dataA=A.sample(100)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 631, in sample
+        return Matrix(numpy.array(units*self.scaled.T)+self.mean)
+    ValueError: shape mismatch: objects cannot be broadcast to a single shape
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 815, in __init__.Mvar.chain
+Failed example:
+    a=Mvar.fromData(dataA)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.chain[5]>", line 1, in <module>
+        a=Mvar.fromData(dataA)
+    NameError: name 'dataA' is not defined
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 816, in __init__.Mvar.chain
+Failed example:
+    assert a.chain()==Mvar.fromData(numpy.hstack([dataA,dataA]))        
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.chain[6]>", line 1, in <module>
+        assert a.chain()==Mvar.fromData(numpy.hstack([dataA,dataA]))
+    NameError: name 'a' is not defined
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 817, in __init__.Mvar.chain
+Failed example:
+    assert a.chain(transform=M) == Mvar.fromData(dataA*numpy.hstack([E,M]))
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.chain[7]>", line 1, in <module>
+        assert a.chain(transform=M) == Mvar.fromData(dataA*numpy.hstack([E,M]))
+    NameError: name 'a' is not defined
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 818, in __init__.Mvar.chain
+Failed example:
+    assert a.chain(transform=M) == Mvar.fromData(numpy.hstack([dataA,dataA*M]))
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.chain[8]>", line 1, in <module>
+        assert a.chain(transform=M) == Mvar.fromData(numpy.hstack([dataA,dataA*M]))
+    NameError: name 'a' is not defined
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 820, in __init__.Mvar.chain
+Failed example:
+    assert a.chain(B*M,M) == a.chain(transform=M)+Mvar.stack(Mvar.zeros(a.ndim),B*M)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.chain[9]>", line 1, in <module>
+        assert a.chain(B*M,M) == a.chain(transform=M)+Mvar.stack(Mvar.zeros(a.ndim),B*M)
+    NameError: name 'a' is not defined
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.given
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.given
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 869, in given
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 880, in __init__.Mvar.given
+Failed example:
+    a = A.given(index=0,value=1)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.given[0]>", line 1, in <module>
+        a = A.given(index=0,value=1)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 925, in given
+        mean[:,fixed]=value.mean
+    IndexError: invalid index
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 881, in __init__.Mvar.given
+Failed example:
+    assert a.mean[:,0]==1
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.given[1]>", line 1, in <module>
+        assert a.mean[:,0]==1
+    NameError: name 'a' is not defined
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 882, in __init__.Mvar.given
+Failed example:
+    assert a.vectors[:,0]==numpy.zeros
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.given[2]>", line 1, in <module>
+        assert a.vectors[:,0]==numpy.zeros
+    NameError: name 'a' is not defined
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 907, in __init__.Mvar.given
+Failed example:
+    a[0]=1
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.given[13]>", line 1, in <module>
+        a[0]=1
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 955, in __setitem__
+        self.copy(self.given(index,value))
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 925, in given
+        mean[:,fixed]=value.mean
+    IndexError: invalid index
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 908, in __init__.Mvar.given
+Failed example:
+    assert a==A.given(index=0,value=1)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.given[14]>", line 1, in <module>
+        assert a==A.given(index=0,value=1)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 925, in given
+        mean[:,fixed]=value.mean
+    IndexError: invalid index
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.info
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.info
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1771, in info
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1773, in __init__.Mvar.info
+Failed example:
+    S=A.sample(100)   
+    assert Matrix(-numpy.log(A(S))) == A.info(S)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.info[0]>", line 1, in <module>
+        S=A.sample(100)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 631, in sample
+        return Matrix(numpy.array(units*self.scaled.T)+self.mean)
+    ValueError: shape mismatch: objects cannot be broadcast to a single shape
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.measure
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.measure
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 633, in measure
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 656, in __init__.Mvar.measure
+Failed example:
+    result = sensor1.measure(actual) & sensor2.measure(actual)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.measure[5]>", line 1, in <module>
+        result = sensor1.measure(actual) & sensor2.measure(actual)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 658, in measure
+        sample=self.sample(1)-self.mean
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 631, in sample
+        return Matrix(numpy.array(units*self.scaled.T)+self.mean)
+    ValueError: shape mismatch: objects cannot be broadcast to a single shape
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.rank
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.rank
+  File "/home/olpc/personal-projects/mvar/__init__.py", line unknown line number, in rank
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line ?, in __init__.Mvar.rank
+Failed example:
+    assert A.rank == A.var.size
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.rank[0]>", line 1, in <module>
+        assert A.rank == A.var.size
+    AssertionError
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.width
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.width
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 704, in width
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 709, in __init__.Mvar.width
+Failed example:
+    assert Matrix([A[n].var[0] for n in range(A.ndim)]) == A.width()**2
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.width[0]>", line 1, in <module>
+        assert Matrix([A[n].var[0] for n in range(A.ndim)]) == A.width()**2
+    IndexError: index out of bounds
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 713, in __init__.Mvar.width
+Failed example:
+    assert Matrix(corr.diagonal()) == Matrix.ones
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.width[3]>", line 1, in <module>
+        assert Matrix(corr.diagonal()) == Matrix.ones
+    AssertionError
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 714, in __init__.Mvar.width
+Failed example:
+    assert Matrix([norm[n].var[0] for n in range(norm.ndim)]) == Matrix.ones
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.width[4]>", line 1, in <module>
+        assert Matrix([norm[n].var[0] for n in range(norm.ndim)]) == Matrix.ones
+    IndexError: index out of bounds
+
+
+======================================================================
+FAIL: Doctest: __init__.givenVector
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.givenVector
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1932, in givenVector
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1937, in __init__.givenVector
+Failed example:
+    assert givenVector(A,index=0,value=1)==A.given(index=0,value=1)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.givenVector[0]>", line 1, in <module>
+        assert givenVector(A,index=0,value=1)==A.given(index=0,value=1)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 925, in given
+        mean[:,fixed]=value.mean
+    IndexError: invalid index
+
+
+----------------------------------------------------------------------
+Ran 642 tests in 168.435s
+
+FAILED (failures=88, errors=28)

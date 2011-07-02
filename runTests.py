@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 import sys
+import os
 import optparse
 import unittest
 import doctest
@@ -15,10 +16,10 @@ import unitTests
 def makeParser():
     parser=optparse.OptionParser()
 
-    parser.add_option('-x',action='store_true',help = "cross test using various values of lfatness and datatype")
+    parser.add_option('-x',action='store_true',help = "cross test using various values of flatness and datatype")
 
     new=optparse.OptionGroup(parser,'new')    
-    new.add_option('-n','--new',action='store_true',default=False,help='create new test objects')
+    new.add_option('-n','--new',action='store_true',default=False,help='force creation of new test objects')
     parser.add_option_group(new)
 
     general=optparse.OptionGroup(parser,'general')
@@ -61,7 +62,7 @@ if __name__=='__main__':
     suite=unittest.TestSuite()
 
     if values.x:
-        for flatness in [(True,True,True),(False,False)]:
+        for flatness in [(True,True,True),(False,False,False)]:
             for dtype in ['r','c','i']:
                 values.flatness=flatness
                 values.dtype=dtype
@@ -69,5 +70,6 @@ if __name__=='__main__':
     else:
         suite.addTests(getSuite(values))
 
-
+    sys.stderr.write("test values: %s\n" % values)
+        
     unittest.TextTestRunner().run(suite)
