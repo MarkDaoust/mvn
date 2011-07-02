@@ -5,7 +5,7 @@
 #todo: merge chain and  sensor.measure??
 #todo: type handling- be more uniform, arrays work element wize, matrixes get converted to Mvars ?
 #todo: wiki: Complex Normal Distribution (I knew there was something underconstrained about these)
-#todo: Mvar.real & imag?,  
+#todo: Mvar.real & Mvar.imag?,  
 #todo: consider removing the autosquare if you ever want to speed things up, 
 #         I bet it would help. it would also allow other factorizations (like cholsky) 
 #todo: wikipedia/kalmanfiltering#information filter    !!   the mvar and it's 
@@ -722,62 +722,6 @@ class Mvar(Plane):
         S=numpy.array(self.scaled)
         return (S.conj()*S).sum(0)**(0.5)
 
-
-
-    def quad(self,matrix=None):
-        #todo: Chi & Chi2 distribution gives the *real* distribution of the length & length^2
-        #       this gust has the right mean and variance
-        """
-        ref: http://en.wikipedia.org/wiki/Quadratic_form_(statistics)
-
-        use this to dot an mvar with itself like (rand())**2 
-        (use dot is like rand()*rand())
-
-        if you're creative with the marix transform you can put together 
-        just about any 
-
-        todo: Chi & Chi2 distribution gives the *real* distribution of the length & length^2
-                this has the right mean and variance so it's like a maximul entropy model
-                (ref: http://en.wikipedia.org/wiki/Principle_of_maximum_entropy )
-        """
-        if matrix is not None:
-            matrix=(matrix+matrix.H)/2
-
-        transformed = self if matrix is None else self*matrix
-        flattened   = transformed*self.mean.H
-
-        return Mvar(
-            mean=flattened.mean+numpy.trace(matrix*self.cov),
-            var=4.0*flattened.var+2.0*numpy.trace(transformed.cov*self.cov),
-        )
-
-    #todo: add a test case to show why quad and dot are different
-    #todo: add a 'transposed' class so inner is just part of multiply
-    def inner(self,other):
-        """
-        >>> assert A.inner(B) == B.inner(A)
-
-        use this to dot product two mvars together, dot is like rand()*rand()
-        be careful dot producting something with itself: 
-            there you might want (rand())**2
-            (use mvar.quad for that)
-        """        
-        return Mvar(
-            mean=self.mean*other.mean.H,
-            var=(
-                (self*other).trace() + 
-                (other*self.mean.H).trace() + 
-                (self*other.mean.H).trace()
-            )
-        )
-    
-    dot = inner
-
-    #todo: add a 'transposed' class so outer is just part of multiply
-    def outer(self,other):        
-        self=numpy.vstack([self.inflate().scaled,self.mean])
-        other=numpy.vstack([other.inflate().scaled,other.mean])
-        return self.H*other
 
     #todo: merge with sensor.measure
     def chain(self,sensor=None,transform=None):
@@ -1694,6 +1638,69 @@ class Mvar(Plane):
             var=self.var,
         )
             
+
+    def quad(self,matrix=None):
+        #todo: Chi & Chi2 distribution gives the *real* distribution of the length & length^2
+        #       this gust has the right mean and variance
+        """
+        ref: http://en.wikipedia.org/wiki/Quadratic_form_(statistics)
+
+        when used without a transform matrix this will get you the distribution 
+        of the vector's magnitude**2.
+
+        use this to dot an mvar with itself like (rand())**2 
+        use iner if you want rand()*rand()
+
+        If you're creative with the marix transform you can make lots of 
+            interesting things happen
+
+        todo: Chi & Chi2 distribution gives the *real* distribution of the length & length^2
+                this has the right mean and variance so it's like a maximul entropy model
+                (ref: http://en.wikipedia.org/wiki/Principle_of_maximum_entropy )
+        """
+        if matrix is not None:
+            matrix=(matrix+matrix.H)/2
+
+        transformed = self if matrix is None else self*matrix
+        flattened   = transformed*self.mean.H
+
+        return Mvar(
+            mean=flattened.mean+numpy.trace(self.cov if matrix is None else matrix*self.cov) ,
+            var=4.0*flattened.var+2.0*numpy.trace(transformed.cov*self.cov),
+        )
+
+    #todo: add a test case to show why quad and dot are different
+    #todo: add a 'transposed' class so inner is just part of multiply
+
+    @__mul__.register(Mvar,Mvar.T)
+    def inner(self,other):
+        """
+        >>> assert A.inner(B) == B.inner(A)
+
+        use this to dot product two mvars together, dot is like rand()*rand()
+        be careful dot producting something with itself: 
+            there you might want (rand())**2
+            (use mvar.quad for that)
+        """        
+        return Mvar(
+            mean=self.mean*other.mean.H,
+            var=(
+                (self*other).trace() + 
+                (other*self.mean.H).trace() + 
+                (self*other.mean.H).trace()
+            )
+        )
+    
+    dot = inner
+
+    #todo: add a 'transposed' class so outer is just part of multiply
+    @__mul__.register(Mvar.T,Mvar)
+    def outer(self,other):
+        """
+        >>> assert(numpy.trace(A.outer(B))) == A.inner(B).mean
+        """
+        return numpy.outer(self.mean,other.mean)
+
 
     def __add__(self,other):
         """

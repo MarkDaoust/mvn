@@ -606,8 +606,206 @@ class blendTester(myTests):
         self.assertTrue( (L1&L2).var==1)
         self.assertTrue( (L1&L2).vectors==[1,0])
 
+class quadTester(myTests):
+    def testDerivation(self):
+        Na = 25
 
-class dotTester(myTests):
+        #get some data from A
+        Da=self.A.sample(Na)
+
+        #and remake the multivariates
+        A=Mvar.fromData(Da)
+
+        # take all the dot products
+        dots=(numpy.array(Da)**2).sum(1)
+        self.assertTrue( Matrix(dots) == numpy.diag(Da*Da.H) )
+
+        Mean = Matrix(dots.mean())
+        Var = Matrix(dots.var())
+
+
+        self.assertTrue( Mean == numpy.trace(Da*Da.H)/Na )
+        self.assertTrue( Mean == numpy.trace(Da.H*Da/Na) )
+        self.assertTrue( Mean == (Da*Da.H).diagonal().mean() )
+
+        self.assertTrue( A.cov+A.mean.H*A.mean == (Da.H*Da)/Na )
+
+        self.assertTrue( Mean == numpy.trace(A.mean.H*A.mean + A.cov) )
+        self.assertTrue( Mean == numpy.trace(A.mean.H*A.mean)+numpy.trace(A.cov) )
+        self.assertTrue( Mean == A.mean*A.mean.H + A.trace() )
+
+        #definition of variance
+        self.assertTrue( Var == (numpy.array(Mean -dots)**2).mean() )
+
+        #expand it
+        self.assertTrue( 
+            Var == (
+                Mean**2 
+                -2*numpy.array(Mean)*dots + dots**2 
+            ).mean() 
+        )
+
+        #distribute the calls to mean()
+        self.assertTrue( Var == Mean**2 - 2*Mean*dots.mean() + (dots**2).mean() )
+
+        #but Mean == dot.mean(), so
+        self.assertTrue( Var == (dots**2).mean() - Mean**2 )
+
+        self.assertTrue( Var == (dots**2).sum()/Na - Mean**2 )
+
+        self.assertTrue( Var == ((Da*Da.H).diagonal()**2).sum()/Na - Mean**2 )
+
+        self.assertTrue( 
+            Var == 
+            Matrix((Da*Da.H).diagonal())
+            *Matrix((Da*Da.H).diagonal()).H/Na 
+            -Mean**2
+        )
+
+        self.assertTrue( 
+            Mean ==
+            (Matrix((Da*Da.H).diagonal())
+            *Matrix.ones((Na,1))/Na)
+        )
+
+        self.assertTrue( 
+            Mean**2 == 
+            (Matrix((Da*Da.H).diagonal())
+            *Matrix.ones((Na,1))/Na)**2
+        )
+
+        self.assertTrue( 
+            Mean**2 == 
+            Matrix((Da*Da.H).diagonal()
+            *Matrix.ones((Na,1))/Na) 
+            *Matrix((Da*Da.H).diagonal()
+            *Matrix.ones((Na,1))/Na)
+        )
+
+        self.assertTrue( 
+            Mean**2 == 
+            Matrix((Da*Da.H).diagonal())
+            *Matrix.ones((Na,1))*Matrix.ones((1,Na))/Na**2 
+            *Matrix((Da*Da.H).diagonal()).H
+        )
+
+        self.assertTrue( 
+            Var ==
+            Matrix((Da*Da.H).diagonal())
+            *Matrix((Da*Da.H).diagonal()).H/Na 
+            -
+            Matrix((Da*Da.H).diagonal())
+            *Matrix.ones((Na,1))*Matrix.ones((1,Na))/Na**2 
+            *Matrix((Da*Da.H).diagonal()).H
+        )
+            
+        self.assertTrue( 
+            Var ==
+            Matrix((Da*Da.H).diagonal())
+            *Matrix((Da*Da.H).diagonal()).H/Na 
+            -
+            (Matrix((Da*Da.H).diagonal())
+            *Matrix((Da*Da.H).diagonal()).H.sum()).sum()/Na/Na
+        )
+
+        self.assertTrue( 
+            Var ==
+            Matrix((Da*Da.H).diagonal())/Na
+            *Matrix((Da*Da.H).diagonal()).H
+            -
+            Matrix((Da*Da.H).diagonal())/Na
+            *(numpy.trace(Da*Da.H)
+            *Matrix.ones((Na,1)))/Na
+        )
+
+        self.assertTrue( 
+            Var == 
+            Matrix((Da*Da.H).diagonal())/Na 
+            * (
+                Matrix((Da*Da.H).diagonal()).H
+                -
+                (numpy.trace(Da*Da.H)
+                *Matrix.ones((Na,1)))/Na
+            )
+        )
+
+        self.assertTrue( 
+            Var == 
+            Matrix((Da*Da.H).diagonal())/Na 
+            *(
+                Matrix((Da*Da.H).diagonal()).H
+                -Mean
+            )
+        )
+
+        #there's a connection in between here that I don't understand   
+
+        #wiki: this is the Reference value
+        wVar=2*numpy.trace(A.cov*A.cov)+4*A.mean*A.cov*A.mean.H
+
+        self.assertTrue( 
+            wVar == 
+            2*numpy.trace(
+                A.cov
+                *A.vectors.H*numpy.diagflat(A.var)*A.vectors
+            ) 
+            + 
+            4*numpy.trace(
+                A.mean.H*A.mean
+                *A.vectors.H*numpy.diagflat(A.var)*A.vectors
+            )
+        )
+
+        self.assertTrue( 
+            wVar == 
+            2*numpy.trace(
+                A.cov
+                *A.vectors.H*numpy.diagflat(A.var)*A.vectors
+            ) 
+            + 
+            numpy.trace(
+                4*A.mean
+                *A.vectors.H*numpy.diagflat(A.var)*A.vectors
+                *A.mean.H
+            )
+        )
+
+        self.assertTrue( 
+            wVar == 
+            2*numpy.trace(
+                A.cov
+                *A.vectors.H*numpy.diagflat(A.var)*A.vectors
+            ) + 
+            numpy.trace(
+                4*A.mean
+                *A.vectors.H*numpy.diagflat(A.var)*A.vectors
+                *A.mean.H
+            )
+        )
+
+        self.assertTrue( 
+            wVar == 
+            2*numpy.trace(A.cov*A.cov)
+            +
+            4*A.mean*A.cov*A.mean.H
+        )
+
+        self.assertTrue(
+            wVar == 
+            2*(A*A).trace()
+            +
+            4*(A*A.mean.H).trace()
+        )
+
+        self.assertTrue(
+            A.quad()==
+            Mvar(
+                mean= A.mean*A.mean.H + A.trace(),
+                var=2*(A*A).trace()+4*(A*A.mean.H).trace()
+            )
+        )
+
+class innerTester(myTests):
     def testDerivation(self):
         A=self.A
         B=self.B
@@ -640,37 +838,79 @@ class dotTester(myTests):
         self.assertTrue( Var == (numpy.array(Mean -dot)**2).mean() )
 
         #expand it
-        self.assertTrue( Var == (Mean**2 - 2*numpy.array(Mean)*dot + dot**2 ).mean() )
+        self.assertTrue( 
+            Var == (
+                Mean**2 
+                - 
+                2*numpy.array(Mean)*dot + dot**2 
+            ).mean() 
+        )
 
         #diftribute the calls to mean()
-        self.assertTrue( Var == Mean**2 - 2*Mean*dot.mean() + (dot**2).mean() )
+        self.assertTrue( 
+            Var == 
+            Mean**2 
+            -2*Mean*dot.mean() 
+            +(dot**2).mean() 
+        )
 
         #but Mean == dot.mean(), so
-        self.assertTrue( Var == (dot**2).mean() - Mean**2 )
+        self.assertTrue( 
+            Var == 
+            (dot**2).mean() - Mean**2
+        )
 
         dot = Matrix(dot)
 
         self.assertTrue( Var == numpy.trace(dot*dot.H)/N - Mean**2 )
         
         #factor everything
-        self.assertTrue( Var == numpy.trace(Da*Db.H*Db*Da.H)/Na/Nb - (A.mean*B.mean.H)**2 )
+        self.assertTrue( 
+            Var == 
+            numpy.trace(Da*Db.H*Db*Da.H)/Na/Nb 
+            - 
+            (A.mean*B.mean.H)**2 
+        )
 
 
         #rotate the trace
-        self.assertTrue( Var == numpy.trace(Da.H*Da*Db.H*Db)/Na/Nb - (A.mean*B.mean.H)**2 )
+        self.assertTrue( 
+            Var == 
+            numpy.trace(Da.H*Da*Db.H*Db)/Na/Nb 
+            - 
+            (A.mean*B.mean.H)**2 
+        )
 
         #group the data's
-        self.assertTrue( Var == numpy.trace((Da.H*Da)*(Db.H*Db))/Na/Nb - (A.mean*B.mean.H)**2 )
+        self.assertTrue( 
+            Var == 
+            numpy.trace((Da.H*Da)*(Db.H*Db))/Na/Nb 
+            -
+            (A.mean*B.mean.H)**2 
+        )
 
         #distribute the N's
-        self.assertTrue( Var == numpy.trace((Da.H*Da)/Na*(Db.H*Db)/Nb) - (A.mean*B.mean.H)**2 )
+        self.assertTrue( 
+            Var == 
+            numpy.trace((Da.H*Da)/Na*(Db.H*Db)/Nb) 
+            - 
+            (A.mean*B.mean.H)**2 
+        )
 
         #from the definition of mean and cov
         self.assertTrue( A.cov+A.mean.H*A.mean == (Da.H*Da)/Na )
         self.assertTrue( B.cov+B.mean.H*B.mean == (Db.H*Db)/Nb )
 
         #replace
-        self.assertTrue( Var == numpy.trace((A.cov+A.mean.H*A.mean)*(B.cov+B.mean.H*B.mean))-(A.mean*B.mean.H)**2 )
+        self.assertTrue( 
+            Var == 
+            numpy.trace(
+                (A.cov+A.mean.H*A.mean)
+                *(B.cov+B.mean.H*B.mean)
+            )
+            -
+            (A.mean*B.mean.H)**2 
+        )
 
 
         #multiply it out
@@ -722,6 +962,45 @@ class dotTester(myTests):
             (B*A.mean.H).trace() + 
             (A*B.mean.H).trace()
         )
+
+        self.assertTrue(
+            A.inner(B) ==
+            Mvar(
+                mean= A.mean*B.mean.H,
+                var= (A*B).trace() + (B*A.mean.H).trace() + (A*B.mean.H).trace()
+            )
+        )
+
+        self.assertTrue( A.inner(B) == B.inner(A) )
+
+
+class outerTester(myTests):
+    def testDerivation(self):
+        A=self.A
+        B=self.B
+
+        Na = 20
+        Nb = 10
+
+        N=Na*Nb
+
+        #get some data from A and B
+        Da=A.sample(Na)
+        Db=B.sample(Nb)
+
+        #and remake the multivariates based on the samples you just took
+        A=Mvar.fromData(Da)
+        B=Mvar.fromData(Db)
+
+        out = numpy.outer(Da,Db).reshape((20,3,10,3))
+
+        self.assertTrue( Matrix(numpy.outer(Da[0,:],Db[0,:])) == out[0,:,0,:] )
+
+        result = out.mean(2).mean(0)
+
+        self.assertTrue( numpy.outer(A.mean,B.mean) == Matrix(result))
+        self.assertTrue( A.outer(B) == Matrix(result))
+        self.assertTrue( B.outer(A) == Matrix(result).H)
 
 def getTests(fixture=None):
     testCases= [
