@@ -1,5 +1,7 @@
 #! /usr/bin/env python
 
+#todo: formData should be the main constructor
+#todo: the approximation tollerence should be a class attribute
 #todo: merge chain and  sensor.measure??
 #todo: type handling- be more uniform, arrays work element wize, matrixes get converted to Mvars ?
 #todo: wiki: Complex Normal Distribution (I knew there was something underconstrained about these)
@@ -73,7 +75,8 @@ import decorate
 #base class
 from plane import Plane
 
-Mvar=decorate.underConstruction()
+Mvar=decorate.underConstruction('Mvar')
+Mvar.T=decorate.underConstruction('Mvar.T')
 
 def format(something):
     '''
@@ -365,7 +368,7 @@ class Mvar(Plane):
         )
 
     @staticmethod
-    def zeros(n=1):
+    def zeros(n=1,mean=None):
         """
         >>> n=abs(N)
         >>> Z=Mvar.zeros(n)
@@ -374,10 +377,10 @@ class Mvar(Plane):
         >>> assert Z.vectors.size==0
         >>> assert Z**-1 == Mvar.infs
         """
-        return Mvar(mean=Matrix.zeros(n))
+        return Mvar(mean=Matrix.zeros(n) if mean is None else Mean)
     
     @staticmethod
-    def infs(n=1):
+    def infs(n=1,mean=None):
         """
         >>> n=abs(N)
         >>> inf=Mvar.infs(n)
@@ -387,11 +390,13 @@ class Mvar(Plane):
         >>> assert inf.vectors==Matrix.eye
         >>> assert inf**-1 == Mvar.zeros
         """
-        
-        return Mvar.zeros(n)**-1
+        result = Mvar.zeros(n)**-1
+        if mean is not None:
+            result.mean = mean
+        return result
 
     @staticmethod
-    def eye(n=1):
+    def eye(n=1,mean = None):
         """
         >>> n=abs(N)
         >>> eye=Mvar.eye(n)
@@ -402,7 +407,7 @@ class Mvar(Plane):
         >>> assert eye**-1 == eye
         """
         return Mvar(
-            mean=Matrix.zeros([1,n]),
+            mean=Matrix.zeros([1,n]) if mean is None else mean,
             vectors=Matrix.eye(n),
         )
     
@@ -617,6 +622,7 @@ class Mvar(Plane):
         a large number of samples will have the same mean and cov as the 
         Mvar being sampled
         """
+        #todo look at that complex-normal distributions
         units = Matrix(
             helpers.ascomplex(numpy.random.randn(n,self.ndim,2))/sqrt(2)
             if cplx else 
@@ -707,7 +713,7 @@ class Mvar(Plane):
         >>> assert Matrix(corr.diagonal()) == Matrix.ones
         >>> assert Matrix([norm[n].var[0] for n in range(norm.ndim)]) == Matrix.ones
 
-        this is very different from 
+        This is very different from 
 
         >>> assert Matrix((A**0).var) == Matrix.ones
 
@@ -745,10 +751,11 @@ class Mvar(Plane):
             var=4.0*flattened.var+2.0*numpy.trace(transformed.cov*self.cov),
         )
 
-    #add a test case to show why quad and dot are different
-    def dot(self,other):
+    #todo: add a test case to show why quad and dot are different
+    #todo: add a 'transposed' class so inner is just part of multiply
+    def inner(self,other):
         """
-        >>> assert A.dot(B) == B.dot(A)
+        >>> assert A.inner(B) == B.inner(A)
 
         use this to dot product two mvars together, dot is like rand()*rand()
         be careful dot producting something with itself: 
@@ -764,6 +771,14 @@ class Mvar(Plane):
             )
         )
     
+    dot = inner
+
+    #todo: add a 'transposed' class so outer is just part of multiply
+    def outer(self,other):        
+        self=numpy.vstack([self.inflate().scaled,self.mean])
+        other=numpy.vstack([other.inflate().scaled,other.mean])
+        return self.H*other
+
     #todo: merge with sensor.measure
     def chain(self,sensor=None,transform=None):
         """
@@ -990,7 +1005,7 @@ class Mvar(Plane):
         """
         if not isinstance(other,Mvar):
             if callable(other):
-                return self == other(self.ndim)
+                other = other(self.ndim)
 
         other=Mvar.fromData(other)
         
@@ -1279,7 +1294,7 @@ class Mvar(Plane):
         function)
         
         >>> if not (A.flat or B.flat):
-        ...     assert A & B == wiki(A,B) or flat
+        ...     assert A & B == wiki(A,B)
 
         this algorithm is also, at the same time, solving linear equations
         where the zero vatiances correspond to a plane's null vectors 
@@ -1289,9 +1304,9 @@ class Mvar(Plane):
         >>> assert (L1&L2).mean==[1,1]
         >>> assert (L1&L2).var.size==0
 
-        >>> L1=Mvar(mean=[0,0],vectors=[1,1],var=numpy.inf)
+        >>> L1=Mvar(mean=[1,0],vectors=[1,1],var=numpy.inf)
         >>> L2=Mvar(mean=[0,1],vectors=[1,0],var=numpy.inf) 
-        >>> assert (L1&L2).mean==[1,1]
+        >>> assert (L1&L2).mean==[2,1]
         >>> assert (L1&L2).var.size==0
         
         >>> L1=Mvar(mean=[0,0],vectors=Matrix.eye, var=[1,1])
@@ -1309,36 +1324,8 @@ class Mvar(Plane):
             #then this is a standard paralell operation
             return (self**(-1)+other**(-1))**(-1) 
         
-        #otherwise there is more work to do
-        
-        #inflate each object
-        self=self.inflate()
-        other=other.inflate()
-        #collect the null vectors
-        Nself=self.vectors[self.var==0,:]
-        Nother=other.vectors[other.var==0,:] 
+        Dmean = Plane.__and__(self,other).mean
 
-        #and stack them
-        null=numpy.vstack([
-            Nself,
-            Nother,
-        ])
-
-        #get length of the component of the means along each null vector
-        r=numpy.hstack([self.mean*Nself.H,other.mean*Nother.H])
-
-        #square up the null vectors
-        (s,v,d)=numpy.linalg.svd(null,full_matrices=False)
-
-        #discard any very small components
-        nonZero = ~helpers.approx(v**2)
-        s=s[:,nonZero]
-        v=v[nonZero]
-        d=d[nonZero,:]
-        
-        #calculate the mean component in the direction of the new null vectors
-        Dmean=r*s*numpy.diagflat(v**-1)*d
-        
         #do the blending, while compensating for the mean of the working plane
         return ((self-Dmean)**-1+(other-Dmean)**-1)**-1+Dmean
 
@@ -1843,12 +1830,12 @@ class Mvar(Plane):
         print self
         """
         return '\n'.join([
-            '%s(' % self.__class__.name,
+            '%s(' % self.__class__.__name__,
             '    mean=',
             '        %s,' % self.mean.__repr__().replace('\n','\n'+8*' '),
-            '    var='
+            '    var=',
             '        %s,' % self.var.__repr__().replace('\n','\n'+8*' '),
-            '    vectors='
+            '    vectors=',
             '        %s' % self.vectors.__repr__().replace('\n','\n'+8*' '),
             ')',
         ])
@@ -1882,6 +1869,14 @@ class Mvar(Plane):
                 'this method can only produce patches for 2d data'
             )
         
+        #lazy import
+        try:
+            E=Ellipse
+        except NameError:
+            from matplotlib.patches import Ellipse as E
+            globals().update({'Ellipse':E})
+
+
         if alpha=='auto':
             kwargs['alpha']=numpy.max([
                 minalpha,
@@ -1895,12 +1890,6 @@ class Mvar(Plane):
         wh[~numpy.isfinite(wh)]=10**5
 
         width,height=2*wh
-
-        try:
-            E=Ellipse
-        except NameError:
-            from matplotlib.patches import Ellipse as E
-            globals().update({'Ellipse':E})
 
         #return an Ellipse patch
         return E(

@@ -1,5 +1,4 @@
 #! /usr/bin/env python
-
 import numpy
 
 import helpers
@@ -7,9 +6,30 @@ import decorate
 from matrix import Matrix 
 from square import square
 
+def getNull(vectors):
+    shape=vectors.shape        
+    missing = shape[1]-shape[0]
+
+    if missing>0:
+        vectors = numpy.vstack(
+            [vectors,numpy.zeros((missing,shape[1]))]
+        )
+    else:
+        vectors=vectors
+
+    var,vectors = square(vectors)
+
+    zeros=helpers.approx(var)
+
+    return vectors[zeros]
+
+
+Plane = decorate.underConstruction('Plane')
+
 @decorate.right
 @decorate.inplace
 @decorate.automath
+@decorate.MultiMethod.sign(Plane)
 class Plane(object):
     """
     plane class, meant to (eventually) factor out some code, and utility from the Mvar class
@@ -25,7 +45,7 @@ class Plane(object):
         stack=Matrix(helpers.autostack([
             [vectors],
             [mean   ],
-        ]))
+        ],default=1))
         
         #unpack the stack into the object's parameters
         self.mean = numpy.real_if_close(stack[-1])
@@ -61,45 +81,48 @@ class Plane(object):
         def fget(self):
             return self.vectors.shape
 
-    def __pow__(self,other):
-        assert other==-1
-        return ~self
-
-    def __invert__(self):
+    @decorate.MultiMethod
+    def __add__(self,other):
         """
-        switch between vectors along the plane and vectors across the plane
-        
+        add two planes together
         """
-        shape=self.shape        
+        raise TypeError("No Apropriate Method Found")
 
+    @__add__.register(Plane)
+    def __add__(self,other):
         result = self.copy()
-
-        missing = shape[1]-shape[0]
-
-        result.vectors = numpy.vstack(
-            [self.vectors,numpy.zeros((missing,shape[1]))]
-        )
-
-        var,vectors = square(result.vectors)
-
-        zeros=helpers.approx(var)
-
-        result.vectors = vectors[zeros]
-
+        result.mean = result.mean+other
         return result
 
+    @__add__.register(Plane,Plane)
     def __add__(self,other):
         return Plane(
             mean=self.mean+other.mean,
             vectors=numpy.vstack([self.vectors,other.vectors])
         )
 
-    def square(self):
-        pass
+    def getNull(self):
+        return getNull(self.vectors)
+
 
     def __and__(self,other):
         """
         plane intersection
         """
-        return (self**(-1)+other**(-1))**(-1) 
+        Nself=self.getNull()
+        Nother=other.getNull()
+
+        #and stack them
+        null=numpy.vstack([
+            Nself,
+            Nother,
+        ])
+
+        #get length of the component of the means along each null vector
+        r=numpy.vstack([Nself*self.mean.H,Nother*other.mean.H])
+        
+        mean = (numpy.linalg.pinv(null,1e-6)*r).H
+
+        return Plane(vectors=getNull(null),mean=mean)
+
 

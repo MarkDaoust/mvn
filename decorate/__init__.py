@@ -81,12 +81,14 @@ def prop(cls):
     func_locals.update(dict((k, cls.__dict__.get(k)) for k in keys))
     return property(**func_locals)
 
-class underConstruction(object):
+class UnderConstruction(object):
+    pass
+
+def underConstruction(name):
     """
-    class placeholder for use during multimethod creation
+    create a class placeholder for use in multimethod creation
     """
-    def __new__(cls):
-        return type("underConstruction",(cls,),{})
+    return type(name,(UnderConstruction,),{})
 
 class MultiMethod(object):
     """
@@ -206,8 +208,7 @@ class MultiMethod(object):
         )
 
         multimethods=(
-            value.multimethod
-            for value
+            value.multimethod for value
             in itertools.chain(static,methods)
             if isinstance(value,types.FunctionType)
                 and hasattr(value,'multimethod')
@@ -215,11 +216,18 @@ class MultiMethod(object):
 
         for m in multimethods:
             if isinstance(m,MultiMethod):
-                typemap=m.typemap
-                for key in typemap.iterkeys():
-                    value=typemap.pop(key)
-                    key=tuple(cls if k is signature else k for k in key)
-                    typemap.update([(key,value)])
+                replace = dict(
+                    (
+                        tuple(
+                            cls if T is signature else T 
+                            for T in key
+                        ) if signature in key else key
+                        ,value
+                    )
+                    for key,value in m.typemap.iteritems() 
+                )
+                m.typemap.clear()
+                m.typemap.update(replace)
 
         return cls
 

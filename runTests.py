@@ -70,6 +70,6 @@ if __name__=='__main__':
     else:
         suite.addTests(getSuite(values))
 
-    sys.stderr.write("test values: %s\n" % values)
+    sys.stderr.write("test values: %s\n%s\n" % (' '.join(sys.argv),values))
         
     unittest.TextTestRunner().run(suite)
