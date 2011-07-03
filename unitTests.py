@@ -611,7 +611,7 @@ class quadTester(myTests):
         Na = 25
 
         #get some data from A
-        Da=self.A.sample(Na)
+        Da=Matrix(self.A.sample(Na))
 
         #and remake the multivariates
         A=Mvar.fromData(Da)
@@ -816,8 +816,8 @@ class innerTester(myTests):
         N=Na*Nb
 
         #get some data from A and B
-        Da=A.sample(Na)
-        Db=B.sample(Nb)
+        Da=Matrix(A.sample(Na))
+        Db=Matrix(B.sample(Nb))
 
         #and remake the multivariates based on the samples you just took
         A=Mvar.fromData(Da)

@@ -124,10 +124,10 @@ class MultiMethod(object):
             raise TypeError('notImplemented')
 
     """
-    def __new__(baseClass,protoFun):
+    def __new__(baseClass,defaultFun):
         # this caller is the object that will be returned
         @decorator 
-        def caller(protoFun,*args,**kwargs): 
+        def caller(defaultFun,*args,**kwargs): 
             types = tuple(arg.__class__ for arg in args)
             while True:
                 try:
@@ -140,12 +140,12 @@ class MultiMethod(object):
             return found(*args,**kwargs)
 
         # we use the decorator module to match the signature to the prototype
-        decorated=caller(protoFun)
+        decorated=caller(defaultFun)
 
         #create the subClass referenced above 
-        subClass = type(protoFun.__name__,(baseClass,),{})
+        subClass = type(defaultFun.__name__,(baseClass,),{})
         #add the prototype function as the default in the typemap
-        subClass.typemap={(): protoFun}
+        subClass.typemap={(): defaultFun}
         #and put the decorator into the subclass
         subClass.__call__=staticmethod(decorated)
         
@@ -167,23 +167,31 @@ class MultiMethod(object):
         ]
 
         if not all(type(t) is type for t in itertools.chain(*types)):
-            raise TypeError('can only register types')
+            raise TypeError('MultiMethod can only register types')
 
-        types=itertools.product(*types)
+        Xtypes=itertools.product(*types)
 
-        def register(function,types=types):
-            for T in types:
-                if T in self.typemap:
+        @curry
+        def register(self,Xtypes,function):
+            try:
+                function = function.multimethod.last 
+            except AttributeError:
+                pass
+
+            for types in Xtypes:
+                if types in self.typemap:
                     raise TypeError("duplicate registration")
             
-                self.typemap[T] = function
+                self.typemap[types] = function
+
+            self.last = function
 
             if function.__name__ == self.__call__.__name__:
                 return self.__call__
-            else:
-                function.multimethod = self
-                return function
-        return register
+            
+            return function
+
+        return register(self,Xtypes)
     
     @staticmethod
     @curry

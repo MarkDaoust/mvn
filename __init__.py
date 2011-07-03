@@ -1705,7 +1705,7 @@ class Mvar(Plane):
             matrix=(matrix+matrix.H)/2
 
         transformed = self if matrix is None else self*matrix
-        flattened   = transformed*self.mean.H
+        flattened   = (transformed*self.mean.H).inflate()
 
         return Mvar(
             mean=flattened.mean+numpy.trace(self.cov if matrix is None else matrix*self.cov) ,
