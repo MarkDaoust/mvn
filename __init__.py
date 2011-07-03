@@ -612,22 +612,40 @@ class Mvar(Plane):
         )
     
 
-    def sample(self,n=1,cplx=False):
+
+    def sample(self,shape):
         """
         take samples from the distribution
-        n is the number of samples, the default is 1
-        each sample is a numpy matrix row vector.
+
+        the vectors are aligned to the last dimension of the returned array
         
+        >>> N = 5
+        >>> assert A.sample(N).shape == (N,A.ndim)
+
+        >>> N = 5,6,7
+        >>> assert A.sample(N).shape == N+(A.ndim,)
+                                
         a large number of samples will have the same mean and cov as the 
         Mvar being sampled
+
+        >>> pows= reversed(range(4))
+        >>> mvars = [Mvar.fromData(A.sample(10**P)) for P in pows] 
+        >>> divergence = [m.KLdiv(A) for m in mvars]
+        >>> assert Matrix(divergence) == sorted(divergence)
+
         """
+        try:
+            shape=list(shape)
+        except TypeError:
+            shape=[shape]
+            
+        shape.append(self.ndim)
+
+        #todo:that number should accept a size-tuple - returning size+ndim
         #todo look at that complex-normal distributions
-        units = Matrix(
-            helpers.ascomplex(numpy.random.randn(n,self.ndim,2))/sqrt(2)
-            if cplx else 
-            numpy.random.randn(n,self.ndim)
-        )
-        return Matrix(numpy.array(units*self.scaled.T)+self.mean)
+        units = numpy.random.randn(*shape)
+
+        return numpy.inner(units,self.scaled.T)+numpy.squeeze(numpy.array(self.mean))
 
     def measure(self,actual):
         """
@@ -786,18 +804,40 @@ class Mvar(Plane):
 
         return perfect+sensor
 
+    @decorate.MultiMethod
     def dist2(self,locations):
         """
         return the square of the mahalabois distance from the Mvar to each vector.
         the vectors should be along the last dimension of the array.
-   
-        >>> N=1000
-        ... Z=3
-        ... dist = A.dist2(A.sample(N))
-        ... assert (dist.mean()-A.ndm)**2 < (Z**2)*(dist.var()/N)
 
+        in this case the dist2 is the vector's length**2
+        >>> E = Mvar.eye(A.ndim)
+        >>> N = 50
+        >>> S = numpy.random.randn(N,A.ndim)
+        >>> assert Matrix(E.dist2(S)) == (S**2).sum(-1)
+
+        >>> #invariant to linear transforms
+        >>> S=Matrix(A.sample(N))
+        >>> T=Matrix.randn((A.ndim,A.ndim))
+        >>> D1 = A.dist2(S)
+        >>> D2 = (A*T).dist2(S*T)
+        >>> assert Matrix(D1)==D2
         
+        >>> N=1000
+        >>> Z=3
+        >>> D = A.dist2(A.sample(N))
+        >>> assert (D.mean()-A.ndim)**2 < (Z**2)*(D.var()/N)
         """
+        raise NotImplementedError("not implimented for: %s" % ([type(self),type(locations)]))
+
+
+    @dist2.register(Mvar,Mvar)
+    def dist2(self,other):
+        return (self + [-1]*other).quad()
+
+    
+    @dist2.register(Mvar,(Matrix,numpy.ndarray))
+    def dist2(self,locations):
         #make sure the mean is a flat numpy array
         mean=numpy.array(self.mean).squeeze()
         #and subtract it from the locations (vectors aligned to the last dimension)
@@ -805,6 +845,7 @@ class Mvar(Plane):
         
         scaled=numpy.array(numpy.inner(deltas,(self**-1).scaled))
         return (scaled*scaled.conjugate()).sum(axis=locations.ndim-1)
+
 
         
     ############## indexing
@@ -1613,8 +1654,6 @@ class Mvar(Plane):
 
         Note that the result does not depend on the mean of the 
         second mvar(!) (really any mvar after the leftmost mvar or matrix)
-
-        
         """
         result = (self*mvar.transform()+mvar*self.transform())
         
@@ -1628,6 +1667,11 @@ class Mvar(Plane):
     @__mul__.register(Mvar,numpy.ndarray)
     @__rmul__.register(Mvar,numpy.ndarray)
     def __vectorMul__(self,vector):
+        """
+        >>> assert A*range(A.ndim) == A*numpy.diagflat(range(A.ndim))
+        >>> assert A+[-1]*A == A+A*(-1*E)
+        """
+
         assert (vector.ndim == 1), 'vector multiply, only accepts 1d arrays' 
         assert (vector.size == 1 or  vector.size == self.ndim),'vector multiply, vector.size must match mvar.ndim'
         
@@ -1690,7 +1734,6 @@ class Mvar(Plane):
             )
         )
     
-    dot = inner
 
     #todo: add a 'transposed' class so outer is just part of multiply
     @__mul__.register(Mvar.T,Mvar)
@@ -1777,13 +1820,13 @@ class Mvar(Plane):
     def info(self,data=None,base=numpy.e):
         """
         >>> S=A.sample(100)   
-        ... assert Matrix(-numpy.log(A(S))) == A.info(S)
+        >>> assert Matrix(-numpy.log(A.density(S))) == A.info(S)
         """
         if data is None:
             data = self
 
         if isinstance(data,Mvar):
-            pass #!
+            raise NotImplemented()
         else:
             baseE=(
                 self.dist2(data)+
@@ -1798,8 +1841,8 @@ class Mvar(Plane):
         """
         default is in base e
 
-        >>> m=numpy.random.randn()
-        ... assert A.entropy()+numpy.log(abs(numpy.linalg.det(m))) == (A*(m)).entropy()
+        >>> m=numpy.random.rand(A.ndim,A.ndim)
+        >>> assert Matrix(A.entropy()+numpy.log(abs(numpy.linalg.det(m)))) == (A*(m)).entropy()
 
         >>> assert (
         ...     numpy.array([
@@ -1817,7 +1860,7 @@ class Mvar(Plane):
         """
         default is in base e
 
-        >>> assert A.KLdiv(A)== 0
+        >>> assert Matrix(A.KLdiv(A))== 0
         >>> assert A.KLdiv(B) > 0
 
         http://en.wikipedia.org/wiki/Multivariate_normal_distribution#Kullback.E2.80.93Leibler_divergence
@@ -1828,7 +1871,7 @@ class Mvar(Plane):
             numpy.log(self.det()/other.det())-
             self.ndim
         )/2
-        return baseE/numpy.log(base)
+        return (baseE/numpy.log(base))[0,0]
 
 
     def __repr__(self):
@@ -1880,6 +1923,7 @@ class Mvar(Plane):
         """
         import matplotlib
         import matplotlib.lines
+        import matplotlib.patches
 
         shape = self.shape
 
