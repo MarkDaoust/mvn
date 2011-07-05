@@ -1,6 +1,6 @@
 test values: ./runTests.py -x
 {'ndim': None, 'flat': None, 'dtype': 'i', 'seed': None, 'x': True, 'flatness': (False, False, False), 'new': False}
-.........................E.......................................F....................F......................................F.....F.......E..............................F.......FF....F..FF...........F......F.....................................FF...F.FEEF.F........F.....F..EE.......E.F.....FF.FF.F.FF........F..FF...F..............F......F..........................E..............................F.FF.....F................F...F...........................E.........E..EEE.E.......EEE.E.EEE.........E...EE...........E...EF..F.unexpected array size: new_size=1, got array with arr_size=0
+.........................E.......................................F....................F............................................F.......E..............................F.......FF....F..F............F......F.....................................FF...F.FEEF.F........F.....F..EE.......E.......FF.FF.F.FF...........FF...F..............F......F..........................E..............................F........F....................F...........................E.........E..EEE.E.......EEE.E.EEE.........E...EE...........E...EF..F.unexpected array size: new_size=1, got array with arr_size=0
 unexpected array size: new_size=1, got array with arr_size=0
 unexpected array size: new_size=1, got array with arr_size=0
 F..unexpected array size: new_size=1, got array with arr_size=0
@@ -488,14 +488,6 @@ Exception raised:
 
 
 ======================================================================
-FAIL: testMatrixMul (unitTests.productTester)
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/home/olpc/personal-projects/mvar/unitTests.py", line 256, in testMatrixMul
-    self.assertTrue( (self.A*self.M)*self.M2.H == self.A*(self.M*self.M2.H) )
-AssertionError
-
-======================================================================
 FAIL: testDerivation (unitTests.innerTester)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
@@ -678,28 +670,6 @@ Exception raised:
 
 
 ======================================================================
-FAIL: Doctest: __init__.Mvar.__mul__
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
-    raise self.failureException(self.format_failure(new.getvalue()))
-AssertionError: Failed doctest test for __init__.Mvar.__mul__
-  File "/home/olpc/personal-projects/mvar/__init__.py", line 26, in __mul__
-
-----------------------------------------------------------------------
-File "/home/olpc/personal-projects/mvar/__init__.py", line 74, in __init__.Mvar.__mul__
-Failed example:
-    assert (A*M)*M2.H == A*(M*M2.H)
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.__mul__[15]>", line 1, in <module>
-        assert (A*M)*M2.H == A*(M*M2.H)
-    AssertionError
-
-
-======================================================================
 FAIL: Doctest: __init__.Mvar.entropy
 ----------------------------------------------------------------------
 Traceback (most recent call last):
@@ -805,14 +775,6 @@ FAIL: testSelf (unitTests.blendTester)
 Traceback (most recent call last):
   File "/home/olpc/personal-projects/mvar/unitTests.py", line 570, in testSelf
     self.assertTrue( (self.A & self.A).cov == self.A.cov/2)
-AssertionError
-
-======================================================================
-FAIL: testMoore (unitTests.chainTester)
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/home/olpc/personal-projects/mvar/unitTests.py", line 469, in testMoore
-    self.assertTrue( self.A.chain(b,self.M) == mvar.mooreChain(self.A,b,self.M) )
 AssertionError
 
 ======================================================================
@@ -1065,50 +1027,6 @@ Exception raised:
 
 
 ======================================================================
-FAIL: Doctest: __init__.Mvar.chain
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
-    raise self.failureException(self.format_failure(new.getvalue()))
-AssertionError: Failed doctest test for __init__.Mvar.chain
-  File "/home/olpc/personal-projects/mvar/__init__.py", line 769, in chain
-
-----------------------------------------------------------------------
-File "/home/olpc/personal-projects/mvar/__init__.py", line 796, in __init__.Mvar.chain
-Failed example:
-    assert A.chain(B*M,M) == mooreChain(A,B*M,M)
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.chain[3]>", line 1, in <module>
-        assert A.chain(B*M,M) == mooreChain(A,B*M,M)
-    AssertionError
-----------------------------------------------------------------------
-File "/home/olpc/personal-projects/mvar/__init__.py", line 803, in __init__.Mvar.chain
-Failed example:
-    assert a.chain(transform=M) == Mvar.fromData(dataA*numpy.hstack([E,M]))
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.chain[7]>", line 1, in <module>
-        assert a.chain(transform=M) == Mvar.fromData(dataA*numpy.hstack([E,M]))
-    AssertionError
-----------------------------------------------------------------------
-File "/home/olpc/personal-projects/mvar/__init__.py", line 804, in __init__.Mvar.chain
-Failed example:
-    assert a.chain(transform=M) == Mvar.fromData(numpy.hstack([dataA,dataA*M]))
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.chain[8]>", line 1, in <module>
-        assert a.chain(transform=M) == Mvar.fromData(numpy.hstack([dataA,dataA*M]))
-    AssertionError
-
-
-======================================================================
 FAIL: Doctest: __init__.Mvar.dist2
 ----------------------------------------------------------------------
 Traceback (most recent call last):
@@ -1349,22 +1267,6 @@ Traceback (most recent call last):
 AssertionError
 
 ======================================================================
-FAIL: testMoore (unitTests.chainTester)
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/home/olpc/personal-projects/mvar/unitTests.py", line 469, in testMoore
-    self.assertTrue( self.A.chain(b,self.M) == mvar.mooreChain(self.A,b,self.M) )
-AssertionError
-
-======================================================================
-FAIL: testStacks (unitTests.chainTester)
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/home/olpc/personal-projects/mvar/unitTests.py", line 484, in testStacks
-    dataA*numpy.hstack([self.E,self.M])
-AssertionError
-
-======================================================================
 FAIL: Doctest: __init__.Mvar.KLdiv
 ----------------------------------------------------------------------
 Traceback (most recent call last):
@@ -1383,50 +1285,6 @@ Exception raised:
         compileflags, 1) in test.globs
       File "<doctest __init__.Mvar.KLdiv[10]>", line 1, in <module>
         assert deltas.mean**2/deltas.var < (Z**2)
-    AssertionError
-
-
-======================================================================
-FAIL: Doctest: __init__.Mvar.chain
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
-    raise self.failureException(self.format_failure(new.getvalue()))
-AssertionError: Failed doctest test for __init__.Mvar.chain
-  File "/home/olpc/personal-projects/mvar/__init__.py", line 769, in chain
-
-----------------------------------------------------------------------
-File "/home/olpc/personal-projects/mvar/__init__.py", line 796, in __init__.Mvar.chain
-Failed example:
-    assert A.chain(B*M,M) == mooreChain(A,B*M,M)
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.chain[3]>", line 1, in <module>
-        assert A.chain(B*M,M) == mooreChain(A,B*M,M)
-    AssertionError
-----------------------------------------------------------------------
-File "/home/olpc/personal-projects/mvar/__init__.py", line 803, in __init__.Mvar.chain
-Failed example:
-    assert a.chain(transform=M) == Mvar.fromData(dataA*numpy.hstack([E,M]))
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.chain[7]>", line 1, in <module>
-        assert a.chain(transform=M) == Mvar.fromData(dataA*numpy.hstack([E,M]))
-    AssertionError
-----------------------------------------------------------------------
-File "/home/olpc/personal-projects/mvar/__init__.py", line 804, in __init__.Mvar.chain
-Failed example:
-    assert a.chain(transform=M) == Mvar.fromData(numpy.hstack([dataA,dataA*M]))
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.chain[8]>", line 1, in <module>
-        assert a.chain(transform=M) == Mvar.fromData(numpy.hstack([dataA,dataA*M]))
     AssertionError
 
 
@@ -3106,6 +2964,6 @@ Exception raised:
 
 
 ----------------------------------------------------------------------
-Ran 684 tests in 186.812s
+Ran 684 tests in 227.524s
 
-FAILED (failures=67, errors=27)
+FAILED (failures=60, errors=27)

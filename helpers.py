@@ -180,7 +180,7 @@ def paralell(*items):
     inverted=[item**(-1) for item in items]
     return sum(inverted[1:],inverted[0])**(-1)
 
-def approx(a,other = None,atol=1e-12):
+def approx(a,other = None,atol=1e-12,rtol=1e-12):
     """
     returns True where delta<atol 
     """
@@ -190,7 +190,15 @@ def approx(a,other = None,atol=1e-12):
         if callable(other):
             other=other(a.shape)
         delta = numpy.abs(a-other)
-
+    if delta.shape:
+        if rtol is not None:    
+            try:
+                finite = numpy.isfinite(delta)
+                rel = delta/delta[finite].max()
+                return (delta<atol) | (rel<rtol)
+            except ValueError:
+                pass
+ 
     return (delta<atol)
 
 def dots(*args):

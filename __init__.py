@@ -433,7 +433,7 @@ class Mvar(Plane):
 
         shape=self.shape        
 
-        missing = shape[1]-shape[0]
+        missing = self.flat
 
         if missing == 0:
             return result

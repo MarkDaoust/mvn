@@ -1,6 +1,8 @@
 #! /bin/bash
 
+mv testresult.txt testresult_old.txt
+
 tee<pipe testresult.txt &
 ./runTests.py $@ &> pipe 
-echo '*************************************************************************'
-git diff testresult.txt | tee testresult.diff
+
+diff testresult_old.txt testresult.txt | tee testresult.diff
