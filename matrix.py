@@ -111,8 +111,13 @@ class Matrix(numpy.matrix):
 
     @staticmethod
     def rand(shape):
-        return numpy.random.rand(*shape)
+        return Matrix(numpy.random.rand(*shape))
 
     @staticmethod
     def randn(shape):
-        return numpy.random.randn(*shape)
+        return Matrix(numpy.random.randn(*shape))
+
+    det = numpy.linalg.det
+
+    def array(self):
+        return numpy.array(self)

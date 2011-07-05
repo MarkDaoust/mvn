@@ -1,10 +1,11 @@
 #! /usr/bin/env python
 
+#todo: using the multimethods: __rmul__ = __mul__ ...
 #todo: formData should be the main constructor
 #todo: the approximation tollerence should be a class attribute
 #todo: merge chain and  sensor.measure??
 #todo: type handling- be more uniform, arrays work element wize, matrixes get converted to Mvars ?
-#todo: wiki: Complex Normal Distribution (I knew there was something underconstrained about these)
+#todo: wiki: Complex Normal Distribution (I knew there was something underconstrained about the way I had been handling them)
 #todo: Mvar.real & Mvar.imag?,  
 #todo: consider removing the autosquare if you ever want to speed things up, 
 #         I bet it would help. it would also allow other factorizations (like cholsky) 
@@ -67,6 +68,7 @@ import helpers
 from helpers import sqrt
 from square import square
 from matrix import Matrix
+from mixture import Mixture
 
 #decorations
 import decorate
@@ -105,8 +107,10 @@ def fromData(data,mean=None,**kwargs):
         anything else is passed through to from cov
 
     >>> assert Mvar.fromData(A)==A 
-    
-    >>> data=[1,2,3]
+
+    >>> assert Mvar.fromData([1,2,3]).ndim == 1
+
+    >>> data = [[1,2,3]]
     >>> new=Mvar.fromData(data)
     >>> assert new.mean == data
     >>> assert Matrix(new.var) == Matrix.zeros
@@ -182,7 +186,7 @@ def fromArray(data,mean=None,weights=None,bias=True):
     >>> assert Mvar.fromData([mvar1,mvar2],weights=[N1,N2]) == Mvar.fromData(numpy.vstack([data1,data2]))
     """
     if data.dtype is not numpy.dtype('object'):
-        return fromMatrix(Matrix(data),weights=weights,mean=mean,bias=bias)
+        return fromMatrix(Matrix(data).T,weights=weights,mean=mean,bias=bias)
 
     ismvar=numpy.array([isinstance(vector,Mvar) for vector in data])    
     mvars=data[ismvar]
@@ -453,6 +457,8 @@ class Mvar(Plane):
     def squeeze(self):
         """
         drop any vector/variance pairs with (self.var) under 1e-12,
+
+        >>> assert A.inflate().squeeze().shape == A.shape
         """
         result=self.copy()
         
@@ -524,6 +530,7 @@ class Mvar(Plane):
         """
         get the number of dimensions of the space the mvar exists in
         >>> assert A.ndim==A.mean.size
+        >>> assert A.ndim==A.vectors.shape[1]
         """
         def fget(self):
             return self.mean.size
@@ -584,11 +591,9 @@ class Mvar(Plane):
         
     def stack(*mvars,**kwargs):
         """
-        >>> AB= Mvar.stack(A,B)
+        >>> AB=A.stack(B)
         >>> assert AB[:A.ndim]==A
         >>> assert AB[A.ndim:]==B
-
-        It's a static method to make it clear that this is not happening in place
         
         Stack two Mvars together, equivalent to hstacking the means, and 
         diag-stacking the covariances
@@ -628,8 +633,8 @@ class Mvar(Plane):
         a large number of samples will have the same mean and cov as the 
         Mvar being sampled
 
-        >>> pows= reversed(range(4))
-        >>> mvars = [Mvar.fromData(A.sample(10**P)) for P in pows] 
+        >>> pows= reversed(range(1,6))
+        >>> mvars = [Mvar.fromData(A.sample(5**P)) for P in pows] 
         >>> divergence = [m.KLdiv(A) for m in mvars]
         >>> assert Matrix(divergence) == sorted(divergence)
 
@@ -639,13 +644,13 @@ class Mvar(Plane):
         except TypeError:
             shape=[shape]
             
-        shape.append(self.ndim)
+        shape.append(self.rank)
 
         #todo:that number should accept a size-tuple - returning size+ndim
         #todo look at that complex-normal distributions
         units = numpy.random.randn(*shape)
 
-        return numpy.inner(units,self.scaled.T)+numpy.squeeze(numpy.array(self.mean))
+        return numpy.inner(units,self.scaled.H)+numpy.squeeze(numpy.array(self.mean))
 
     def measure(self,actual):
         """
@@ -671,6 +676,8 @@ class Mvar(Plane):
         >>> actual=numpy.arange(0,A.ndim)
         >>>
         >>> result = sensor1.measure(actual) & sensor2.measure(actual)
+
+        see also: Mvar.chain
         """
         sample=self.sample(1)-self.mean
         sample[numpy.isnan(sample)]=0
@@ -687,19 +694,26 @@ class Mvar(Plane):
 
         >>> assert A.det() == (
         ...     0 if 
-        ...     A.shape[0]!=A.shape[1] else 
-        ...     numpy.prod(A.var)
+        ...     A.rank!=A.ndim else 
+        ...     A.var.prod()
         ... )
 
-        if you want the pseudo-det use self.var.prod()
+        if you want the pseudo-det use self.pdet
         (ref: http://en.wikipedia.org/wiki/Pseudo-determinant)
         """
         shape=self.shape
         return (
             0 if 
             shape[0]!=shape[1] else 
-            numpy.prod(self.var)
+            self.var.prod()
         )
+
+    def pdet(self):
+        """
+        returns the psudodet of the covariance matrix
+        >>> assert A.pdet() == A.var.prod()
+        """
+        return self.var.prod()
         
     def trace(self):
         """
@@ -740,7 +754,6 @@ class Mvar(Plane):
         return (S.conj()*S).sum(0)**(0.5)
 
 
-    #todo: merge with sensor.measure
     def chain(self,sensor=None,transform=None):
         """
         given a distribution of actual values and an Mvar to act as a sensor 
@@ -780,6 +793,8 @@ class Mvar(Plane):
         
         >>> assert a.chain(B*M,M) == a.chain(transform=M)+Mvar.stack(Mvar.zeros(a.ndim),B*M)
 
+        see also : mvar.measure
+
         reference: andrew moore/data mining/gaussians
         """
         twice = Mvar(
@@ -805,7 +820,7 @@ class Mvar(Plane):
         return perfect+sensor
 
     @decorate.MultiMethod
-    def dist2(self,locations):
+    def dist2(self,locations=numpy.zeros):
         """
         return the square of the mahalabois distance from the Mvar to each vector.
         the vectors should be along the last dimension of the array.
@@ -816,36 +831,42 @@ class Mvar(Plane):
         >>> S = numpy.random.randn(N,A.ndim)
         >>> assert Matrix(E.dist2(S)) == (S**2).sum(-1)
 
-        >>> #invariant to linear transforms
+        This is Invariant to linear transforms
         >>> S=Matrix(A.sample(N))
         >>> T=Matrix.randn((A.ndim,A.ndim))
         >>> D1 = A.dist2(S)
         >>> D2 = (A*T).dist2(S*T)
         >>> assert Matrix(D1)==D2
         
+        The expected distance squared of a sample from it's parent, is the number of dimensions
+        >>> A.dist2(A).mean = A.ndim
+
+        >>> #warning: this works, but there is probably a better way.
         >>> N=1000
         >>> Z=3
-        >>> D = A.dist2(A.sample(N))
-        >>> assert (D.mean()-A.ndim)**2 < (Z**2)*(D.var()/N)
+        >>> deltas = Mvar.fromData(A.dist2(A.sample(N)) - A.ndim)
+        >>> deltas.var/=N
+        >>> assert (deltas.mean)**2/deltas.var < (Z**2)
+
+        for Mvars it currenty just returns an mvar (mean & variance), 
+        but that should be a non-central chi**2 distribution
         """
-        raise NotImplementedError("not implimented for: %s" % ([type(self),type(locations)]))
+        if callable(locations):
+            locations = locations(self.mean.shape)
 
+        #todo: implement noncentral chi2
+        if isinstance(locations,Mvar):
+            return (self + [-1]*locations).quad()
 
-    @dist2.register(Mvar,Mvar)
-    def dist2(self,other):
-        return (self + [-1]*other).quad()
-
-    
-    @dist2.register(Mvar,(Matrix,numpy.ndarray))
-    def dist2(self,locations):
+        locations = numpy.asarray(locations)
         #make sure the mean is a flat numpy array
         mean=numpy.array(self.mean).squeeze()
         #and subtract it from the locations (vectors aligned to the last dimension)
         deltas=numpy.array(locations)-mean
         
         scaled=numpy.array(numpy.inner(deltas,(self**-1).scaled))
-        return (scaled*scaled.conjugate()).sum(axis=locations.ndim-1)
 
+        return (scaled*scaled.conjugate()).sum(axis=locations.ndim-1)
 
         
     ############## indexing
@@ -1649,7 +1670,8 @@ class Mvar(Plane):
         multiplying two Mvars together is defined to fit with power
         
         >>> assert A*A==A**2
-        >>> assert A*A==A*A.transform() or A.flat
+        >>> if not A.flat:
+        ...     assert A*A==A*A.transform()
         >>> assert A*B == B*A
 
         Note that the result does not depend on the mean of the 
@@ -1815,18 +1837,59 @@ class Mvar(Plane):
         The vectors should be aligned onto the last dimension
         That last dimension is squeezed out during the calculation
         """
-        return numpy.exp(-self.info(locations)) 
+        return numpy.exp(-self.entropy(locations)) 
     
-    def info(self,data=None,base=numpy.e):
+    def entropy(self,data=None,base=numpy.e):
         """
-        >>> S=A.sample(100)   
-        >>> assert Matrix(-numpy.log(A.density(S))) == A.info(S)
+        return the differential entropy, or encoding length, is the requested base.        
+        
+        the default is in base e
+        
+        With vectors it is simply the log of the improbability
+            >>> S=A.sample(100)   
+            >>> assert Matrix(numpy.log(1/A.density(S))) == A.entropy(S)
+
+        With an Mvar it is the average encoding length per sample
+            >>> assert Matrix(A.entropy(A.copy())) == A.entropy()
+
+            >>> #warning: this works, but there is probably a better way.
+            >>>
+            >>> #note: the variance of the mean of the sample is the variance 
+            >>> #      of the sample divided by the sample size.
+            >>>
+            >>> N=1000
+            >>> Z=3
+            >>> a=A.sample(N)
+            >>> deltas = Mvar.fromData(A.entropy(a)-A.entropy())
+            >>> deltas.var/=N
+            >>> assert (deltas.mean**2)/(deltas.var) < (Z**2)     
+            >>>
+            >>> b=B.sample(N)
+            >>> deltas = Mvar.fromData(A.entropy(b)-A.entropy(B))
+            >>> deltas.var/=N
+            >>> assert (deltas.mean**2)/(deltas.var) < (Z**2)   
+
+        differential-entropy is sensitive to linear transforms 
+        >>> m=Matrix.randn([A.ndim,A.ndim])
+        >>> assert Matrix((A*m).entropy()) == A.entropy()+numpy.log(abs(m.det()))
+
+        the joint entropy is less than the sum of the marginals
+        >>> assert (
+        ...     numpy.array([
+        ...         A[dim].entropy() 
+        ...         for dim in range(A.ndim)
+        ...     ]).sum() >= A.entropy() 
+        ... )
+
+        http://en.wikipedia.org/wiki/Multivariate_normal_distribution
+
         """
         if data is None:
             data = self
-
         if isinstance(data,Mvar):
-            raise NotImplemented()
+            baseE = numpy.log(self.det()*(2*numpy.pi*numpy.e)**self.ndim)/2
+            if data is not self:
+                baseE+=self.KLdiv(data)
         else:
             baseE=(
                 self.dist2(data)+
@@ -1836,43 +1899,48 @@ class Mvar(Plane):
 
         return baseE/numpy.log(base)
         
-
-    def entropy(self,base=numpy.e):
-        """
-        default is in base e
-
-        >>> m=numpy.random.rand(A.ndim,A.ndim)
-        >>> assert Matrix(A.entropy()+numpy.log(abs(numpy.linalg.det(m)))) == (A*(m)).entropy()
-
-        >>> assert (
-        ...     numpy.array([
-        ...         A[dim].entropy() 
-        ...         for dim in range(A.ndim)
-        ...     ]).sum() >= A.entropy() 
-        ... )
-
-        http://en.wikipedia.org/wiki/Multivariate_normal_distribution
-        """
-        baseE= numpy.log(self.det()*(2*numpy.pi*numpy.e)**self.ndim)/2
-        return baseE/numpy.log(base)
-
+        
     def KLdiv(self,other,base=numpy.e):
         """
         default is in base e
 
-        >>> assert Matrix(A.KLdiv(A))== 0
-        >>> assert A.KLdiv(B) > 0
+        it measures the difference between two distributions:
+            there is no difference between a distribution and itself        
+            >>> assert Matrix(A.KLdiv(A)) == 0 
+    
+            The difference is always positive
+            >>> assert A.KLdiv(B) > 0
+
+        invariant under linear transforms
+            >>> m = Matrix.randn([A.ndim,A.ndim])
+            >>> assert Matrix(A.KLdiv(B)) == (A*m).KLdiv(B*m)
+
+        can be created by re-arranging other functions
+            >>> assert A.entropy(B) == A.KLdiv(B) + A.entropy()
+
+            >>> N=1000
+            >>> Z=3
+            >>> b=B.sample(N)
+            >>> deltas = Mvar.fromData(A.entropy(b) - (A.KLdiv(B) + A.entropy()))
+            >>> deltas.var/=N
+            >>> assert deltas.mean**2/deltas.var < (Z**2)
 
         http://en.wikipedia.org/wiki/Multivariate_normal_distribution#Kullback.E2.80.93Leibler_divergence
         """
-        baseE= (
-            (self/other).trace()+
-            ((other**-1)*(other.mean-self.mean).H).cov-
-            numpy.log(self.det()/other.det())-
-            self.ndim
-        )/2
-        return (baseE/numpy.log(base))[0,0]
-
+        if isinstance(other,Mvar):
+            det = self.det()
+            if det:
+                baseE= (
+                    (other/self).trace()+
+                    ((self**-1)*(self.mean-other.mean).H).cov-
+                    numpy.log(other.det()/self.det())-
+                    self.ndim
+                )/2
+                return (baseE/numpy.log(base))[0,0]
+            else: 
+                return numpy.inf 
+        else:
+            return self.entropy(other)-self.entropy()
 
     def __repr__(self):
         """

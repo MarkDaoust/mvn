@@ -39,11 +39,16 @@ class creationTester(myTests):
         self.assertTrue( Mvar.fromData(self.A)==self.A )
 
         data=[1,2,3]
-        new=Mvar.fromData(data)
-        self.assertTrue( new.mean == data )
-        self.assertTrue( (new.var == numpy.zeros([0])).all() )
-        self.assertTrue( new.vectors == numpy.zeros )
-        self.assertTrue( new.cov == numpy.zeros([3,3]) )
+        one = Mvar.fromData(data)
+        self.assertTrue(one.ndim == 1)
+
+
+        data=[[1,2,3]]
+        many=Mvar.fromData(data)
+        self.assertTrue( many.mean == data )
+        self.assertTrue( Matrix(many.var) == numpy.zeros )
+        self.assertTrue( many.vectors == numpy.zeros )
+        self.assertTrue( many.cov == numpy.zeros )
 
     def testFromCov(self):
         self.assertTrue(Mvar.fromCov(self.A.cov,mean=self.A.mean) == self.A)
