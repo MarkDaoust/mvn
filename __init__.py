@@ -540,9 +540,33 @@ class Mvar(Plane):
         """
         get the number of dimensions of the space covered by the mvar
         >>> assert A.rank == A.var.size
+        >>> assert A.rank == A.vectors.shape[0]
         """
         def fget(self):
-            return self.mean.size
+            return self.vectors.shape[0]
+
+    def _transformParts(self,power=1):
+        """
+        sometimes you can get a more precise result from a transform by changing the order that 
+        matrixes are multiplied
+
+        >>> import operator
+        >>> parts = A._transformParts(N) 
+        >>> assert parts[0]*parts[1] == A.transform(N)
+        """
+        if helpers.approx(power):
+            vectors=self.vectors
+            varP=numpy.ones_like(self.var)
+        else:
+            #the null vectors are automatically being ignored,
+            #ignore the infinite ones as well
+            keep=~helpers.approx(self.var**(-1))
+            
+            varP=numpy.real_if_close(self.var[keep]**(power/2.0))
+            vectors=self.vectors[keep,:]
+
+        return Matrix(varP*vectors.H.array()),vectors
+
 
     def transform(self,power=1):
         """
@@ -570,25 +594,13 @@ class Mvar(Plane):
         if not numpy.isreal(self.var).all() or not(self.var>0).all():
             power = complex(power)
 
-
-        if helpers.approx(power):
-            vectors=self.vectors
-            varP=numpy.ones_like(self.var)
-        else:
-            #the null vectors are automatically being ignored,
-            #ignore the infinite ones as well
-            keep=~helpers.approx(self.var**(-1))
-            
-            varP=numpy.real_if_close(self.var[keep]**(power/2.0))
-            vectors=self.vectors[keep,:]
-
-        return varP*numpy.array(vectors.H)*vectors
+        parts = self._transformParts(power)
+        return parts[0]*parts[1]
 
     def sign(self):
         return helpers.sign(self.var)
 
     ########## Utilities
-        
     def stack(*mvars,**kwargs):
         """
         >>> AB=A.stack(B)
@@ -1677,7 +1689,10 @@ class Mvar(Plane):
         Note that the result does not depend on the mean of the 
         second mvar(!) (really any mvar after the leftmost mvar or matrix)
         """
-        result = (self*mvar.transform()+mvar*self.transform())
+        selfA,selfB = self._transformParts()
+        mvarA,mvarB = mvar._transformParts()
+
+        result = (self*mvarA*mvarB+mvar*selfA*selfB)
         
         result.mean += (
             self.mean-self.mean*mvar.transform(0)+
