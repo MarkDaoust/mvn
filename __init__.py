@@ -59,6 +59,7 @@ remember: circular logic works because circluar logic works.
  
 """
 ############  imports
+import copy
 
 ## 3rd party
 import numpy
@@ -339,9 +340,9 @@ class Mvar(Plane):
         ]))
         
         #unpack the stack into the object's parameters
-        self.mean = numpy.real_if_close(stack[-1,1:])
+        self.mean = stack[-1,1:]
         self.var = numpy.real_if_close(numpy.array(stack[:-1,0]).flatten())
-        self.vectors = numpy.real_if_close(stack[:-1,1:])
+        self.vectors = stack[:-1,1:]
         
         if square:
             self.copy(self.square())
@@ -477,11 +478,18 @@ class Mvar(Plane):
         
         >>> assert A.vectors*A.vectors.H==Matrix.eye
         """ 
-        result=self.copy()
+        result = self.copy()
+        result.vectors = Matrix(self.vectors)
+        
+        vtype = result.vectors.dtype
+        result.vectors.dtype = float
+
         (result.var,result.vectors)=square(
             vectors=self.vectors,
             var=self.var,
         )
+
+        result.vectors.dtype = vtype
         return result
 
     
