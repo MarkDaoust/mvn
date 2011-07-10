@@ -111,12 +111,17 @@ def makeObjects(dtype=None,flat=None,ndim=None,seed=None):
         randn(n,ndim)*dtype.imag*1j
     )
 
-    [A,B,C]=[
+    A,B,C=[
         Mvar(
             mean=5*randn()*rvec(dtype=D),
-            vectors=5*randn()*rvec(n=ndim-F,dtype=D),
-        ) for F,D in zip(flat,dtype)
+            vectors=5*randn()*rvec(n=2*ndim,dtype=D),
+        ) for D in dtype
     ]
+
+    for X,F in zip((A,B,C),flat):
+        if F:
+            F.var = F.var[:-F]
+            F.vectors = F.vectors[:-F]
 
 # above we only get real varances, this would change them:
 # ad kill all the unit tests
