@@ -339,12 +339,17 @@ class Mvar(Plane):
             [var,vectors],
             [1  ,mean   ],
         ]))
-        
+
         #unpack the stack into the object's parameters
         self.mean = stack[-1,1:]
         self.var = numpy.real_if_close(numpy.array(stack[:-1,0]).flatten())
         self.vectors = stack[:-1,1:]
         
+        assert  (numpy.isreal(numpy.asarray(self.mean)).all() 
+            and numpy.isreal(numpy.asarray(self.var)).all()
+            and numpy.isreal(numpy.asarray(self.vectors)).all()
+        ),'real numbers only'
+
         if square:
             self.copy(self.square())
 
@@ -479,54 +484,16 @@ class Mvar(Plane):
         
         >>> assert A.vectors*A.vectors.H==Matrix.eye
         """ 
-        stype = self.dtype
-        
-        if stype == complex:
-            result = self.retype(float)
-
-            (result.var,result.vectors)=square(
-                vectors=result.vectors,
-                var=result.var,
-            )
-
-            result.vectors/=(2.0**0.5)
-            result.var*=(2.0)
-
-            result.dtype = complex
-
-        else:
-            result = self.copy()
-            (result.var,result.vectors)=square(
-                vectors=result.vectors,
-                var=result.var,
-            )
+        result = self.copy()
+        (result.var,result.vectors)=square(
+            vectors=result.vectors,
+            var=result.var,
+        )
 
         return result
 
     
     ############ setters/getters -> properties
-    @decorate.prop
-    class dtype():
-        """
-        get or set the data-type of the mean and vectors 
-        """
-        def fget(self):
-            result = self.mean.dtype
-            assert result == self.vectors.dtype
-            return result
-
-        def fset(self,dtype):
-            self.mean = Matrix(self.mean)
-            self.vectors = Matrix(self.vectors)
-            
-            self.mean.dtype = dtype
-            self.vectors.dtype = dtype
-    
-    def retype(self,dtype):
-        result = self.copy(deep=False)
-        result.dtype = dtype
-        return result
-
     @decorate.prop
     class cov():
         """
@@ -669,8 +636,6 @@ class Mvar(Plane):
             **kwargs
         )
     
-
-
     def sample(self,shape):
         """
         take samples from the distribution
@@ -968,30 +933,23 @@ class Mvar(Plane):
         #convert the inputs
         value=Mvar.fromData(value)
         fixed=binindex(index,self.ndim)
-        if fixed.all():
-            return Mvar.fromData(value)
 
         free = ~fixed
 
-        Z=numpy.zeros
-        meanType=(Z([],self.mean.dtype)+Z([],value.mean.dtype)).dtype
-        varType=(Z([],self.var.dtype)+Z([],value.var.dtype)).dtype
-        vectorType=(Z([],self.vectors.dtype)+Z([],value.vectors.dtype)).dtype
-
         #create the mean, for the new object,and set the values of interest
-        mean=numpy.zeros([1,self.shape[0]],dtype=meanType)
+        mean=numpy.zeros([1,self.shape[0]])
         mean[:,fixed]=value.mean
 
         #create empty vectors for the new object
         vectors=numpy.zeros([
             value.shape[0]+(self.ndim-value.ndim),
             self.ndim,
-        ],dtype=vectorType)
+        ])
         vectors[0:value.shape[0],fixed]=value.vectors
         vectors[value.shape[0]:,free]=numpy.eye(self.ndim-value.ndim)
         
         #create the variance for the new object
-        var=numpy.zeros(vectors.shape[0],dtype=varType)
+        var=numpy.zeros(vectors.shape[0])
         var[0:value.shape[0]]=value.var
         var[value.shape[0]:]=numpy.Inf
 
@@ -1374,17 +1332,8 @@ class Mvar(Plane):
         >>> assert (L1&L2).vectors==[1,0]
         
     """
-        stype = self.dtype
-        otype = other.dtype
-
-        self.dtype = float
-        other.dtype = float
-
         #check if they both fill the space
-        if (
-            self.mean.size == (~helpers.approx(self.var)).sum() and 
-            other.mean.size == (~helpers.approx(self.var)).sum()
-        ):
+        if not (self.flat or other.flat):
             #then this is a standard paralell operation
             result=(self**(-1)+other**(-1))**(-1) 
         else:
@@ -1392,9 +1341,6 @@ class Mvar(Plane):
 
             #do the blending, while compensating for the mean of the working plane
             result=((self-Dmean)**-1+(other-Dmean)**-1)**-1+Dmean
-
-        stype = stype
-        otype = otype
 
         return result
 
@@ -1687,8 +1633,6 @@ class Mvar(Plane):
             
             if you want to scale the distribution linearily with the mean
             then use matrix multiplication
-
-            >>> assert 1j*A*1j==-A
         """
         assert numpy.isreal(scalar)
         scalar = numpy.real(scalar)

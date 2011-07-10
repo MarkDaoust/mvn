@@ -144,7 +144,6 @@ class signTester(myTests):
     def testNeg(self):
         self.assertTrue( -self.A==-1*self.A )
         self.assertTrue( self.A==-1*-1*self.A )
-        self.assertTrue( 1j*self.A*1j==1j*(1j*self.A) ==-self.A )
 
     def testAdd(self):
         self.assertTrue( (self.A+self.A)==(2*self.A) )
@@ -184,14 +183,6 @@ class signTester(myTests):
         self.assertTrue( self.A-self.B == -(self.B-self.A) )
         self.assertTrue( self.A+(self.B-self.B)==self.A )
 
-    def testImag(self):
-        A=self.A
-
-        Ai=A.copy()
-        Ai.vectors=1j*Ai.vectors
-        self.assertTrue(A == Ai)
-
-        self.assertTrue(A & self.B == Ai & self.B)
 
 class productTester(myTests):
     def testMulTypes(self):
@@ -327,38 +318,18 @@ class powerTester(myTests):
     def testIntPowers(self):
         self.assertTrue( self.A.transform(self.N)== (self.A**self.N).transform() )
         self.assertTrue( self.A.transform(self.N)== self.A.transform()**self.N )
-        
-    def testRealPowers(self):
-        k=numpy.real(self.K1)
-        self.assertTrue( (self.A**k).transform() == self.A.transform(k) )
 
-    def testComplexPowers(self):
+    def testMorePowers(self):
         self.assertTrue( (self.A**self.K1).transform()**2 == self.A.transform(self.K1)**2 )
 
-        #as nice as it would be if these worked, 
+        self.assertTrue( self.A**self.K1*self.A**self.K2 == self.A**(self.K1+self.K2))
+        self.assertTrue( self.A**self.K1/self.A**self.K2 == self.A**(self.K1-self.K2))
 
-        self.assertFalse( self.A**self.K1*self.A**self.K2 == self.A**(self.K1+self.K2))
-        self.assertFalse( self.A**self.K1/self.A**self.K2 == self.A**(self.K1-self.K2))
+        self.assertTrue( self.A*self.A**self.K2 == self.A**(1+self.K2))
+        self.assertTrue( self.A/self.A**self.K2 == self.A**(1-self.K2))
 
-        self.assertFalse( self.A*self.A**self.K2 == self.A**(1+self.K2))
-        self.assertFalse( self.A/self.A**self.K2 == self.A**(1-self.K2))
-
-        self.assertFalse( self.A**self.K1*self.A == self.A**(self.K1+1))
-        self.assertFalse( self.A**self.K1/self.A == self.A**(self.K1-1))
-
-        #they can't because as soon as you have complex variances
-        #there's a divergence between multiply and power.
-        #it's because half of the variance gets conjugated... and the 
-        #semetry complicates things even more.           
-        a=self.A**self.K1
-        self.assertTrue((
-            Matrix(numpy.sort((a*a).var)) == 
-            numpy.sort(numpy.conj(a.var**(0.5))*a.var*a.var**(0.5))
-        ).all())
-
-        #so
-        self.assertFalse(a*a == a**2)
-
+        self.assertTrue( self.A**self.K1*self.A == self.A**(self.K1+1))
+        self.assertTrue( self.A**self.K1/self.A == self.A**(self.K1-1))
  
 
     def testZeroPow(self):
@@ -388,8 +359,10 @@ class powerTester(myTests):
         
         self.assertTrue( self.A.mean*self.A.transform(0) == ((self.A**-1)**-1).mean )
 
-        k1=numpy.real(self.K1)
-        k2=numpy.real(self.K2)
+        k1=self.K1
+        k2=self.K2
+        self.assertTrue( (self.A**k1).transform() == self.A.transform(k1) )
+
         self.assertTrue( (self.A**k1)*(self.A**k2)==self.A**(k1+k2) )
         self.assertTrue( self.A**k1/self.A**k2==self.A**(k1-k2) )
 
@@ -451,8 +424,6 @@ class givenTester(myTests):
 
     def testGivenVector(self):
         self.assertTrue( mvar.givenVector(self.A,index=0,value=1)==self.A.given(index=0,value=1) )
-        self.assertTrue( mvar.givenVector(self.A,index=0,value=1j)==self.A.given(index=0,value=1j) )
-        self.assertTrue( mvar.givenVector(self.A,index=0,value=1+1j)==self.A.given(index=0,value=1+1j) )
 
 class chainTester(myTests):
     def testBasic(self):

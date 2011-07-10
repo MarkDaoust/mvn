@@ -118,13 +118,9 @@ def _subSquare(vectors,var,full=False):
         vec=numpy.zeros([0,shape[1]])
         return (val,vec)
     
-    eig = (
-        numpy.linalg.eigh if
-        numpy.isreal(var).all() else
-        numpy.linalg.eig
-    )
+    eig = numpy.linalg.eigh
 
-    if shape[0]>=shape[1] or full or not vectors.any() or not numpy.isreal(var).all():
+    if shape[0]>=shape[1] or full or not vectors.any():
         scaled=Matrix(var[:,None]*numpy.array(vectors))
         
         cov=vectors.H*scaled
@@ -139,16 +135,14 @@ def _subSquare(vectors,var,full=False):
 
     else:
         scaled=Matrix(scipy.sqrt(var)[:,None]*numpy.array(vectors))
-        Xcov=vectors*vectors.H
-        if Xcov == Matrix.eye:
-            return (var,vectors)
+        Xcov=scaled*scaled.T
         
         ( _ ,Xvec)=numpy.linalg.eigh(Xcov)
         
         Xscaled=(Xvec.H*scaled)
         val=helpers.mag2(Xscaled)
 
-        vec=numpy.array(Xscaled)/scipy.sqrt(val[:,numpy.newaxis])
+        vec=numpy.array(Xscaled)/scipy.sqrt(val[:,None])
 
     
     return (val,vec)

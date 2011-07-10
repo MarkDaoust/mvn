@@ -45,7 +45,7 @@ def getObjects(values):
             pass
 
     if objects is None:
-        objects = makeObjects(values.dtype,values.flat,values.ndim,values.seed)
+        objects = makeObjects(values.flat,values.ndim,values.seed)
         
     testDict[frozenValues] = objects
     testDict['last']=objects
@@ -55,7 +55,7 @@ def getObjects(values):
 
     return objects
 
-def makeObjects(dtype=None,flat=None,ndim=None,seed=None):
+def makeObjects(flat=None,ndim=None,seed=None):
     rand=numpy.random.rand
     randn=numpy.random.randn
     randint=lambda x,y: int(numpy.round((x-0.5)+numpy.random.rand()*(y-x+0.5)))
@@ -86,42 +86,16 @@ def makeObjects(dtype=None,flat=None,ndim=None,seed=None):
         flat=triple(x)
     
     assert all(f<=ndim for f in flat), "flatness can't be larger than ndim"
-
-
-    dtypes={
-        None:lambda:[1.0,1.0+1.0j,1.0j][randint(0,2)],
-        'r':lambda:1.0+0j,
-        'c':lambda:(1.0+1.0j)/(2**0.5),
-        'i':lambda:0+1.0j,
-    }
- 
-    if hasattr(dtype,'__iter__'):
-        dtype=[
-                complex(item) if 
-                isinstance(item,(float,complex,int)) else 
-                dtypes[item]() 
-            for item in dtype
-        ]
-    elif dtype in dtypes:
-        dtype=[item() for item in triple(dtypes[dtype])]
         
 
-    rvec= lambda n=1,dtype=1+0j,ndim=ndim:Matrix(
-        randn(n,ndim)*dtype.real+
-        randn(n,ndim)*dtype.imag*1j
-    )
+    rvec= lambda n=1,ndim=ndim:Matrix(randn(n,ndim))
 
     A,B,C=[
         Mvar(
-            mean=5*randn()*rvec(dtype=D),
-            vectors=5*randn()*rvec(n=2*ndim,dtype=D),
-        ) for D in dtype
+            mean=5*randn()*rvec(),
+            vectors=5*randn()*rvec(n=ndim-F),
+        ) for F in flat
     ]
-
-    for X,F in zip((A,B,C),flat):
-        if F:
-            F.var = F.var[:-F]
-            F.vectors = F.vectors[:-F]
 
 # above we only get real varances, this would change them:
 # ad kill all the unit tests
@@ -133,13 +107,13 @@ def makeObjects(dtype=None,flat=None,ndim=None,seed=None):
 #        )
 
     n=randint(1,2*ndim)
-    M=rvec(n,dtype=random.choice(dtype)).H
-    M2=rvec(n,dtype=random.choice(dtype)).H    
+    M=rvec(n).H
+    M2=rvec(n).H    
 
     E=Matrix.eye(ndim)
     
-    K1 = (numpy.random.randn()+numpy.random.randn()*1j)
-    K2 = (numpy.random.randn()+numpy.random.randn()*1j)
+    K1 = (numpy.random.randn())
+    K2 = (numpy.random.randn())
 
     N=randint(-3,3)
 

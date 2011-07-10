@@ -71,7 +71,7 @@ def cleanup(after):
     """
     @decorator
     def F(decorated,*args,**kwargs):
-        return after(decorated(*args,**kwargs))
+        return after(decorated(*args,**kwargs),*args,**kwargs)
 
     return F
 

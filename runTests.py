@@ -27,13 +27,6 @@ def makeParser():
     general.add_option('-d','--ndim',action='store',type=int,help='set the number of data dimensions')
     parser.add_option_group(general)
 
-    datatype=optparse.OptionGroup(parser,'DataType')
-    datatype.add_option('-r','--real',dest='dtype',action='store_const',const=('r','r','r'), help='use real data')
-    datatype.add_option('-c','--cplx',dest='dtype',action='store_const',const=('c','c','c'), help='use complex data')
-    datatype.add_option('-i','--imag',dest='dtype',action='store_const',const=('i','i','i'), help='use imaginary data')
-    datatype.add_option('--type',dest='dtype',nargs=3,type=str,help='set data types individually to the test objects')
-    parser.add_option_group(datatype)
-
     flatness=optparse.OptionGroup(parser,'Flatness')
     flatness.add_option('-f','--flat',dest='flat',action='store_const',const=(True,True,True),help='set all the objects to flat')
     flatness.add_option('-F','--full',dest='flat',action='store_const',const=(False,False,False),help='set no objects to flat')
@@ -63,7 +56,6 @@ if __name__=='__main__':
 
     if values.x:
         for flatness in [(True,True,True),(False,False,False)]:
-            for dtype in ['r','c','i']:
                 values.flatness=flatness
                 values.dtype=dtype
                 suite.addTests(getSuite(values))
