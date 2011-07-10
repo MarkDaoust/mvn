@@ -937,7 +937,7 @@ class Mvar(Plane):
         free = ~fixed
 
         #create the mean, for the new object,and set the values of interest
-        mean=numpy.zeros([1,self.shape[0]])
+        mean=Matrix.zeros([1,self.ndim])
         mean[:,fixed]=value.mean
 
         #create empty vectors for the new object

@@ -1,7 +1,261 @@
-test values: ./runTests.py -nF --ndim 3
-{'ndim': 3, 'x': None, 'seed': None, 'flat': (False, False, False), 'new': True}
-................................................................................................................
+test values: ./runTests.py -f --ndim 3
+{'ndim': 3, 'x': None, 'seed': None, 'flat': (True, True, True), 'new': False}
+...........F.............FF.F.......F.........F.......F........F........F..........FF..................F......F.
+======================================================================
+FAIL: testMatrixMul (unitTests.productTester)
 ----------------------------------------------------------------------
-Ran 112 tests in 37.774s
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 247, in testMatrixMul
+    self.assertTrue( (self.A*self.M)*self.M2.H == self.A*(self.M*self.M2.H) )
+AssertionError
 
-OK
+======================================================================
+FAIL: testIntPowers (unitTests.powerTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 320, in testIntPowers
+    self.assertTrue( self.A.transform(self.N)== self.A.transform()**self.N )
+AssertionError
+
+======================================================================
+FAIL: testMorePowers (unitTests.powerTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 325, in testMorePowers
+    self.assertTrue( self.A**self.K1*self.A**self.K2 == self.A**(self.K1+self.K2))
+AssertionError
+
+======================================================================
+FAIL: testRealPow (unitTests.powerTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 358, in testRealPow
+    self.assertTrue( self.A/self.A**-1 == self.A**2 )
+AssertionError
+
+======================================================================
+FAIL: testParadoxes (unitTests.inversionTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 528, in testParadoxes
+    self.assertTrue( (self.A&self.B) & ~self.B == self.A & (self.B&~self.B) )
+AssertionError
+
+======================================================================
+FAIL: testGivenVector (unitTests.givenTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 426, in testGivenVector
+    self.assertTrue( mvar.givenVector(self.A,index=0,value=1)==self.A.given(index=0,value=1) )
+AssertionError
+
+======================================================================
+FAIL: testAnd (unitTests.chainTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 489, in testAnd
+    self.assertTrue(measured[:self.ndim] == self.A&self.B)
+AssertionError
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.KLdiv
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.KLdiv
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1920, in KLdiv
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1926, in __init__.Mvar.KLdiv
+Failed example:
+    assert Matrix(A.KLdiv(A)) == 0 
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.KLdiv[0]>", line 1, in <module>
+        assert Matrix(A.KLdiv(A)) == 0
+    AssertionError
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1936, in __init__.Mvar.KLdiv
+Failed example:
+    assert A.entropy(B) == A.KLdiv(B) + A.entropy()
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.KLdiv[4]>", line 1, in <module>
+        assert A.entropy(B) == A.KLdiv(B) + A.entropy()
+    AssertionError
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1943, in __init__.Mvar.KLdiv
+Failed example:
+    assert deltas.mean**2/deltas.var < (Z**2)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.KLdiv[10]>", line 1, in <module>
+        assert deltas.mean**2/deltas.var < (Z**2)
+    AssertionError
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.__mul__
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.__mul__
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 27, in __mul__
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 75, in __init__.Mvar.__mul__
+Failed example:
+    assert (A*M)*M2.H == A*(M*M2.H)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.__mul__[15]>", line 1, in <module>
+        assert (A*M)*M2.H == A*(M*M2.H)
+    AssertionError
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.dist2
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.dist2
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 27, in dist2
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 43, in __init__.Mvar.dist2
+Failed example:
+    assert Matrix(D1)==D2
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.dist2[8]>", line 1, in <module>
+        assert Matrix(D1)==D2
+    AssertionError
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 53, in __init__.Mvar.dist2
+Failed example:
+    assert (deltas.mean)**2/deltas.var < (Z**2)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.dist2[14]>", line 1, in <module>
+        assert (deltas.mean)**2/deltas.var < (Z**2)
+    AssertionError
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.entropy
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.entropy
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1859, in entropy
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1867, in __init__.Mvar.entropy
+Failed example:
+    assert Matrix(numpy.log(1/A.density(S))) == A.entropy(S)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.entropy[1]>", line 1, in <module>
+        assert Matrix(numpy.log(1/A.density(S))) == A.entropy(S)
+    AssertionError
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1870, in __init__.Mvar.entropy
+Failed example:
+    assert Matrix(A.entropy(A.copy())) == A.entropy()
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.entropy[2]>", line 1, in <module>
+        assert Matrix(A.entropy(A.copy())) == A.entropy()
+    AssertionError
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1882, in __init__.Mvar.entropy
+Failed example:
+    assert (deltas.mean**2)/(deltas.var) < (Z**2)     
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.entropy[8]>", line 1, in <module>
+        assert (deltas.mean**2)/(deltas.var) < (Z**2)
+    AssertionError
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1887, in __init__.Mvar.entropy
+Failed example:
+    assert (deltas.mean**2)/(deltas.var) < (Z**2)   
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.entropy[12]>", line 1, in <module>
+        assert (deltas.mean**2)/(deltas.var) < (Z**2)
+    AssertionError
+
+
+======================================================================
+FAIL: Doctest: __init__.Mvar.transform
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.transform
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 579, in transform
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 589, in __init__.Mvar.transform
+Failed example:
+    assert A.transform(N)== A.transform()**N  
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.transform[6]>", line 1, in <module>
+        assert A.transform(N)== A.transform()**N
+    AssertionError
+
+
+======================================================================
+FAIL: Doctest: __init__.givenVector
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.givenVector
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 2087, in givenVector
+
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 2092, in __init__.givenVector
+Failed example:
+    assert givenVector(A,index=0,value=1)==A.given(index=0,value=1)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.givenVector[0]>", line 1, in <module>
+        assert givenVector(A,index=0,value=1)==A.given(index=0,value=1)
+    AssertionError
+
+
+----------------------------------------------------------------------
+Ran 112 tests in 35.697s
+
+FAILED (failures=13)
