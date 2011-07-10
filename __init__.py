@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
-#todo: using the multimethods: __rmul__ = __mul__ ...
+#todo: better interfacing with numpy
+#todo: using the multimethods: __rmul__ = __mul__, ypu don't need seperate multimethods
 #todo: formData should be the main constructor
 #todo: the approximation tollerence should be a class attribute
 #todo: merge chain and  sensor.measure??
@@ -478,22 +479,54 @@ class Mvar(Plane):
         
         >>> assert A.vectors*A.vectors.H==Matrix.eye
         """ 
-        result = self.copy()
-        result.vectors = Matrix(self.vectors)
+        stype = self.dtype
         
-        vtype = result.vectors.dtype
-        result.vectors.dtype = float
+        if stype == complex:
+            result = self.retype(float)
 
-        (result.var,result.vectors)=square(
-            vectors=self.vectors,
-            var=self.var,
-        )
+            (result.var,result.vectors)=square(
+                vectors=result.vectors,
+                var=result.var,
+            )
 
-        result.vectors.dtype = vtype
+            result.vectors/=(2.0**0.5)
+            result.var*=(2.0)
+
+            result.dtype = complex
+
+        else:
+            result = self.copy()
+            (result.var,result.vectors)=square(
+                vectors=result.vectors,
+                var=result.var,
+            )
+
         return result
 
     
     ############ setters/getters -> properties
+    @decorate.prop
+    class dtype():
+        """
+        get or set the data-type of the mean and vectors 
+        """
+        def fget(self):
+            result = self.mean.dtype
+            assert result == self.vectors.dtype
+            return result
+
+        def fset(self,dtype):
+            self.mean = Matrix(self.mean)
+            self.vectors = Matrix(self.vectors)
+            
+            self.mean.dtype = dtype
+            self.vectors.dtype = dtype
+    
+    def retype(self,dtype):
+        result = self.copy(deep=False)
+        result.dtype = dtype
+        return result
+
     @decorate.prop
     class cov():
         """
@@ -555,14 +588,14 @@ class Mvar(Plane):
 
     def _transformParts(self,power=1):
         """
-        sometimes you can get a more precise result from a transform by changing the order that 
-        matrixes are multiplied
+        sometimes you can get a more precise result from a matrix multiplication 
+        by changing the order that matrixes are multiplied
 
         >>> import operator
         >>> parts = A._transformParts(N) 
         >>> assert parts[0]*parts[1] == A.transform(N)
         """
-        if helpers.approx(power):
+        if power == 0 or helpers.approx(power):
             vectors=self.vectors
             varP=numpy.ones_like(self.var)
         else:
@@ -1341,18 +1374,29 @@ class Mvar(Plane):
         >>> assert (L1&L2).vectors==[1,0]
         
     """
+        stype = self.dtype
+        otype = other.dtype
+
+        self.dtype = float
+        other.dtype = float
+
         #check if they both fill the space
         if (
-            self.mean.size == (self.var!=0).sum() and 
-            other.mean.size == (other.var!=0).sum()
+            self.mean.size == (~helpers.approx(self.var)).sum() and 
+            other.mean.size == (~helpers.approx(self.var)).sum()
         ):
             #then this is a standard paralell operation
-            return (self**(-1)+other**(-1))**(-1) 
-        
-        Dmean = Plane.__and__(self,other).mean
+            result=(self**(-1)+other**(-1))**(-1) 
+        else:
+            Dmean = Plane.__and__(self,other).mean
 
-        #do the blending, while compensating for the mean of the working plane
-        return ((self-Dmean)**-1+(other-Dmean)**-1)**-1+Dmean
+            #do the blending, while compensating for the mean of the working plane
+            result=((self-Dmean)**-1+(other-Dmean)**-1)**-1+Dmean
+
+        stype = stype
+        otype = otype
+
+        return result
 
     def __pow__(self,power):
         """
@@ -1429,6 +1473,9 @@ class Mvar(Plane):
             ...     #information is lost if the object is flat.
             ...     assert A**2==A*A.transform()
         """
+        assert numpy.isreal(power)
+        power = numpy.real(power)
+
         if numpy.real(power)<0: 
             self=self.inflate()
         
@@ -1643,6 +1690,9 @@ class Mvar(Plane):
 
             >>> assert 1j*A*1j==-A
         """
+        assert numpy.isreal(scalar)
+        scalar = numpy.real(scalar)
+
         return Mvar(
             mean= scalar*self.mean,
             var = scalar*self.var,
