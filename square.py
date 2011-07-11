@@ -32,11 +32,8 @@ def square(vectors,var=None,full=False):
     but here I only need one of the two sets of vectors, so I actually calculate the smaller of 
     the two possible covariance marixes and, and then it's eigen-stuff.
     """ 
-    var =( 
-        numpy.ones(vectors.shape[0]) if 
-        var is None else 
-        numpy.real_if_close(var)
-    )
+    if var is None:
+        var =numpy.ones(vectors.shape[0]) 
 
     infinite=helpers.approx(1/scipy.sqrt(var)) | ~numpy.isfinite(var)
 
@@ -131,13 +128,14 @@ def _subSquare(vectors,var,full=False):
         cov=vectors.H*vectors
         (_,vec)=eig(cov)
         vec=vec.H
-        val=numpy.zeros(vec.shape[0])    
+        val=numpy.zeros(vec.shape[0])
 
     else:
         scaled=Matrix(scipy.sqrt(var)[:,None]*numpy.array(vectors))
-        Xcov=numpy.array(vectors)*var[:,None]*vectors.T
+        #Xcov = scaled*scaled.H        
+        Xcov=var[:,None]*numpy.array(vectors)*vectors.H
         
-        (_,Xvec)=numpy.linalg.eigh(Xcov)
+        (_,Xvec)=eig(Xcov)
         
         Xscaled=(Xvec.H*scaled)
         val=helpers.mag2(Xscaled)

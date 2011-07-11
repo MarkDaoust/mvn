@@ -1,14 +1,6 @@
 test values: ./runTests.py -f --ndim 3
 {'ndim': 3, 'x': None, 'seed': None, 'flat': (True, True, True), 'new': False}
-...........F.............FF.F.......F.........F.......F........F........F..........FF..................F......F.
-======================================================================
-FAIL: testMatrixMul (unitTests.productTester)
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/home/olpc/personal-projects/mvar/unitTests.py", line 247, in testMatrixMul
-    self.assertTrue( (self.A*self.M)*self.M2.H == self.A*(self.M*self.M2.H) )
-AssertionError
-
+.........................FF.F.......F.........F.......F........F.........F.........FF..................F......F.
 ======================================================================
 FAIL: testIntPowers (unitTests.powerTester)
 ----------------------------------------------------------------------
@@ -64,10 +56,10 @@ Traceback (most recent call last):
   File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
     raise self.failureException(self.format_failure(new.getvalue()))
 AssertionError: Failed doctest test for __init__.Mvar.KLdiv
-  File "/home/olpc/personal-projects/mvar/__init__.py", line 1920, in KLdiv
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1915, in KLdiv
 
 ----------------------------------------------------------------------
-File "/home/olpc/personal-projects/mvar/__init__.py", line 1926, in __init__.Mvar.KLdiv
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1921, in __init__.Mvar.KLdiv
 Failed example:
     assert Matrix(A.KLdiv(A)) == 0 
 Exception raised:
@@ -78,7 +70,7 @@ Exception raised:
         assert Matrix(A.KLdiv(A)) == 0
     AssertionError
 ----------------------------------------------------------------------
-File "/home/olpc/personal-projects/mvar/__init__.py", line 1936, in __init__.Mvar.KLdiv
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1931, in __init__.Mvar.KLdiv
 Failed example:
     assert A.entropy(B) == A.KLdiv(B) + A.entropy()
 Exception raised:
@@ -89,7 +81,7 @@ Exception raised:
         assert A.entropy(B) == A.KLdiv(B) + A.entropy()
     AssertionError
 ----------------------------------------------------------------------
-File "/home/olpc/personal-projects/mvar/__init__.py", line 1943, in __init__.Mvar.KLdiv
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1938, in __init__.Mvar.KLdiv
 Failed example:
     assert deltas.mean**2/deltas.var < (Z**2)
 Exception raised:
@@ -102,24 +94,26 @@ Exception raised:
 
 
 ======================================================================
-FAIL: Doctest: __init__.Mvar.__mul__
+FAIL: Doctest: __init__.Mvar.__pow__
 ----------------------------------------------------------------------
 Traceback (most recent call last):
   File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
     raise self.failureException(self.format_failure(new.getvalue()))
-AssertionError: Failed doctest test for __init__.Mvar.__mul__
-  File "/home/olpc/personal-projects/mvar/__init__.py", line 27, in __mul__
+AssertionError: Failed doctest test for __init__.Mvar.__pow__
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1347, in __pow__
 
 ----------------------------------------------------------------------
-File "/home/olpc/personal-projects/mvar/__init__.py", line 75, in __init__.Mvar.__mul__
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1393, in __init__.Mvar.__pow__
 Failed example:
-    assert (A*M)*M2.H == A*(M*M2.H)
+    if ((not A.flat) or (k1>=0 and k1>=0)):
+        assert (A**k1)*(A**k2)==A**(k1+k2) 
+        assert A**k1/A**k2==A**(k1-k2) 
 Exception raised:
     Traceback (most recent call last):
       File "/usr/lib/python2.6/doctest.py", line 1248, in __run
         compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.__mul__[15]>", line 1, in <module>
-        assert (A*M)*M2.H == A*(M*M2.H)
+      File "<doctest __init__.Mvar.__pow__[11]>", line 2, in <module>
+        assert (A**k1)*(A**k2)==A**(k1+k2)
     AssertionError
 
 
@@ -163,10 +157,10 @@ Traceback (most recent call last):
   File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
     raise self.failureException(self.format_failure(new.getvalue()))
 AssertionError: Failed doctest test for __init__.Mvar.entropy
-  File "/home/olpc/personal-projects/mvar/__init__.py", line 1859, in entropy
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1854, in entropy
 
 ----------------------------------------------------------------------
-File "/home/olpc/personal-projects/mvar/__init__.py", line 1867, in __init__.Mvar.entropy
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1862, in __init__.Mvar.entropy
 Failed example:
     assert Matrix(numpy.log(1/A.density(S))) == A.entropy(S)
 Exception raised:
@@ -177,7 +171,7 @@ Exception raised:
         assert Matrix(numpy.log(1/A.density(S))) == A.entropy(S)
     AssertionError
 ----------------------------------------------------------------------
-File "/home/olpc/personal-projects/mvar/__init__.py", line 1870, in __init__.Mvar.entropy
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1865, in __init__.Mvar.entropy
 Failed example:
     assert Matrix(A.entropy(A.copy())) == A.entropy()
 Exception raised:
@@ -188,7 +182,7 @@ Exception raised:
         assert Matrix(A.entropy(A.copy())) == A.entropy()
     AssertionError
 ----------------------------------------------------------------------
-File "/home/olpc/personal-projects/mvar/__init__.py", line 1882, in __init__.Mvar.entropy
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1877, in __init__.Mvar.entropy
 Failed example:
     assert (deltas.mean**2)/(deltas.var) < (Z**2)     
 Exception raised:
@@ -199,7 +193,7 @@ Exception raised:
         assert (deltas.mean**2)/(deltas.var) < (Z**2)
     AssertionError
 ----------------------------------------------------------------------
-File "/home/olpc/personal-projects/mvar/__init__.py", line 1887, in __init__.Mvar.entropy
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1882, in __init__.Mvar.entropy
 Failed example:
     assert (deltas.mean**2)/(deltas.var) < (Z**2)   
 Exception raised:
@@ -240,10 +234,10 @@ Traceback (most recent call last):
   File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
     raise self.failureException(self.format_failure(new.getvalue()))
 AssertionError: Failed doctest test for __init__.givenVector
-  File "/home/olpc/personal-projects/mvar/__init__.py", line 2087, in givenVector
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 2082, in givenVector
 
 ----------------------------------------------------------------------
-File "/home/olpc/personal-projects/mvar/__init__.py", line 2092, in __init__.givenVector
+File "/home/olpc/personal-projects/mvar/__init__.py", line 2087, in __init__.givenVector
 Failed example:
     assert givenVector(A,index=0,value=1)==A.given(index=0,value=1)
 Exception raised:
@@ -256,6 +250,6 @@ Exception raised:
 
 
 ----------------------------------------------------------------------
-Ran 112 tests in 35.697s
+Ran 112 tests in 36.541s
 
-FAILED (failures=13)
+FAILED (failures=12)

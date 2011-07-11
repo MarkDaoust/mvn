@@ -342,7 +342,7 @@ class Mvar(Plane):
 
         #unpack the stack into the object's parameters
         self.mean = stack[-1,1:]
-        self.var = numpy.real_if_close(numpy.array(stack[:-1,0]).flatten())
+        self.var = numpy.array(stack[:-1,0]).flatten()
         self.vectors = stack[:-1,1:]
         
         assert  (numpy.isreal(numpy.asarray(self.mean)).all() 
@@ -1432,13 +1432,8 @@ class Mvar(Plane):
         return Mvar(
             mean=self.mean*self.transform(power-1)+dmean,
             vectors=self.vectors,
-            var=(
-                self.var**power
-                #Interesting idea but wrong: it would only fix A*A==A**2 for complex objects.  
-                #if numpy.isreal(self.var).all() else 
-                #numpy.conj(self.var**((power-1)/2))*self.var*self.var**((power-1)/2)
-            ),
-            square=False#bool(numpy.imag(power)),
+            var=self.var**power,
+            square=False,
         )
 
     @decorate.prepare(lambda self,other:(self,format(other)))
@@ -1838,7 +1833,7 @@ class Mvar(Plane):
         """
         #todo: fix the crash generated, for flat objects by: 1/A-1/A (inf-inf == nan)
 
-        other = other if isinstance(other,Mvar) else Mvar(mean=other)
+        other = other if isinstance(other,Mvar) else Mvar.fromData(other)
         return Mvar(
             mean=self.mean+other.mean,
             vectors=numpy.vstack([self.vectors,other.vectors]),
@@ -2170,7 +2165,11 @@ def binindex(index,numel):
 if __name__ == '__main__':
     #overwrite everything we just created with the copy that was 
     #created when we imported mvar; there can only be one.
-    #from testObjects import *
+    from testObjects import *
+
+    b=B**0
+
+    assert b+b == 2*b
 
     N1=1000
     N2=10
