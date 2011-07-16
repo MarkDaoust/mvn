@@ -308,6 +308,8 @@ class Mvar(Plane):
     """
     fromData=staticmethod(fromData)    
 
+    infoBase = numpy.e
+
     ############## Creation
     def __init__(self,
         vectors=Matrix.eye,
@@ -891,7 +893,7 @@ class Mvar(Plane):
         >>> Z=3
         >>> deltas = Mvar.fromData(A.dist2(A.sample(N)) - A.ndim)
         >>> deltas.var/=N
-        >>> assert (deltas.mean)**2/deltas.var < (Z**2)
+        >>> assert deltas.dist2() < (Z**2)
 
         for Mvars it currenty just returns an mvar (mean & variance), 
         but that should be a non-central chi**2 distribution
@@ -1875,58 +1877,86 @@ class Mvar(Plane):
         Returns the probability density in the specified locations, 
         The vectors should be aligned onto the last dimension
         That last dimension is squeezed out during the calculation
+
+        >>> data = A.sample([5,5])
+        >>> assert Matrix(A.density(data)) == numpy.exp(-A.entropy(data))
         """
         return numpy.exp(-self.entropy(locations)) 
     
-    def entropy(self,data=None,base=numpy.e):
+
+    def entropy(self,data=None,base=None):
         """
-        return the differential entropy, or encoding length, is the requested base.        
-        
-        the default is in base e
-        
-        With vectors it is simply the log of the improbability
-            >>> S=A.sample(100)   
-            >>> assert Matrix(numpy.log(1/A.density(S))) == A.entropy(S)
+        information required to encode a using a code based on B
+        definition:
+            A.entropy(B) -> sum(p(B)*log(p(A)))
 
-        With an Mvar it is the average encoding length per sample
-            >>> assert Matrix(A.entropy(A.copy())) == A.entropy()
+        This returns the differential entropy.        
+        The default base is stored in the class-attribute 'infoBase'
 
-            >>> #warning: this works, but there is probably a better way.
-            >>>
-            >>> #note: the variance of the mean of the sample is the variance 
-            >>> #      of the sample divided by the sample size.
-            >>>
+            >>> assert A.infoBase is A.__class__.infoBase
+            >>> assert A.infoBase is numpy.e
+
+        With vectors it is simply the log of the inverse of the probability of each sample
+
+            >>> Sa=A.sample(100)   
+            >>> assert Matrix(numpy.log(1/A.density(Sa))) == A.entropy(Sa)
+            >>> Sb=B.sample(100)   
+            >>> #sometimes this next one is just a bunch of infinities
+            >>> assert Matrix(1/A.density(Sb)) == numpy.exp(A.entropy(Sb)) 
+
+        With an Mvar it is the average encoding length per sample (it would be 
+            nice if I could find the distribution instead of just the mean)
+
+            >>> assert Matrix(A.entropy()) == A.entropy(A) 
+            >>> assert Matrix(A.entropy()) == A.entropy(A.copy())
+
+        Entropy is sensitive to linear transforms 
+            >>> m=Matrix.randn([A.ndim,A.ndim])
+            >>> assert Matrix((A*m).entropy()) == A.entropy()+numpy.log(abs(m.det()))
+
+        The joint entropy is less than the sum of the marginals
+
+            >>> marginalEntropy = Matrix([
+            ...     A[dim].entropy() 
+            ...     for dim in range(A.ndim)
+            ... ])
+            >>> assert Matrix(A.diag().entropy()) == marginalEntropy.sum()
+            >>> assert A.entropy() <= marginalEntropy.sum() 
+
+        At the limit, a the mean mean entropy of a large number of samples from 
+            a distribution will be the entropy of the distribution 
+
+            warning: this works, but there is probably a better way.
+            
+            note: the variance of the mean of the sample is the variance 
+                  of the sample divided by the sample size.
+
             >>> N=1000
             >>> Z=3
+            >>>
             >>> a=A.sample(N)
             >>> deltas = Mvar.fromData(A.entropy(a)-A.entropy())
             >>> deltas.var/=N
-            >>> assert (deltas.mean**2)/(deltas.var) < (Z**2)     
+            >>> assert deltas.dist2() < (Z**2)     
             >>>
             >>> b=B.sample(N)
             >>> deltas = Mvar.fromData(A.entropy(b)-A.entropy(B))
             >>> deltas.var/=N
-            >>> assert (deltas.mean**2)/(deltas.var) < (Z**2)   
-
-        differential-entropy is sensitive to linear transforms 
-        >>> m=Matrix.randn([A.ndim,A.ndim])
-        >>> assert Matrix((A*m).entropy()) == A.entropy()+numpy.log(abs(m.det()))
-
-        the joint entropy is less than the sum of the marginals
-        >>> assert (
-        ...     numpy.array([
-        ...         A[dim].entropy() 
-        ...         for dim in range(A.ndim)
-        ...     ]).sum() >= A.entropy() 
-        ... )
+            >>> assert deltas.dist2() < (Z**2)  
 
         http://en.wikipedia.org/wiki/Multivariate_normal_distribution
-
         """
+        if base is None:
+            base=self.infoBase
+
         if data is None:
             data = self
+
         if isinstance(data,Mvar):
-            baseE = numpy.log(self.det()*(2*numpy.pi*numpy.e)**self.ndim)/2
+            baseE = (
+                numpy.log(data.det())+
+                data.ndim*numpy.log(2*numpy.pi*numpy.e)
+            )/2
             if data is not self:
                 baseE+=self.KLdiv(data)
         else:
@@ -1941,31 +1971,60 @@ class Mvar(Plane):
         
     def KLdiv(self,other,base=numpy.e):
         """
-        default is in base e
+        A.KLdiv(B) -> sum(p(B)*log(p(B)/p(A)))
+
+        Return the KLdiv in the requested base.        
+        The default base is stored in the class-attribute 'infoBase'
+
+            >>> assert A.infoBase is A.__class__.infoBase
+            >>> assert A.infoBase is numpy.e
 
         it measures the difference between two distributions:
-            there is no difference between a distribution and itself        
+        there is no difference between a distribution and itself        
             >>> assert Matrix(A.KLdiv(A)) == 0 
     
-            The difference is always positive
+        The difference is always positive
             >>> assert A.KLdiv(B) > 0
 
-        invariant under linear transforms
+        Invariant under linear transforms
             >>> m = Matrix.randn([A.ndim,A.ndim])
             >>> assert Matrix(A.KLdiv(B)) == (A*m).KLdiv(B*m)
 
-        can be created by re-arranging other functions
-            >>> assert A.entropy(B) == A.KLdiv(B) + A.entropy()
+        Can be created by re-arranging other functions
+            >>> assert A.entropy(B) - B.entropy() == A.KLdiv(B)
 
+            >>> b=B.sample(100)           
+            >>> assert Matrix(A.entropy(b) - Mvar.fromData(b).entropy()) == A.KLdiv(b)
+
+
+        And calculating it for an Mvar is equivalent to averaging out a bunch of samples
             >>> N=1000
             >>> Z=3
+            >>> 
+            >>> #KLdiv 
+            >>> a=A.sample(N)
+            >>> KL = Mvar.fromData(A.KLdiv(a)) #should be zero
+            >>> KL.var/=N
+            >>> assert KL.dist2() < (Z**2)
+            >>> 
+            >>> #KLdiv 
             >>> b=B.sample(N)
-            >>> deltas = Mvar.fromData(A.entropy(b) - (A.KLdiv(B) + A.entropy()))
-            >>> deltas.var/=N
-            >>> assert deltas.mean**2/deltas.var < (Z**2)
+            >>> KL = Mvar.fromData(A.KLdiv(b) - A.KLdiv(B)) #difference should be zero
+            >>> KL.var/=N
+            >>> assert KL.dist2() < (Z**2)
+            >>> 
+            >>> B2=B.copy(deep=True)
+            >>> B2.var/=2
+            >>> b2=B2.sample(N)
+            >>> KL = Mvar.fromData(B.KLdiv(b2) - B.KLdiv(B2)) #should be zero
+            >>> KL.var/=N
+            >>> assert KL.dist2() < (Z**2)
 
         http://en.wikipedia.org/wiki/Multivariate_normal_distribution#Kullback.E2.80.93Leibler_divergence
         """
+        if base is None:
+            base=self.infoBase
+
         if isinstance(other,Mvar):
             det = self.det()
             if det:
@@ -1979,7 +2038,9 @@ class Mvar(Plane):
             else: 
                 return numpy.inf 
         else:
-            return self.entropy(other)-self.entropy()
+            baseE= self.entropy(other)-Mvar.fromData(other).entropy()            
+            return (baseE/numpy.log(base))
+
 
     def __repr__(self):
         """
