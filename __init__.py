@@ -1,33 +1,33 @@
 #! /usr/bin/env python
 
-#todo: better interfacing with numpy
-#todo: using the multimethods: __rmul__ = __mul__, ypu don't need seperate multimethods
+#todo: mixtures should know: the variance of the mean of the sample is the 
+#      variance of the sample divided by the sample size.
+
+
+#todo: better interfacing with numpy & scipy's distributions
 #todo: formData should be the main constructor
 #todo: the approximation tollerence should be a class attribute
 #todo: merge chain and  sensor.measure??
 #todo: type handling- be more uniform, arrays work element wize, matrixes get converted to Mvars ?
-#todo: wiki: Complex Normal Distribution (I knew there was something underconstrained about the way I had been handling them)
-#todo: Mvar.real & Mvar.imag?,  
+#todo: better type handling, multimethods? many things that accept an mvar should 
+#        accept Mvar.eye, Mvar.zeros, Mvar.infs 
 #todo: consider removing the autosquare if you ever want to speed things up, 
 #         I bet it would help. it would also allow other factorizations (like cholsky) 
 #todo: wikipedia/kalmanfiltering#information filter    !!   the mvar and it's 
 #       inverse are different things, maybe the linear algebra should go in a 
 #       super class, and all the covariance/information filter stuff in two sub classes 
-#todo: better type handling, multimethods? many things that accept an mvar should 
-#        accept Mvar.eye, Mvar.zeros, Mvar.infs 
 #todo: error handling
 #todo: do something about mvars with zero dimensions ?
 #todo: understand transforms composed of Mvars as the component vectors, and 
 #          whether it is meaningful to consider mvars in both the rows and columns
+#todo: implement transpose and dot product, related to bilinear forms?
 #todo: implement a transpose,for the above 
-#todo: chi*2 distribution for the lengths (other distributions)
-#todo: see if div should mtlab like matlab backwards divide added
+#todo: chi2 distribution/non-central chi2 for the lengths (other distributions?)
+#todo: see if div should do something like matlab backwards divide
 #todo: impliment collections so that '|' is meaningful
 #todo: cleanup my 'square' function (now that it is clear that it's an SVD)
-#todo: implement transpose and dot product, related to bilinear forms?
 #todo: split the class into two levels: "fast" and 'safe'? <- "if __debug__" ?
 #todo: understand the EM and K-means algorithms (available in scipy)
-#todo: understans what complex numbers imply with these.
 #todo: understand the relationship between these and a hessian matrix.
 #todo: figure out the relationship between these and spherical harmonics
 #todo: investigate higher order cumulants, 'principal cumulant analysis??'
@@ -420,6 +420,23 @@ class Mvar(Plane):
             mean=Matrix.zeros([1,n]) if mean is None else mean,
             vectors=Matrix.eye(n),
         )
+
+    def diag(self):
+        """
+        Return a distribution with the same marginals, but zero correlation 
+        between elements.
+        
+        this is a maximum entropy distribution, 
+        if all you want is to preserve the marginal variances
+
+        >>> assert A.entropy() <= A.diag().entropy()
+        >>> assert A.diag().corr == Matrix.eye
+        >>> assert sorted(A.diag().var) == sorted(A.width()**2)
+        >>>
+        >>> marginals = [A[dim] for dim in range(A.ndim)]
+        >>> assert Mvar.stack(*marginals) == A.diag()
+        """
+        return Mvar(mean=self.mean,var = self.width()**2)        
     
     ##### 'cosmetic' manipulations
     def inflate(self):
@@ -497,7 +514,7 @@ class Mvar(Plane):
     @decorate.prop
     class cov():
         """
-        get or set the covariance matrix used by the object
+        get or set the covariance matrix
         
         >>> assert A.cov==A.var*numpy.array(A.vectors.H)*A.vectors
         >>> assert abs(A).cov==A.scaled.H*A.scaled
@@ -511,7 +528,16 @@ class Mvar(Plane):
                 cov=cov,
             )
             self.copy(new)
-    
+
+    @decorate.prop
+    class corr():
+        """
+        get the correlation matrix used by the object
+        
+        >>> assert A.corr==(A/A.width()).cov
+        """
+        def fget(self):
+            return (self/self.width()).cov
 
     @decorate.prop
     class scaled():
@@ -757,9 +783,10 @@ class Mvar(Plane):
         
         >>> assert Matrix([A[n].var[0] for n in range(A.ndim)]) == A.width()**2
 
+        >>> assert Matrix(A.corr.diagonal()) == Matrix.ones
+
         >>> norm = A/A.width()
-        >>> corr = norm.cov
-        >>> assert Matrix(corr.diagonal()) == Matrix.ones
+        >>> assert norm.corr == norm.cov
         >>> assert Matrix([norm[n].var[0] for n in range(norm.ndim)]) == Matrix.ones
 
         This is very different from 
