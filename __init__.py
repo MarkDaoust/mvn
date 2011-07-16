@@ -1342,7 +1342,7 @@ class Mvar(Plane):
         ...     assert A & B == wiki(A,B)
 
         this algorithm is also, at the same time, solving linear equations
-        where the zero vatiances correspond to a plane's null vectors 
+        where the zero variances correspond to a plane's null vectors 
 
         >>> L1=Mvar(mean=[1,0],vectors=[0,1],var=numpy.inf)
         >>> L2=Mvar(mean=[0,1],vectors=[1,0],var=numpy.inf) 
@@ -1747,7 +1747,7 @@ class Mvar(Plane):
 
     def quad(self,matrix=None):
         #todo: Chi & Chi2 distribution gives the *real* distribution of the length & length^2
-        #       this gust has the right mean and variance
+        #       this just has the right mean and variance
         """
         ref: http://en.wikipedia.org/wiki/Quadratic_form_(statistics)
 
@@ -1830,11 +1830,11 @@ class Mvar(Plane):
         
         scalar multiplication however fits with addition:
 
-        >>> assert (A+A).mean==(2*A).mean
-        >>> assert (A+A).mean==2*A.mean
+            >>> assert (A+A).mean==(2*A).mean
+            >>> assert (A+A).mean==2*A.mean
         
-        >>> assert (A+B).mean==A.mean+B.mean
-        >>> assert (A+B).cov==A.cov+B.cov
+            >>> assert (A+B).mean==A.mean+B.mean
+            >>> assert (A+B).cov==A.cov+B.cov
         
         watch out subtraction is the inverse of addition 
             >>> assert A-A == Mvar(mean=numpy.zeros_like(A.mean))
@@ -1858,7 +1858,6 @@ class Mvar(Plane):
             >>> assert A-B == -(B-A)
             >>> assert A+(B-B)==A
             
-            but watchout you'll end up with complex... everything?
         """
         #todo: fix the crash generated, for flat objects by: 1/A-1/A (inf-inf == nan)
 
