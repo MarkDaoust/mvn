@@ -316,8 +316,15 @@ class mergeTester(myTests):
 
 class powerTester(myTests):
     def testIntPowers(self):
-        self.assertTrue( self.A.transform(self.N)== (self.A**self.N).transform() )
-        self.assertTrue( self.A.transform(self.N)== self.A.transform()**self.N )
+        N = abs(self.N)
+        self.assertTrue( self.A.transform(N)== (self.A**N).transform() )
+        self.assertTrue( self.A.transform(N)== self.A.transform()**N )
+
+        N = -abs(self.N)
+        if not self.A.flat:
+            self.assertTrue( self.A.transform(N)== (self.A**N).transform() )
+        self.assertTrue( self.A.transform(N)== self.A.transform()**N )
+
 
     def testMorePowers(self):
         self.assertTrue( (self.A**self.K1).transform()**2 == self.A.transform(self.K1)**2 )

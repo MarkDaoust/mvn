@@ -1,19 +1,19 @@
-test values: ./runTests.py -f --ndim 3
-{'ndim': 3, 'x': None, 'seed': None, 'flat': (True, True, True), 'new': False}
-.........................FF.F.......F.........F.......F........F.........F.........FF..................F......F.
+test values: ./runTests.py -nf --ndim 3
+{'ndim': 3, 'x': None, 'seed': None, 'flat': (True, True, True), 'new': True}
+.........................FF.F.......F.........F.......F........F...................F..FF..................F......F.
 ======================================================================
 FAIL: testIntPowers (unitTests.powerTester)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/olpc/personal-projects/mvar/unitTests.py", line 320, in testIntPowers
-    self.assertTrue( self.A.transform(self.N)== self.A.transform()**self.N )
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 326, in testIntPowers
+    self.assertTrue( self.A.transform(N)== self.A.transform()**N )
 AssertionError
 
 ======================================================================
 FAIL: testMorePowers (unitTests.powerTester)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/olpc/personal-projects/mvar/unitTests.py", line 325, in testMorePowers
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 332, in testMorePowers
     self.assertTrue( self.A**self.K1*self.A**self.K2 == self.A**(self.K1+self.K2))
 AssertionError
 
@@ -21,7 +21,7 @@ AssertionError
 FAIL: testRealPow (unitTests.powerTester)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/olpc/personal-projects/mvar/unitTests.py", line 358, in testRealPow
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 365, in testRealPow
     self.assertTrue( self.A/self.A**-1 == self.A**2 )
 AssertionError
 
@@ -29,7 +29,7 @@ AssertionError
 FAIL: testParadoxes (unitTests.inversionTester)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/olpc/personal-projects/mvar/unitTests.py", line 528, in testParadoxes
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 535, in testParadoxes
     self.assertTrue( (self.A&self.B) & ~self.B == self.A & (self.B&~self.B) )
 AssertionError
 
@@ -37,7 +37,7 @@ AssertionError
 FAIL: testGivenVector (unitTests.givenTester)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/olpc/personal-projects/mvar/unitTests.py", line 426, in testGivenVector
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 433, in testGivenVector
     self.assertTrue( mvar.givenVector(self.A,index=0,value=1)==self.A.given(index=0,value=1) )
 AssertionError
 
@@ -45,7 +45,7 @@ AssertionError
 FAIL: testAnd (unitTests.chainTester)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/home/olpc/personal-projects/mvar/unitTests.py", line 489, in testAnd
+  File "/home/olpc/personal-projects/mvar/unitTests.py", line 496, in testAnd
     self.assertTrue(measured[:self.ndim] == self.A&self.B)
 AssertionError
 
@@ -56,64 +56,122 @@ Traceback (most recent call last):
   File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
     raise self.failureException(self.format_failure(new.getvalue()))
 AssertionError: Failed doctest test for __init__.Mvar.KLdiv
-  File "/home/olpc/personal-projects/mvar/__init__.py", line 1915, in KLdiv
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1971, in KLdiv
 
 ----------------------------------------------------------------------
-File "/home/olpc/personal-projects/mvar/__init__.py", line 1921, in __init__.Mvar.KLdiv
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1983, in __init__.Mvar.KLdiv
 Failed example:
     assert Matrix(A.KLdiv(A)) == 0 
 Exception raised:
     Traceback (most recent call last):
       File "/usr/lib/python2.6/doctest.py", line 1248, in __run
         compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.KLdiv[0]>", line 1, in <module>
+      File "<doctest __init__.Mvar.KLdiv[2]>", line 1, in <module>
         assert Matrix(A.KLdiv(A)) == 0
     AssertionError
 ----------------------------------------------------------------------
-File "/home/olpc/personal-projects/mvar/__init__.py", line 1931, in __init__.Mvar.KLdiv
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1993, in __init__.Mvar.KLdiv
 Failed example:
-    assert A.entropy(B) == A.KLdiv(B) + A.entropy()
+    assert A.entropy(B) - B.entropy() == A.KLdiv(B)
 Exception raised:
     Traceback (most recent call last):
       File "/usr/lib/python2.6/doctest.py", line 1248, in __run
         compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.KLdiv[4]>", line 1, in <module>
-        assert A.entropy(B) == A.KLdiv(B) + A.entropy()
+      File "<doctest __init__.Mvar.KLdiv[6]>", line 1, in <module>
+        assert A.entropy(B) - B.entropy() == A.KLdiv(B)
     AssertionError
 ----------------------------------------------------------------------
-File "/home/olpc/personal-projects/mvar/__init__.py", line 1938, in __init__.Mvar.KLdiv
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1996, in __init__.Mvar.KLdiv
 Failed example:
-    assert deltas.mean**2/deltas.var < (Z**2)
+    assert Matrix(A.entropy(b) - Mvar.fromData(b).entropy()) == A.KLdiv(b)
 Exception raised:
     Traceback (most recent call last):
       File "/usr/lib/python2.6/doctest.py", line 1248, in __run
         compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.KLdiv[10]>", line 1, in <module>
-        assert deltas.mean**2/deltas.var < (Z**2)
+      File "<doctest __init__.Mvar.KLdiv[8]>", line 1, in <module>
+        assert Matrix(A.entropy(b) - Mvar.fromData(b).entropy()) == A.KLdiv(b)
     AssertionError
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 2007, in __init__.Mvar.KLdiv
+Failed example:
+    assert KL.dist2() < (Z**2)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.KLdiv[14]>", line 1, in <module>
+        assert KL.dist2() < (Z**2)
+      File "<string>", line 2, in dist2
+      File "/home/olpc/personal-projects/mvar/decorate/__init__.py", line 140, in caller
+        return found(*args,**kwargs)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 914, in dist2
+        scaled=numpy.array(numpy.inner(deltas,(self**-1).scaled))
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1465, in __pow__
+        square=False,
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 353, in __init__
+        ),'real numbers only'
+    AssertionError: real numbers only
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 2013, in __init__.Mvar.KLdiv
+Failed example:
+    assert KL.dist2() < (Z**2)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.KLdiv[18]>", line 1, in <module>
+        assert KL.dist2() < (Z**2)
+      File "<string>", line 2, in dist2
+      File "/home/olpc/personal-projects/mvar/decorate/__init__.py", line 140, in caller
+        return found(*args,**kwargs)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 914, in dist2
+        scaled=numpy.array(numpy.inner(deltas,(self**-1).scaled))
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1465, in __pow__
+        square=False,
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 353, in __init__
+        ),'real numbers only'
+    AssertionError: real numbers only
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 2020, in __init__.Mvar.KLdiv
+Failed example:
+    assert KL.dist2() < (Z**2)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.KLdiv[24]>", line 1, in <module>
+        assert KL.dist2() < (Z**2)
+      File "<string>", line 2, in dist2
+      File "/home/olpc/personal-projects/mvar/decorate/__init__.py", line 140, in caller
+        return found(*args,**kwargs)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 914, in dist2
+        scaled=numpy.array(numpy.inner(deltas,(self**-1).scaled))
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1465, in __pow__
+        square=False,
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 353, in __init__
+        ),'real numbers only'
+    AssertionError: real numbers only
 
 
 ======================================================================
-FAIL: Doctest: __init__.Mvar.__pow__
+FAIL: Doctest: __init__.Mvar.density
 ----------------------------------------------------------------------
 Traceback (most recent call last):
   File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
     raise self.failureException(self.format_failure(new.getvalue()))
-AssertionError: Failed doctest test for __init__.Mvar.__pow__
-  File "/home/olpc/personal-projects/mvar/__init__.py", line 1347, in __pow__
+AssertionError: Failed doctest test for __init__.Mvar.density
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1872, in density
 
 ----------------------------------------------------------------------
-File "/home/olpc/personal-projects/mvar/__init__.py", line 1393, in __init__.Mvar.__pow__
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1881, in __init__.Mvar.density
 Failed example:
-    if ((not A.flat) or (k1>=0 and k1>=0)):
-        assert (A**k1)*(A**k2)==A**(k1+k2) 
-        assert A**k1/A**k2==A**(k1-k2) 
+    assert Matrix(A.density(data)) == numpy.exp(-A.entropy(data))
 Exception raised:
     Traceback (most recent call last):
       File "/usr/lib/python2.6/doctest.py", line 1248, in __run
         compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.__pow__[11]>", line 2, in <module>
-        assert (A**k1)*(A**k2)==A**(k1+k2)
+      File "<doctest __init__.Mvar.density[1]>", line 1, in <module>
+        assert Matrix(A.density(data)) == numpy.exp(-A.entropy(data))
     AssertionError
 
 
@@ -124,10 +182,10 @@ Traceback (most recent call last):
   File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
     raise self.failureException(self.format_failure(new.getvalue()))
 AssertionError: Failed doctest test for __init__.Mvar.dist2
-  File "/home/olpc/personal-projects/mvar/__init__.py", line 27, in dist2
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 28, in dist2
 
 ----------------------------------------------------------------------
-File "/home/olpc/personal-projects/mvar/__init__.py", line 43, in __init__.Mvar.dist2
+File "/home/olpc/personal-projects/mvar/__init__.py", line 44, in __init__.Mvar.dist2
 Failed example:
     assert Matrix(D1)==D2
 Exception raised:
@@ -138,16 +196,25 @@ Exception raised:
         assert Matrix(D1)==D2
     AssertionError
 ----------------------------------------------------------------------
-File "/home/olpc/personal-projects/mvar/__init__.py", line 53, in __init__.Mvar.dist2
+File "/home/olpc/personal-projects/mvar/__init__.py", line 54, in __init__.Mvar.dist2
 Failed example:
-    assert (deltas.mean)**2/deltas.var < (Z**2)
+    assert deltas.dist2() < (Z**2)
 Exception raised:
     Traceback (most recent call last):
       File "/usr/lib/python2.6/doctest.py", line 1248, in __run
         compileflags, 1) in test.globs
       File "<doctest __init__.Mvar.dist2[14]>", line 1, in <module>
-        assert (deltas.mean)**2/deltas.var < (Z**2)
-    AssertionError
+        assert deltas.dist2() < (Z**2)
+      File "<string>", line 2, in dist2
+      File "/home/olpc/personal-projects/mvar/decorate/__init__.py", line 140, in caller
+        return found(*args,**kwargs)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 914, in dist2
+        scaled=numpy.array(numpy.inner(deltas,(self**-1).scaled))
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1465, in __pow__
+        square=False,
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 353, in __init__
+        ),'real numbers only'
+    AssertionError: real numbers only
 
 
 ======================================================================
@@ -157,52 +224,81 @@ Traceback (most recent call last):
   File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
     raise self.failureException(self.format_failure(new.getvalue()))
 AssertionError: Failed doctest test for __init__.Mvar.entropy
-  File "/home/olpc/personal-projects/mvar/__init__.py", line 1854, in entropy
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 1886, in entropy
 
 ----------------------------------------------------------------------
-File "/home/olpc/personal-projects/mvar/__init__.py", line 1862, in __init__.Mvar.entropy
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1901, in __init__.Mvar.entropy
 Failed example:
-    assert Matrix(numpy.log(1/A.density(S))) == A.entropy(S)
+    assert Matrix(numpy.log(1/A.density(Sa))) == A.entropy(Sa)
 Exception raised:
     Traceback (most recent call last):
       File "/usr/lib/python2.6/doctest.py", line 1248, in __run
         compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.entropy[1]>", line 1, in <module>
-        assert Matrix(numpy.log(1/A.density(S))) == A.entropy(S)
+      File "<doctest __init__.Mvar.entropy[3]>", line 1, in <module>
+        assert Matrix(numpy.log(1/A.density(Sa))) == A.entropy(Sa)
     AssertionError
 ----------------------------------------------------------------------
-File "/home/olpc/personal-projects/mvar/__init__.py", line 1865, in __init__.Mvar.entropy
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1904, in __init__.Mvar.entropy
 Failed example:
-    assert Matrix(A.entropy(A.copy())) == A.entropy()
+    assert Matrix(1/A.density(Sb)) == numpy.exp(A.entropy(Sb)) 
 Exception raised:
     Traceback (most recent call last):
       File "/usr/lib/python2.6/doctest.py", line 1248, in __run
         compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.entropy[2]>", line 1, in <module>
-        assert Matrix(A.entropy(A.copy())) == A.entropy()
+      File "<doctest __init__.Mvar.entropy[5]>", line 1, in <module>
+        assert Matrix(1/A.density(Sb)) == numpy.exp(A.entropy(Sb))
     AssertionError
 ----------------------------------------------------------------------
-File "/home/olpc/personal-projects/mvar/__init__.py", line 1877, in __init__.Mvar.entropy
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1910, in __init__.Mvar.entropy
 Failed example:
-    assert (deltas.mean**2)/(deltas.var) < (Z**2)     
+    assert Matrix(A.entropy()) == A.entropy(A.copy())
 Exception raised:
     Traceback (most recent call last):
       File "/usr/lib/python2.6/doctest.py", line 1248, in __run
         compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.entropy[8]>", line 1, in <module>
-        assert (deltas.mean**2)/(deltas.var) < (Z**2)
+      File "<doctest __init__.Mvar.entropy[7]>", line 1, in <module>
+        assert Matrix(A.entropy()) == A.entropy(A.copy())
     AssertionError
 ----------------------------------------------------------------------
-File "/home/olpc/personal-projects/mvar/__init__.py", line 1882, in __init__.Mvar.entropy
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1939, in __init__.Mvar.entropy
 Failed example:
-    assert (deltas.mean**2)/(deltas.var) < (Z**2)   
+    assert deltas.dist2() < (Z**2)     
 Exception raised:
     Traceback (most recent call last):
       File "/usr/lib/python2.6/doctest.py", line 1248, in __run
         compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.entropy[12]>", line 1, in <module>
-        assert (deltas.mean**2)/(deltas.var) < (Z**2)
-    AssertionError
+      File "<doctest __init__.Mvar.entropy[18]>", line 1, in <module>
+        assert deltas.dist2() < (Z**2)
+      File "<string>", line 2, in dist2
+      File "/home/olpc/personal-projects/mvar/decorate/__init__.py", line 140, in caller
+        return found(*args,**kwargs)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 914, in dist2
+        scaled=numpy.array(numpy.inner(deltas,(self**-1).scaled))
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1465, in __pow__
+        square=False,
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 353, in __init__
+        ),'real numbers only'
+    AssertionError: real numbers only
+----------------------------------------------------------------------
+File "/home/olpc/personal-projects/mvar/__init__.py", line 1944, in __init__.Mvar.entropy
+Failed example:
+    assert deltas.dist2() < (Z**2)  
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.6/doctest.py", line 1248, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.entropy[22]>", line 1, in <module>
+        assert deltas.dist2() < (Z**2)
+      File "<string>", line 2, in dist2
+      File "/home/olpc/personal-projects/mvar/decorate/__init__.py", line 140, in caller
+        return found(*args,**kwargs)
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 914, in dist2
+        scaled=numpy.array(numpy.inner(deltas,(self**-1).scaled))
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 1465, in __pow__
+        square=False,
+      File "/home/olpc/personal-projects/mvar/__init__.py", line 353, in __init__
+        ),'real numbers only'
+    AssertionError: real numbers only
 
 
 ======================================================================
@@ -212,10 +308,10 @@ Traceback (most recent call last):
   File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
     raise self.failureException(self.format_failure(new.getvalue()))
 AssertionError: Failed doctest test for __init__.Mvar.transform
-  File "/home/olpc/personal-projects/mvar/__init__.py", line 579, in transform
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 607, in transform
 
 ----------------------------------------------------------------------
-File "/home/olpc/personal-projects/mvar/__init__.py", line 589, in __init__.Mvar.transform
+File "/home/olpc/personal-projects/mvar/__init__.py", line 617, in __init__.Mvar.transform
 Failed example:
     assert A.transform(N)== A.transform()**N  
 Exception raised:
@@ -234,10 +330,10 @@ Traceback (most recent call last):
   File "/usr/lib/python2.6/doctest.py", line 2152, in runTest
     raise self.failureException(self.format_failure(new.getvalue()))
 AssertionError: Failed doctest test for __init__.givenVector
-  File "/home/olpc/personal-projects/mvar/__init__.py", line 2082, in givenVector
+  File "/home/olpc/personal-projects/mvar/__init__.py", line 2169, in givenVector
 
 ----------------------------------------------------------------------
-File "/home/olpc/personal-projects/mvar/__init__.py", line 2087, in __init__.givenVector
+File "/home/olpc/personal-projects/mvar/__init__.py", line 2174, in __init__.givenVector
 Failed example:
     assert givenVector(A,index=0,value=1)==A.given(index=0,value=1)
 Exception raised:
@@ -250,6 +346,6 @@ Exception raised:
 
 
 ----------------------------------------------------------------------
-Ran 112 tests in 36.541s
+Ran 115 tests in 37.417s
 
 FAILED (failures=12)
