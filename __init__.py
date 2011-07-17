@@ -1868,7 +1868,6 @@ class Mvar(Plane):
             var = numpy.concatenate([self.var,other.var]),
         )
         
-    ################# Non-Math python internals
     def density(self,locations):
         """
         self(locations)
@@ -2040,7 +2039,64 @@ class Mvar(Plane):
             baseE= self.entropy(other)-Mvar.fromData(other).entropy()            
             return (baseE/numpy.log(base))
 
+    @decorate.prop
+    class corners(object):
+        """
+        Get an iterator over the corners of the eigen-ellipse
+        The points are placed at 1 standard deviations so that the matrix 
+        has the same variance as the source
 
+        The result is 2**rank, 1 x ndim vectors, that in total have the same 
+        properties as the mvar they were pulled from:
+            >>> if A.rank < 10:
+            ...     C = Matrix([row for row in A.corners])
+            ...     assert C.shape[0] == 2**A.rank
+            ...     assert A == C 
+            ...     assert A*M == C*M
+
+        see also: X
+        """
+        def fget(self):
+            scaled = self.scaled
+            mean = self.mean
+            rank = self.rank
+
+            for n in range(2**self.rank):
+                B=bin(n).split('b')[1]
+                B='0'*(rank-len(B))+B
+                positive = numpy.array([b=='1' for b in B])
+                yield numpy.squeeze(
+                    (scaled[positive,:].sum(0)-scaled[~positive,:].sum(0))
+                    +mean
+                )
+
+    @decorate.prop
+    class X(object):
+        """
+        Get the 'X' of points on the tips of the eigenvectors
+        The points are placed at self.rank**(0.5) standard deviations so that the matrix 
+        has the same variance as the source
+
+        The result is a (2*rank x ndim) matrix that has the same properties as 
+        the mvar it was pulled from:
+            >>> assert isinstance(A.X,Matrix)
+            >>> assert A.X.shape == (A.rank*2,A.ndim)
+            >>> assert A==A.X
+            >>> assert A*M == A.X*M
+        """
+        def fget(self):
+            scaled = (self.rank**0.5)*self.scaled
+            return numpy.vstack([scaled,-scaled])+self.mean
+
+
+    ################# Non-Math python internals
+    def __iter__(self):
+        """
+        iterate over the vectors in X so:
+            >>> assert A == numpy.array([row for row in A])
+        """
+        return iter(numpy.squeeze(self.X))
+    
     def __repr__(self):
         """
         print self

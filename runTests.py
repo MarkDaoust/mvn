@@ -56,9 +56,8 @@ if __name__=='__main__':
 
     if values.x:
         for flatness in [(True,True,True),(False,False,False)]:
-                values.flatness=flatness
-                values.dtype=dtype
-                suite.addTests(getSuite(values))
+            values.flatness=flatness
+            suite.addTests(getSuite(values))
     else:
         suite.addTests(getSuite(values))
 

@@ -45,11 +45,11 @@ class Matrix(numpy.matrix):
 
     @expandCallable
     def __eq__(self,other):
-        other=Matrix(other)
+        other = Matrix(other)
         if self.shape==other.shape:
             return numpy.allclose(self,other,self.rtol,self.atol)
         else:
-            ValueError('shape miss-match')
+            raise ValueError('shape miss-match')
 
     def __ne__(self,other):
         return not(self ==  other)
