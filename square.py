@@ -132,8 +132,8 @@ def _subSquare(vectors,var,full=False):
 
     else:
         scaled=Matrix(scipy.sqrt(var)[:,None]*numpy.array(vectors))
-        #Xcov = scaled*scaled.H        
-        Xcov=var[:,None]*numpy.array(vectors)*vectors.H
+        Xcov = scaled*scaled.H        
+        #Xcov=var[:,None]*numpy.array(vectors)*vectors.H
         
         (_,Xvec)=eig(Xcov)
         

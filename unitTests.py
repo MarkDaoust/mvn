@@ -292,6 +292,11 @@ class propertyTester(myTests):
         else:
             a=self.A.inflate()
             self.assertTrue( a.vectors.H*a.vectors==Matrix.eye )
+        
+        self.assertTrue(self.A.vectors*self.A.vectors.H == Matrix.eye)
+        self.assertTrue((self.A*self.M).cov==self.M.H*self.A.cov*self.M)
+        self.assertTrue((self.A*self.M).vectors*(self.A*self.M).vectors.H == Matrix.eye)
+
 
     def testTransform(self):
         self.assertTrue( self.A.transform() == self.A.transform(1) )
@@ -323,7 +328,7 @@ class powerTester(myTests):
         N = -abs(self.N)
         if not self.A.flat:
             self.assertTrue( self.A.transform(N)== (self.A**N).transform() )
-        self.assertTrue( self.A.transform(N)== self.A.transform()**N )
+            self.assertTrue( self.A.transform(N)== self.A.transform()**N )
 
 
     def testMorePowers(self):
@@ -975,7 +980,7 @@ class outerTester(myTests):
         A=Mvar.fromData(Da)
         B=Mvar.fromData(Db)
 
-        out = numpy.outer(Da,Db).reshape((20,3,10,3))
+        out = numpy.outer(Da,Db).reshape((Na,A.ndim,Nb,B.ndim))
 
         self.assertTrue( Matrix(numpy.outer(Da[0,:],Db[0,:])) == out[0,:,0,:] )
 
