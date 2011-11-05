@@ -6,8 +6,8 @@ import sys
 import time
 import numpy
 
-#import matplotlib
-#matplotlib.use('cairo')
+import matplotlib
+matplotlib.use('cairo')
 
 from pylab import *
 from mvar import Mvar,Matrix

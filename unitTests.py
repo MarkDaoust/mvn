@@ -307,7 +307,11 @@ class propertyTester(myTests):
         self.assertTrue( self.A.cov == self.A.transform()*self.A.transform() )
         self.assertTrue( self.A.cov == self.A.transform()**2 )
         self.assertTrue( self.A.cov == self.A.transform(2) )
-        self.assertTrue( (self.A*self.B.transform() + self.B*self.A.transform()).cov/2 == (self.A*self.B).cov )
+        self.assertTrue( 
+            (self.A*self.B.transform() 
+            + self.B*self.A.transform()).cov/2 
+            == (self.A*self.B).cov 
+        )
 
 
 class mergeTester(myTests):
@@ -379,8 +383,11 @@ class powerTester(myTests):
         self.assertTrue( self.A**k1/self.A**k2==self.A**(k1-k2) )
 
         if not self.A.flat:
-            self.assertTrue( self.A**k1 == self.A*self.A.transform(k1-1) + Mvar(mean=self.A.mean-self.A.mean*self.A.transform(0)) )
-        
+            self.assertTrue( 
+                self.A**k1 == (
+                    self.A*self.A.transform(k1-1) + 
+                    Mvar(mean=self.A.mean-self.A.mean*self.A.transform(0))
+                ))
 
 class linalgTester(myTests):
     def testTrace(self):
@@ -530,7 +537,14 @@ class inversionTester(myTests):
         self.assertTrue( (self.A & ~self.A) == Mvar(mean=self.A.mean, vectors=self.A.vectors, var=Matrix.infs) )
         self.assertTrue( (self.A & ~self.A)*self.A.vectors.H == Mvar.infs )
 
-        self.assertTrue(  self.A &(self.B & ~self.B) == self.A & Mvar(mean=self.B.mean, vectors=self.B.vectors, var=Matrix.infs) )
+        self.assertTrue(  
+            self.A & (self.B & ~self.B) == 
+            self.A & Mvar(
+                mean=self.B.mean, 
+                vectors=self.B.vectors, 
+                var=Matrix.infs
+            )
+        )
 
         if not self.B.flat:        
             self.assertTrue( self.A == self.A & (self.B & ~self.B) )
@@ -544,6 +558,18 @@ class inversionTester(myTests):
         P=self.A.copy()
         P.var=P.var/0.0
         self.assertTrue( P==(self.A & ~self.A) )
+
+
+    def testPow(self):
+        self.assertTrue(
+           ( self.A)**(-1) + (~self.A)**(-1) == 
+           Mvar.zeros
+        )
+        
+        self.assertTrue(
+           (( self.A)**(-1) + (~self.A)**(-1))**-1 == 
+           Mvar.zeros(self.A.ndim)**-1
+        )    
 
 class blendTester(myTests):
     def testCommutativity(self):

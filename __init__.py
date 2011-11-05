@@ -1,9 +1,9 @@
 #! /usr/bin/env python
 
 #todo: mixtures should know: the variance of the mean of the sample is the 
-#      variance of the sample divided by the sample size.
-
-
+#      variance of the sample divided by the sample size.given
+#todo: revert-Mvar mul --> Matrix*Mvar == Mvar.fromData(Matrix)*Mvar
+#todo: add a dimension preserving "marginal" function,  
 #todo: better interfacing with numpy & scipy's distributions
 #todo: formData should be the main constructor
 #todo: the approximation tollerence should be a class attribute
@@ -64,6 +64,7 @@ import copy
 
 ## 3rd party
 import numpy
+numpy.seterr(all = 'ignore')
 
 ## local
 import helpers
@@ -333,6 +334,12 @@ class Mvar(Plane):
         #stack everything to check sizes and automatically inflate any 
         #functions that were passed in
         
+        if callable(var):
+            default = 0
+        else:
+            var = numpy.array(var).flatten()[:,None]
+            default = var.size
+
         var= var if callable(var) else numpy.array(var).flatten()[:,None]
         mean= mean if callable(mean) else numpy.array(mean).flatten()[None,:]
         vectors= vectors if callable(vectors) else Matrix(vectors)
@@ -340,7 +347,7 @@ class Mvar(Plane):
         stack=Matrix(helpers.autostack([
             [var,vectors],
             [1  ,mean   ],
-        ]))
+        ],default = default))
 
         #unpack the stack into the object's parameters
         self.mean = stack[-1,1:]
@@ -380,7 +387,7 @@ class Mvar(Plane):
         )
 
     @staticmethod
-    def zeros(n=1,mean=None):
+    def zeros(n=1,mean=Matrix.zeros):
         """
         >>> n=abs(N)
         >>> Z=Mvar.zeros(n)
@@ -389,7 +396,10 @@ class Mvar(Plane):
         >>> assert Z.vectors.size==0
         >>> assert Z**-1 == Mvar.infs
         """
-        return Mvar(mean=Matrix.zeros(n) if mean is None else Mean)
+        if callable(mean):
+            mean=mean([1,n])
+
+        return Mvar(mean=mean)
     
     @staticmethod
     def infs(n=1,mean=None):
@@ -586,7 +596,6 @@ class Mvar(Plane):
         sometimes you can get a more precise result from a matrix multiplication 
         by changing the order that matrixes are multiplied
 
-        >>> import operator
         >>> parts = A._transformParts(N) 
         >>> assert parts[0]*parts[1] == A.transform(N)
         """
@@ -627,8 +636,11 @@ class Mvar(Plane):
             shape=(ndim,ndim)
             return Matrix.zeros(shape)
 
-        if not numpy.isreal(self.var).all() or not(self.var>0).all():
-            power = complex(power)
+
+        assert (
+            (self.var>0).all() or 
+            int(power) == power
+        ),"negative number cannot be raised to a fractional power"
 
         parts = self._transformParts(power)
         return parts[0]*parts[1]
@@ -664,7 +676,7 @@ class Mvar(Plane):
             **kwargs
         )
     
-    def sample(self,shape):
+    def sample(self,shape = (1,)):
         """
         take samples from the distribution
 
@@ -918,13 +930,15 @@ class Mvar(Plane):
         
     ############## indexing
     
-    def given(self,index,value):
+    def given(self,index,value=None):
         """
         return an mvar representing the conditional probability distribution, 
         given the values, on the given indexes
+
+        also used for __setitem__
         
         equivalent to: andrew moore/data mining/gussians/page 22
-        except that my __and__ handels infinities, other versions of given don't
+        (except that my __and__ handles infinities)
         
         basic usage fixes the indexed component of the mean to the given value 
         with zero variance in that dimension.
@@ -933,7 +947,14 @@ class Mvar(Plane):
         >>> assert a.mean[:,0]==1
         >>> assert a.vectors[:,0]==numpy.zeros
 
-        this equivalent to doing an __and__ with an mvar of the apropriate shape
+        Slices work
+        >>> A[1:] = 0
+        >>> assert A.rank <= 1
+
+        The value you're setting it to is irrelevant if you are only interested in the variance:
+        >>> assert A.given(index=0,value=0).cov == A.given(index=0,value=1000).cov
+
+        This equivalent to doing an __and__ with an mvar of the apropriate shape
         zero var on the indexed dimensions, infinite vars on the others
         
         >>> L1=Mvar(mean=[0,0],vectors=[[1,1],[1,-1]], var=[numpy.inf,0.5])
@@ -942,11 +963,10 @@ class Mvar(Plane):
         >>> assert (L1&L2).mean==[1,1]
         >>> assert (L1&L2).cov==[[0,0],[0,2]]
         
-        the above examples are with scalars but vectors work with apropriate 
+        The above examples are with scalars but vectors work with apropriate 
         indexes
         
-        because this is just an interface to __and__ the logical extension 
-        becomes obvious:
+        because this is just an interface to __and__ the logical extension is:
         
         >>> Y=Mvar(mean=[0,1],vectors=Matrix.eye, var=[numpy.inf,1])
         >>> X=Mvar(mean=[1,0],vectors=Matrix.eye,var=[1,numpy.inf])
@@ -958,24 +978,46 @@ class Mvar(Plane):
         >>> a=A.copy()
         >>> a[0]=1
         >>> assert a==A.given(index=0,value=1)
+
+        and remember that results get flattened by the slicing
+        >>> assert A.rank > A.given(0 ,1).rank
+
+        since it can accept values with a variance: 
+        >>> x= Mvar(var = numpy.inf)
+        >>> assert A.given(0,x) == A
+
+        If you don't set a value something interesting happens
+        >>> !! this is one step from a reverse chain ?
+        >>> index = 0        
+        >>> a = A.given(index)
+        >>> assert a == A.given(index,~A[index]) 
+        >>> assert a  & A.marginal(index) == A
+        >>> assert A.given(0).given(0,0) == A.given(0,0)
+
         """
         #convert the inputs
-        value=Mvar.fromData(value)
         fixed=binindex(index,self.ndim)
-
+        N = fixed.sum()
         free = ~fixed
 
         #create the mean, for the new object,and set the values of interest
+        if value is None:
+            #value=Mvar.zeros(n=N,mean = Matrix.nans)
+            value=~self[index] 
+        else:                
+            value=Mvar.fromData(value)
+
+    
         mean=Matrix.zeros([1,self.ndim])
         mean[:,fixed]=value.mean
-
+        
         #create empty vectors for the new object
         vectors=numpy.zeros([
             value.shape[0]+(self.ndim-value.ndim),
             self.ndim,
         ])
         vectors[0:value.shape[0],fixed]=value.vectors
-        vectors[value.shape[0]:,free]=numpy.eye(self.ndim-value.ndim)
+        vectors[value.shape[0]:,free]=numpy.eye(self.ndim-N)
         
         #create the variance for the new object
         var=numpy.zeros(vectors.shape[0])
@@ -998,6 +1040,26 @@ class Mvar(Plane):
 
         """
         self.copy(self.given(index,value))
+
+    def marginal(self,index):
+        """
+        like __getitem__, but the result has the same dimensions as the self. 
+
+        >>> assert A.marginal(slice(None)) == A
+
+        >>> import operator
+        >>> M = [A.marginal(n) for n in range(A.ndim)]
+        >>> assert reduce(operator.and_,M) == A.diag()
+        """
+        index = ~binindex(index,self.ndim)
+        N = index.sum()
+        vectors = Matrix.zeros([N,self.ndim])
+        vectors[range(N),index]=1
+        return self+Mvar(
+            var = Matrix.infs,
+            vectors = vectors,
+        )
+        
 
     def __getitem__(self,index):
         """
@@ -1746,8 +1808,9 @@ class Mvar(Plane):
             
 
     def quad(self,matrix=None):
-        #todo: Chi & Chi2 distribution gives the *real* distribution of the length & length^2
-        #       this just has the right mean and variance
+        #todo: noncentral Chi & Chi2 distribution gives the *real* distribution 
+        #       of the length & length^2 this just has the right mean and
+        #       variance
         """
         ref: http://en.wikipedia.org/wiki/Quadratic_form_(statistics)
 
@@ -1806,37 +1869,32 @@ class Mvar(Plane):
         """
         return numpy.outer(self.mean,other.mean)
 
-
+    @decorate.MultiMethod
     def __add__(self,other):
         """
         self+other
         
-        Implementation:
-            >>> assert (A+B)==Mvar(
-            ...     mean=A.mean+B.mean,
-            ...     vectors=numpy.vstack([A.vectors,B.vectors]),
-            ...     var = numpy.concatenate([A.var,B.var]),
-            ... )
-
         When using addition keep in mind that rand()+rand() is not like scaling 
         one random number by 2 (2*rand()), it adds together two random numbers.
 
         The add here is like rand()+rand()
         
         Addition is defined this way so it can be used directly in the kalman 
-        noise addition step
+        noise addition step, it also makes these things a real vector space
         
-        so if you want simple scale use matrix multiplication like rand()*(2*eye)
-        
-        scalar multiplication however fits with addition:
+        so if you want simple scale use matrix multiplication like:
+            >>> assert A*[2] == A*(2*Matrix.eye(A.ndim))
 
-            >>> assert (A+A).mean==(2*A).mean
-            >>> assert (A+A).mean==2*A.mean
+        scalar multiplication however fits with addition:
+            >>> assert A+A == A*2
+
+            >>> assert (A+A).mean == (2*A).mean
+            >>> assert (A+A).mean == 2*A.mean
         
-            >>> assert (A+B).mean==A.mean+B.mean
-            >>> assert (A+B).cov==A.cov+B.cov
+            >>> assert (A+B).mean == A.mean+B.mean
+            >>> assert (A+B).cov == A.cov+B.cov
         
-        watch out subtraction is the inverse of addition 
+        and watch out subtraction is the inverse of addition 
             >>> assert A-A == Mvar(mean=numpy.zeros_like(A.mean))
             >>> assert (A-B)+B == A
             >>> assert (A-B).mean == A.mean - B.mean
@@ -1860,13 +1918,31 @@ class Mvar(Plane):
             
         """
         #todo: fix the crash generated, for flat objects by: 1/A-1/A (inf-inf == nan)
+        raise TyprError('Not implemented for these types')
 
-        other = other if isinstance(other,Mvar) else Mvar.fromData(other)
+    @__add__.register(Mvar)
+    def __add__(self,other):
+        result = self.copy()
+        result.mean = result.mean + other 
+        return result
+
+    @__add__.register(Mvar,Mvar)
+    def __add__(self,other):
+        """
+        Implementation:
+            >>> assert (A+B)==Mvar(
+            ...     mean=A.mean+B.mean,
+            ...     vectors=numpy.vstack([A.vectors,B.vectors]),
+            ...     var = numpy.concatenate([A.var,B.var]),
+            ... )
+        """
         return Mvar(
             mean=self.mean+other.mean,
             vectors=numpy.vstack([self.vectors,other.vectors]),
             var = numpy.concatenate([self.var,other.var]),
         )
+
+
         
     def density(self,locations):
         """
@@ -1878,6 +1954,13 @@ class Mvar(Plane):
 
         >>> data = A.sample([5,5])
         >>> assert Matrix(A.density(data)) == numpy.exp(-A.entropy(data))
+
+        >>> data = A.sample([10,10])
+        >>> a=A.density(data)
+        >>> b=B.density(data)
+        >>> ab = (A&B).density(data)
+        >>> ratio = (a*b)/ab
+        >>> assert Matrix(0) == ratio.var()
         """
         return numpy.exp(-self.entropy(locations)) 
     
@@ -1911,6 +1994,10 @@ class Mvar(Plane):
         Entropy is sensitive to linear transforms 
             >>> m=Matrix.randn([A.ndim,A.ndim])
             >>> assert Matrix((A*m).entropy()) == A.entropy()+numpy.log(abs(m.det()))
+           
+        But the difference is proportional to the det of the transform so 
+        rotations for example do nothing.
+            >>> assert Matrix(A.entropy()) == (A*A.vectors.H).entropy()
 
         The joint entropy is less than the sum of the marginals
 
@@ -1952,16 +2039,16 @@ class Mvar(Plane):
 
         if isinstance(data,Mvar):
             baseE = (
-                numpy.log(data.det())+
-                data.ndim*numpy.log(2*numpy.pi*numpy.e)
+                numpy.log(data.pdet())+
+                data.rank*numpy.log(2*numpy.pi*numpy.e)
             )/2
             if data is not self:
                 baseE+=self.KLdiv(data)
         else:
             baseE=(
                 self.dist2(data)+
-                self.ndim*numpy.log(2*numpy.pi)+
-                numpy.log(self.det())
+                self.rank*numpy.log(2*numpy.pi)+
+                numpy.log(self.pdet())
             )/2
 
         return baseE/numpy.log(base)
@@ -1994,7 +2081,10 @@ class Mvar(Plane):
             >>> b=B.sample(100)           
             >>> assert Matrix(A.entropy(b) - Mvar.fromData(b).entropy()) == A.KLdiv(b)
 
+        What does this mean? shared information?:
+            >>> assert Matrix(A.diag().KLdiv(A)) == A.diag().entropy() - A.entropy() 
 
+#I'm not sure this is worth the backwards API.
         And calculating it for an Mvar is equivalent to averaging out a bunch of samples
             >>> N=1000
             >>> Z=3
@@ -2029,8 +2119,8 @@ class Mvar(Plane):
                 baseE= (
                     (other/self).trace()+
                     ((self**-1)*(self.mean-other.mean).H).cov-
-                    numpy.log(other.det()/self.det())-
-                    self.ndim
+                    numpy.log(other.pdet()/self.pdet())-
+                    self.rank
                 )/2
                 return (baseE/numpy.log(base))[0,0]
             else: 
@@ -2185,7 +2275,7 @@ class Mvar(Plane):
         width,height=2*wh
 
         #return an Ellipse patch
-        return patches.Ellipse(
+        return matplotlib.patches.Ellipse(
             #with the Mvar's mean at the centre 
             xy=tuple(self.mean.flatten()),
             #matching width and height
