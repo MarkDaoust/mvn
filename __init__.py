@@ -602,7 +602,9 @@ class Mvar(Plane):
         by changing the order that matrixes are multiplied
 
         >>> parts = A._transformParts(N) 
-        >>> assert parts[0]*parts[1] == A.transform(N)
+        >>> assert parts[0]*numpy.diagflat(parts[1])*parts[2] == A.transform(N)
+        >>> assert numpy.multiply(parts[0],parts[1])*parts[2] == A.transform(N)
+
         """
         if power == 0:
             vectors=self.vectors
@@ -611,7 +613,7 @@ class Mvar(Plane):
             varP=numpy.real_if_close(self.var**(power/2.0))
             vectors=self.vectors
 
-        return numpy.multiply(vectors.H,varP),vectors
+        return vectors.H,varP,vectors
 
 
     def transform(self,power=1):
@@ -644,7 +646,7 @@ class Mvar(Plane):
         ),"negative number cannot be raised to a fractional power"
 
         parts = self._transformParts(power)
-        return parts[0]*parts[1]
+        return numpy.multiply(parts[0],parts[1])*parts[2]
 
     def sign(self):
         return helpers.sign(self.var)
@@ -1779,10 +1781,10 @@ class Mvar(Plane):
         Note that the result does not depend on the mean of the 
         second mvar(!) (really any mvar after the leftmost mvar or matrix)
         """
-        self0,self1 = self._transformParts()
-        mvar0,mvar1 = mvar._transformParts()
+        self0,self1,self2 = self._transformParts()
+        mvar0,mvar1,mvar2 = mvar._transformParts()
 
-        result = (self*mvar0*mvar1+mvar*self0*self1)
+        result = (self*mvar0*mvar1*mvar2+mvar*self0*self1*self2)
         
         result.mean += (
             self.mean-self.mean*mvar.transform(0)+
