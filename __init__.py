@@ -599,16 +599,12 @@ class Mvar(Plane):
         >>> parts = A._transformParts(N) 
         >>> assert parts[0]*parts[1] == A.transform(N)
         """
-        if power == 0 or helpers.approx(power):
+        if power == 0:
             vectors=self.vectors
             varP=numpy.ones_like(self.var)
         else:
-            #the null vectors are automatically being ignored,
-            #ignore the infinite ones as well
-            keep=~helpers.approx(self.var**(-1))
-            
-            varP=numpy.real_if_close(self.var[keep]**(power/2.0))
-            vectors=self.vectors[keep,:]
+            varP=numpy.real_if_close(self.var**(power/2.0))
+            vectors=self.vectors
 
         return Matrix(varP*vectors.H.array()),vectors
 
@@ -2399,6 +2395,8 @@ if __name__ == '__main__':
     #overwrite everything we just created with the copy that was 
     #created when we imported mvar; there can only be one.
     from testObjects import *
+    
+    A/B == A*(B**(-1))
 
     b=B**0
 
