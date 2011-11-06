@@ -1509,15 +1509,16 @@ class Mvar(Plane):
         assert numpy.isreal(power)
         power = numpy.real(power)
 
+        transform = self.transform(power-1)
+
         if numpy.real(power)<0: 
             self=self.inflate()
         
         V=self.vectors            
         dmean=self.mean-self.mean*V.H*V        
         
-        
         return Mvar(
-            mean=self.mean*self.transform(power-1)+dmean,
+            mean=self.mean*transform+dmean,
             vectors=self.vectors,
             var=self.var**power,
             square=False,

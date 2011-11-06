@@ -1,6 +1,6 @@
 test values: ./runTests.py -x --ndim 3
 {'ndim': 3, 'flat': None, 'seed': None, 'new': False, 'flatness': (False, False, False), 'x': True}
-....................................FF.FF.F..........FF.............FF..F......................F.F.F...........FFF....F...........E....................E.F..FFFFF..............F........F...F...F..F.F.........F...F...F...F...........FF.....F.
+...............................................................................................F...F...........FF.................E....................E................................F..........F.F.........F...F...F...F...........FF.......
 ======================================================================
 ERROR: testDiv (unitTests.productTester)
 ----------------------------------------------------------------------
@@ -15,7 +15,7 @@ Traceback (most recent call last):
   File "<string>", line 2, in __mul__
   File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 140, in caller
     return found(*args,**kwargs)
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1779, in _mvarMul
+  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1780, in _mvarMul
     result = (self*mvarA*mvarB+mvar*selfA*selfB)
   File "<string>", line 2, in __mul__
   File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 50, in F
@@ -23,7 +23,7 @@ Traceback (most recent call last):
   File "<string>", line 2, in __mul__
   File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 140, in caller
     return found(*args,**kwargs)
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1753, in _matrixMul
+  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1754, in _matrixMul
     vectors=self.vectors*matrix,
   File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 363, in __init__
     self.copy(self.square())
@@ -51,7 +51,7 @@ Traceback (most recent call last):
   File "<string>", line 2, in __mul__
   File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 140, in caller
     return found(*args,**kwargs)
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1779, in _mvarMul
+  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1780, in _mvarMul
     result = (self*mvarA*mvarB+mvar*selfA*selfB)
   File "<string>", line 2, in __mul__
   File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 50, in F
@@ -59,7 +59,7 @@ Traceback (most recent call last):
   File "<string>", line 2, in __mul__
   File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 140, in caller
     return found(*args,**kwargs)
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1753, in _matrixMul
+  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1754, in _matrixMul
     vectors=self.vectors*matrix,
   File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 363, in __init__
     self.copy(self.square())
@@ -74,213 +74,6 @@ Traceback (most recent call last):
 LinAlgError: Eigenvalues did not converge
 
 ======================================================================
-FAIL: testParadoxes (unitTests.inversionTester)
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/home/suki/Tutorials/personal-projects/mvar/unitTests.py", line 537, in testParadoxes
-    self.assertTrue( (self.A & ~self.A) == Mvar(mean=self.A.mean, vectors=self.A.vectors, var=Matrix.infs) )
-AssertionError: False is not true
-
-======================================================================
-FAIL: testPow (unitTests.inversionTester)
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/home/suki/Tutorials/personal-projects/mvar/unitTests.py", line 571, in testPow
-    Mvar.zeros(self.A.ndim)**-1
-AssertionError: False is not true
-
-======================================================================
-FAIL: testKnownValues1 (unitTests.blendTester)
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/home/suki/Tutorials/personal-projects/mvar/unitTests.py", line 607, in testKnownValues1
-    self.assertTrue( (L1&L2).mean==[1,1])
-AssertionError: False is not true
-
-======================================================================
-FAIL: testKnownValues2 (unitTests.blendTester)
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/home/suki/Tutorials/personal-projects/mvar/unitTests.py", line 613, in testKnownValues2
-    self.assertTrue( (L1&L2).mean==[1,1])
-AssertionError: False is not true
-
-======================================================================
-FAIL: testNotFlat (unitTests.blendTester)
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/home/suki/Tutorials/personal-projects/mvar/unitTests.py", line 585, in testNotFlat
-    self.assertTrue( self.A & -self.A == Mvar(mean=numpy.zeros(self.ndim))**-1)
-AssertionError: False is not true
-
-======================================================================
-FAIL: testInfs (unitTests.creationTester)
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/home/suki/Tutorials/personal-projects/mvar/unitTests.py", line 67, in testInfs
-    self.assertTrue( inf.mean==Matrix.zeros )
-AssertionError: False is not true
-
-======================================================================
-FAIL: testZeros (unitTests.creationTester)
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/home/suki/Tutorials/personal-projects/mvar/unitTests.py", line 62, in testZeros
-    self.assertTrue( Z**-1 == Mvar.infs)
-AssertionError: False is not true
-
-======================================================================
-FAIL: __and__ (__init__.Mvar)
-Doctest: __init__.Mvar.__and__
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/usr/lib/python2.7/doctest.py", line 2166, in runTest
-    raise self.failureException(self.format_failure(new.getvalue()))
-AssertionError: Failed doctest test for __init__.Mvar.__and__
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1358, in __and__
-
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1387, in __init__.Mvar.__and__
-Failed example:
-    if not A.flat:
-        assert A &-A == Mvar(mean=numpy.zeros(ndim))**-1
-        assert A &~A == Mvar(mean=numpy.zeros(ndim))**-1
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.__and__[3]>", line 2, in <module>
-        assert A &-A == Mvar(mean=numpy.zeros(ndim))**-1
-    AssertionError
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1407, in __init__.Mvar.__and__
-Failed example:
-    assert (L1&L2).mean==[1,1]
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.__and__[9]>", line 1, in <module>
-        assert (L1&L2).mean==[1,1]
-    AssertionError
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1412, in __init__.Mvar.__and__
-Failed example:
-    assert (L1&L2).mean==[2,1]
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.__and__[13]>", line 1, in <module>
-        assert (L1&L2).mean==[2,1]
-    AssertionError
-
-
-======================================================================
-FAIL: __eq__ (__init__.Mvar)
-Doctest: __init__.Mvar.__eq__
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/usr/lib/python2.7/doctest.py", line 2166, in runTest
-    raise self.failureException(self.format_failure(new.getvalue()))
-AssertionError: Failed doctest test for __init__.Mvar.__eq__
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1077, in __eq__
-
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1107, in __init__.Mvar.__eq__
-Failed example:
-    assert Mvar.infs(n) == Mvar.infs
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.__eq__[8]>", line 1, in <module>
-        assert Mvar.infs(n) == Mvar.infs
-    AssertionError
-
-
-======================================================================
-FAIL: __invert__ (__init__.Mvar)
-Doctest: __init__.Mvar.__invert__
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/usr/lib/python2.7/doctest.py", line 2166, in runTest
-    raise self.failureException(self.format_failure(new.getvalue()))
-AssertionError: Failed doctest test for __init__.Mvar.__invert__
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1270, in __invert__
-
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1300, in __init__.Mvar.__invert__
-Failed example:
-    assert (A & ~A) == Mvar(mean=A.mean, vectors=A.vectors, var=Matrix.infs)
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.__invert__[11]>", line 1, in <module>
-        assert (A & ~A) == Mvar(mean=A.mean, vectors=A.vectors, var=Matrix.infs)
-    AssertionError
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1301, in __init__.Mvar.__invert__
-Failed example:
-    if not A.flat:
-        assert (A & ~A) == Mvar(mean=numpy.zeros(A.ndim))**-1
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.__invert__[12]>", line 2, in <module>
-        assert (A & ~A) == Mvar(mean=numpy.zeros(A.ndim))**-1
-    AssertionError
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1306, in __init__.Mvar.__invert__
-Failed example:
-    if not B.flat:
-        assert A == A & (B & ~B)
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.__invert__[13]>", line 2, in <module>
-        assert A == A & (B & ~B)
-    AssertionError
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1311, in __init__.Mvar.__invert__
-Failed example:
-    assert  A &(B & ~B) == A & Mvar(mean=B.mean, vectors=B.vectors, var=Matrix.infs)
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.__invert__[14]>", line 1, in <module>
-        assert  A &(B & ~B) == A & Mvar(mean=B.mean, vectors=B.vectors, var=Matrix.infs)
-    AssertionError
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1315, in __init__.Mvar.__invert__
-Failed example:
-    if not (A.flat or B.flat):
-       assert (A&B) & ~B == A & (B&~B)
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.__invert__[16]>", line 2, in <module>
-        assert (A&B) & ~B == A & (B&~B)
-    AssertionError
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1331, in __init__.Mvar.__invert__
-Failed example:
-    assert P==(A & ~A)       
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.__invert__[20]>", line 1, in <module>
-        assert P==(A & ~A)
-    AssertionError
-
-
-======================================================================
 FAIL: given (__init__.Mvar)
 Doctest: __init__.Mvar.given
 ----------------------------------------------------------------------
@@ -290,28 +83,6 @@ Traceback (most recent call last):
 AssertionError: Failed doctest test for __init__.Mvar.given
   File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 929, in given
 
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 976, in __init__.Mvar.given
-Failed example:
-    assert a==A.given(index=0,value=1)
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.given[17]>", line 1, in <module>
-        assert a==A.given(index=0,value=1)
-    AssertionError
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 983, in __init__.Mvar.given
-Failed example:
-    assert A.given(0,x) == A
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.given[20]>", line 1, in <module>
-        assert A.given(0,x) == A
-    AssertionError
 ----------------------------------------------------------------------
 File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 986, in __init__.Mvar.given
 Failed example:
@@ -324,73 +95,6 @@ Exception raised:
         !! this is one step from a reverse chain ?
         ^
     SyntaxError: invalid syntax
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 989, in __init__.Mvar.given
-Failed example:
-    assert a == A.given(index,~A[index]) 
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.given[24]>", line 1, in <module>
-        assert a == A.given(index,~A[index])
-    AssertionError
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 990, in __init__.Mvar.given
-Failed example:
-    assert a  & A.marginal(index) == A
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.given[25]>", line 1, in <module>
-        assert a  & A.marginal(index) == A
-    AssertionError
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 991, in __init__.Mvar.given
-Failed example:
-    assert A.given(0).given(0,0) == A.given(0,0)
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.given[26]>", line 1, in <module>
-        assert A.given(0).given(0,0) == A.given(0,0)
-    AssertionError
-
-
-======================================================================
-FAIL: infs (__init__.Mvar)
-Doctest: __init__.Mvar.infs
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/usr/lib/python2.7/doctest.py", line 2166, in runTest
-    raise self.failureException(self.format_failure(new.getvalue()))
-AssertionError: Failed doctest test for __init__.Mvar.infs
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 405, in infs
-
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 409, in __init__.Mvar.infs
-Failed example:
-    assert inf.mean==Matrix.zeros
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.infs[2]>", line 1, in <module>
-        assert inf.mean==Matrix.zeros
-    AssertionError
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 413, in __init__.Mvar.infs
-Failed example:
-    assert inf**-1 == Mvar.zeros
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.infs[6]>", line 1, in <module>
-        assert inf**-1 == Mvar.zeros
-    AssertionError
 
 
 ======================================================================
@@ -450,11 +154,7 @@ Exception raised:
         compileflags, 1) in test.globs
       File "<doctest __init__.Mvar.transform[7]>", line 1, in <module>
         assert (A**numpy.real(K1)).transform() == A.transform(numpy.real(K1))
-      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1520, in __pow__
-        mean=self.mean*self.transform(power-1)+dmean,
-      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 639, in transform
-        ),"negative number cannot be raised to a fractional power"
-    AssertionError: negative number cannot be raised to a fractional power
+    AssertionError
 
 
 ======================================================================
@@ -509,7 +209,7 @@ Exception raised:
       File "<string>", line 2, in __mul__
       File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 140, in caller
         return found(*args,**kwargs)
-      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1802, in __vectorMul__
+      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1803, in __vectorMul__
         var=self.var,
       File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 360, in __init__
         ),'real numbers only'
@@ -528,108 +228,6 @@ Exception raised:
 
 
 ======================================================================
-FAIL: zeros (__init__.Mvar)
-Doctest: __init__.Mvar.zeros
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/usr/lib/python2.7/doctest.py", line 2166, in runTest
-    raise self.failureException(self.format_failure(new.getvalue()))
-AssertionError: Failed doctest test for __init__.Mvar.zeros
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 390, in zeros
-
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 397, in __init__.Mvar.zeros
-Failed example:
-    assert Z**-1 == Mvar.infs
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.zeros[5]>", line 1, in <module>
-        assert Z**-1 == Mvar.infs
-    AssertionError
-
-
-======================================================================
-FAIL: givenVector (__init__)
-Doctest: __init__.givenVector
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/usr/lib/python2.7/doctest.py", line 2166, in runTest
-    raise self.failureException(self.format_failure(new.getvalue()))
-AssertionError: Failed doctest test for __init__.givenVector
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 2311, in givenVector
-
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 2316, in __init__.givenVector
-Failed example:
-    assert givenVector(A,index=0,value=1)==A.given(index=0,value=1)
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.givenVector[0]>", line 1, in <module>
-        assert givenVector(A,index=0,value=1)==A.given(index=0,value=1)
-    AssertionError
-
-
-======================================================================
-FAIL: testDoubleNegative (unitTests.inversionTester)
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/home/suki/Tutorials/personal-projects/mvar/unitTests.py", line 532, in testDoubleNegative
-    self.assertTrue( ~(~self.A&~self.B) == self.A & self.B )
-AssertionError: False is not true
-
-======================================================================
-FAIL: testParadoxes (unitTests.inversionTester)
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/home/suki/Tutorials/personal-projects/mvar/unitTests.py", line 537, in testParadoxes
-    self.assertTrue( (self.A & ~self.A) == Mvar(mean=self.A.mean, vectors=self.A.vectors, var=Matrix.infs) )
-AssertionError: False is not true
-
-======================================================================
-FAIL: testPow (unitTests.inversionTester)
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/home/suki/Tutorials/personal-projects/mvar/unitTests.py", line 571, in testPow
-    Mvar.zeros(self.A.ndim)**-1
-AssertionError: False is not true
-
-======================================================================
-FAIL: testCommutativity (unitTests.blendTester)
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/home/suki/Tutorials/personal-projects/mvar/unitTests.py", line 576, in testCommutativity
-    self.assertTrue( self.A & self.B == self.B & self.A)
-AssertionError: False is not true
-
-======================================================================
-FAIL: testKnownValues1 (unitTests.blendTester)
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/home/suki/Tutorials/personal-projects/mvar/unitTests.py", line 607, in testKnownValues1
-    self.assertTrue( (L1&L2).mean==[1,1])
-AssertionError: False is not true
-
-======================================================================
-FAIL: testKnownValues2 (unitTests.blendTester)
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/home/suki/Tutorials/personal-projects/mvar/unitTests.py", line 613, in testKnownValues2
-    self.assertTrue( (L1&L2).mean==[1,1])
-AssertionError: False is not true
-
-======================================================================
-FAIL: testAnd (unitTests.chainTester)
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/home/suki/Tutorials/personal-projects/mvar/unitTests.py", line 508, in testAnd
-    self.assertTrue(measured[:self.ndim] == self.A&self.B)
-AssertionError: False is not true
-
-======================================================================
 FAIL: KLdiv (__init__.Mvar)
 Doctest: __init__.Mvar.KLdiv
 ----------------------------------------------------------------------
@@ -637,10 +235,10 @@ Traceback (most recent call last):
   File "/usr/lib/python2.7/doctest.py", line 2166, in runTest
     raise self.failureException(self.format_failure(new.getvalue()))
 AssertionError: Failed doctest test for __init__.Mvar.KLdiv
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 2053, in KLdiv
+  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 2054, in KLdiv
 
 ----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 2072, in __init__.Mvar.KLdiv
+File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 2073, in __init__.Mvar.KLdiv
 Failed example:
     assert Matrix(A.KLdiv(B)) == (A*m).KLdiv(B*m)
 Exception raised:
@@ -651,7 +249,7 @@ Exception raised:
         assert Matrix(A.KLdiv(B)) == (A*m).KLdiv(B*m)
     AssertionError
 ----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 2098, in __init__.Mvar.KLdiv
+File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 2099, in __init__.Mvar.KLdiv
 Failed example:
     assert KL.dist2() < (Z**2)
 Exception raised:
@@ -662,7 +260,7 @@ Exception raised:
         assert KL.dist2() < (Z**2)
     AssertionError
 ----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 2105, in __init__.Mvar.KLdiv
+File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 2106, in __init__.Mvar.KLdiv
 Failed example:
     assert KL.dist2() < (Z**2)
 Exception raised:
@@ -671,154 +269,6 @@ Exception raised:
         compileflags, 1) in test.globs
       File "<doctest __init__.Mvar.KLdiv[25]>", line 1, in <module>
         assert KL.dist2() < (Z**2)
-    AssertionError
-
-
-======================================================================
-FAIL: __and__ (__init__.Mvar)
-Doctest: __init__.Mvar.__and__
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/usr/lib/python2.7/doctest.py", line 2166, in runTest
-    raise self.failureException(self.format_failure(new.getvalue()))
-AssertionError: Failed doctest test for __init__.Mvar.__and__
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1358, in __and__
-
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1375, in __init__.Mvar.__and__
-Failed example:
-    assert A & B == B & A 
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.__and__[0]>", line 1, in <module>
-        assert A & B == B & A
-    AssertionError
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1387, in __init__.Mvar.__and__
-Failed example:
-    if not A.flat:
-        assert A &-A == Mvar(mean=numpy.zeros(ndim))**-1
-        assert A &~A == Mvar(mean=numpy.zeros(ndim))**-1
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.__and__[3]>", line 2, in <module>
-        assert A &-A == Mvar(mean=numpy.zeros(ndim))**-1
-    AssertionError
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1407, in __init__.Mvar.__and__
-Failed example:
-    assert (L1&L2).mean==[1,1]
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.__and__[9]>", line 1, in <module>
-        assert (L1&L2).mean==[1,1]
-    AssertionError
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1412, in __init__.Mvar.__and__
-Failed example:
-    assert (L1&L2).mean==[2,1]
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.__and__[13]>", line 1, in <module>
-        assert (L1&L2).mean==[2,1]
-    AssertionError
-
-
-======================================================================
-FAIL: __invert__ (__init__.Mvar)
-Doctest: __init__.Mvar.__invert__
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/usr/lib/python2.7/doctest.py", line 2166, in runTest
-    raise self.failureException(self.format_failure(new.getvalue()))
-AssertionError: Failed doctest test for __init__.Mvar.__invert__
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1270, in __invert__
-
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1294, in __init__.Mvar.__invert__
-Failed example:
-    assert ~(~A&~B) == A & B 
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.__invert__[10]>", line 1, in <module>
-        assert ~(~A&~B) == A & B
-    AssertionError
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1300, in __init__.Mvar.__invert__
-Failed example:
-    assert (A & ~A) == Mvar(mean=A.mean, vectors=A.vectors, var=Matrix.infs)
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.__invert__[11]>", line 1, in <module>
-        assert (A & ~A) == Mvar(mean=A.mean, vectors=A.vectors, var=Matrix.infs)
-    AssertionError
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1301, in __init__.Mvar.__invert__
-Failed example:
-    if not A.flat:
-        assert (A & ~A) == Mvar(mean=numpy.zeros(A.ndim))**-1
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.__invert__[12]>", line 2, in <module>
-        assert (A & ~A) == Mvar(mean=numpy.zeros(A.ndim))**-1
-    AssertionError
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1311, in __init__.Mvar.__invert__
-Failed example:
-    assert  A &(B & ~B) == A & Mvar(mean=B.mean, vectors=B.vectors, var=Matrix.infs)
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.__invert__[14]>", line 1, in <module>
-        assert  A &(B & ~B) == A & Mvar(mean=B.mean, vectors=B.vectors, var=Matrix.infs)
-    AssertionError
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1314, in __init__.Mvar.__invert__
-Failed example:
-    assert (A&~B) & B == (A&B) & ~B
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.__invert__[15]>", line 1, in <module>
-        assert (A&~B) & B == (A&B) & ~B
-    AssertionError
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1331, in __init__.Mvar.__invert__
-Failed example:
-    assert P==(A & ~A)       
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.__invert__[20]>", line 1, in <module>
-        assert P==(A & ~A)
-    AssertionError
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1334, in __init__.Mvar.__invert__
-Failed example:
-    assert (~A & ~B) == ~(A & B)
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.__invert__[21]>", line 1, in <module>
-        assert (~A & ~B) == ~(A & B)
     AssertionError
 
 
@@ -850,7 +300,7 @@ Exception raised:
       File "<string>", line 2, in __mul__
       File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 140, in caller
         return found(*args,**kwargs)
-      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1779, in _mvarMul
+      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1780, in _mvarMul
         result = (self*mvarA*mvarB+mvar*selfA*selfB)
       File "<string>", line 2, in __mul__
       File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 50, in F
@@ -858,7 +308,7 @@ Exception raised:
       File "<string>", line 2, in __mul__
       File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 140, in caller
         return found(*args,**kwargs)
-      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1753, in _matrixMul
+      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1754, in _matrixMul
         vectors=self.vectors*matrix,
       File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 363, in __init__
         self.copy(self.square())
@@ -901,7 +351,7 @@ Exception raised:
       File "<string>", line 2, in __mul__
       File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 140, in caller
         return found(*args,**kwargs)
-      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1779, in _mvarMul
+      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1780, in _mvarMul
         result = (self*mvarA*mvarB+mvar*selfA*selfB)
       File "<string>", line 2, in __mul__
       File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 50, in F
@@ -909,7 +359,7 @@ Exception raised:
       File "<string>", line 2, in __mul__
       File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 140, in caller
         return found(*args,**kwargs)
-      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1753, in _matrixMul
+      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1754, in _matrixMul
         vectors=self.vectors*matrix,
       File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 363, in __init__
         self.copy(self.square())
@@ -932,10 +382,10 @@ Traceback (most recent call last):
   File "/usr/lib/python2.7/doctest.py", line 2166, in runTest
     raise self.failureException(self.format_failure(new.getvalue()))
 AssertionError: Failed doctest test for __init__.Mvar.density
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1943, in density
+  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1944, in density
 
 ----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1959, in __init__.Mvar.density
+File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1960, in __init__.Mvar.density
 Failed example:
     assert Matrix(0) == ratio.var()
 Exception raised:
@@ -955,10 +405,10 @@ Traceback (most recent call last):
   File "/usr/lib/python2.7/doctest.py", line 2166, in runTest
     raise self.failureException(self.format_failure(new.getvalue()))
 AssertionError: Failed doctest test for __init__.Mvar.entropy
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1964, in entropy
+  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1965, in entropy
 
 ----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 2026, in __init__.Mvar.entropy
+File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 2027, in __init__.Mvar.entropy
 Failed example:
     assert deltas.dist2() < (Z**2)  
 Exception raised:
@@ -981,28 +431,6 @@ AssertionError: Failed doctest test for __init__.Mvar.given
   File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 929, in given
 
 ----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 976, in __init__.Mvar.given
-Failed example:
-    assert a==A.given(index=0,value=1)
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.given[17]>", line 1, in <module>
-        assert a==A.given(index=0,value=1)
-    AssertionError
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 983, in __init__.Mvar.given
-Failed example:
-    assert A.given(0,x) == A
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.given[20]>", line 1, in <module>
-        assert A.given(0,x) == A
-    AssertionError
-----------------------------------------------------------------------
 File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 986, in __init__.Mvar.given
 Failed example:
     !! this is one step from a reverse chain ?
@@ -1014,39 +442,6 @@ Exception raised:
         !! this is one step from a reverse chain ?
         ^
     SyntaxError: invalid syntax
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 989, in __init__.Mvar.given
-Failed example:
-    assert a == A.given(index,~A[index]) 
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.given[24]>", line 1, in <module>
-        assert a == A.given(index,~A[index])
-    AssertionError
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 990, in __init__.Mvar.given
-Failed example:
-    assert a  & A.marginal(index) == A
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.given[25]>", line 1, in <module>
-        assert a  & A.marginal(index) == A
-    AssertionError
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 991, in __init__.Mvar.given
-Failed example:
-    assert A.given(0).given(0,0) == A.given(0,0)
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.given[26]>", line 1, in <module>
-        assert A.given(0).given(0,0) == A.given(0,0)
-    AssertionError
 
 
 ======================================================================
@@ -1180,7 +575,7 @@ Exception raised:
       File "<string>", line 2, in __mul__
       File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 140, in caller
         return found(*args,**kwargs)
-      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1802, in __vectorMul__
+      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1803, in __vectorMul__
         var=self.var,
       File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 360, in __init__
         ),'real numbers only'
@@ -1198,30 +593,7 @@ Exception raised:
     AssertionError
 
 
-======================================================================
-FAIL: givenVector (__init__)
-Doctest: __init__.givenVector
 ----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/usr/lib/python2.7/doctest.py", line 2166, in runTest
-    raise self.failureException(self.format_failure(new.getvalue()))
-AssertionError: Failed doctest test for __init__.givenVector
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 2311, in givenVector
+Ran 240 tests in 2.517s
 
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 2316, in __init__.givenVector
-Failed example:
-    assert givenVector(A,index=0,value=1)==A.given(index=0,value=1)
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.givenVector[0]>", line 1, in <module>
-        assert givenVector(A,index=0,value=1)==A.given(index=0,value=1)
-    AssertionError
-
-
-----------------------------------------------------------------------
-Ran 240 tests in 2.215s
-
-FAILED (failures=36, errors=2)
+FAILED (failures=13, errors=2)
