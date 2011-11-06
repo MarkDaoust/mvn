@@ -1,6 +1,6 @@
 test values: ./runTests.py -x --ndim 3
 {'ndim': 3, 'flat': None, 'seed': None, 'new': False, 'flatness': (False, False, False), 'x': True}
-...............................................................................................F...F...........FF.................E....................E................................F..........F.F.........F...F...F...F...........FF.......
+................................................................F..............................F...F...........FF.................E....................E................................F..........F.F.........F...F...F...F...........FF.......
 ======================================================================
 ERROR: testDiv (unitTests.productTester)
 ----------------------------------------------------------------------
@@ -15,23 +15,23 @@ Traceback (most recent call last):
   File "<string>", line 2, in __mul__
   File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 140, in caller
     return found(*args,**kwargs)
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1780, in _mvarMul
-    result = (self*mvarA*mvarB+mvar*selfA*selfB)
+  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1785, in _mvarMul
+    result = (self*mvar0*mvar1+mvar*self0*self1)
   File "<string>", line 2, in __mul__
   File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 50, in F
     return decorated(*before(*args),**kwargs)
   File "<string>", line 2, in __mul__
   File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 140, in caller
     return found(*args,**kwargs)
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1754, in _matrixMul
+  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1759, in _matrixMul
     vectors=self.vectors*matrix,
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 363, in __init__
+  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 368, in __init__
     self.copy(self.square())
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 519, in square
+  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 524, in square
     var=result.var,
-  File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 71, in square
-    (var,vectors) = _subSquare(vectors,var)
-  File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 124, in _subSquare
+  File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 49, in square
+    (Ivar,Ivectors)=_subSquare(vectors=vectors[infinite,:],var=numpy.ones_like(var[infinite]),full=True)
+  File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 126, in _subSquare
     (val,vec)=eig(cov)
   File "/usr/lib/pymodules/python2.7/numpy/linalg/linalg.py", line 1187, in eigh
     raise LinAlgError, 'Eigenvalues did not converge'
@@ -51,27 +51,50 @@ Traceback (most recent call last):
   File "<string>", line 2, in __mul__
   File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 140, in caller
     return found(*args,**kwargs)
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1780, in _mvarMul
-    result = (self*mvarA*mvarB+mvar*selfA*selfB)
+  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1785, in _mvarMul
+    result = (self*mvar0*mvar1+mvar*self0*self1)
   File "<string>", line 2, in __mul__
   File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 50, in F
     return decorated(*before(*args),**kwargs)
   File "<string>", line 2, in __mul__
   File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 140, in caller
     return found(*args,**kwargs)
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1754, in _matrixMul
+  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1759, in _matrixMul
     vectors=self.vectors*matrix,
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 363, in __init__
+  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 368, in __init__
     self.copy(self.square())
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 519, in square
+  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 524, in square
     var=result.var,
-  File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 71, in square
-    (var,vectors) = _subSquare(vectors,var)
-  File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 124, in _subSquare
+  File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 49, in square
+    (Ivar,Ivectors)=_subSquare(vectors=vectors[infinite,:],var=numpy.ones_like(var[infinite]),full=True)
+  File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 126, in _subSquare
     (val,vec)=eig(cov)
   File "/usr/lib/pymodules/python2.7/numpy/linalg/linalg.py", line 1187, in eigh
     raise LinAlgError, 'Eigenvalues did not converge'
 LinAlgError: Eigenvalues did not converge
+
+======================================================================
+FAIL: KLdiv (__init__.Mvar)
+Doctest: __init__.Mvar.KLdiv
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.7/doctest.py", line 2166, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for __init__.Mvar.KLdiv
+  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 2059, in KLdiv
+
+----------------------------------------------------------------------
+File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 2104, in __init__.Mvar.KLdiv
+Failed example:
+    assert KL.dist2() < (Z**2)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.KLdiv[19]>", line 1, in <module>
+        assert KL.dist2() < (Z**2)
+    AssertionError
+
 
 ======================================================================
 FAIL: given (__init__.Mvar)
@@ -81,10 +104,10 @@ Traceback (most recent call last):
   File "/usr/lib/python2.7/doctest.py", line 2166, in runTest
     raise self.failureException(self.format_failure(new.getvalue()))
 AssertionError: Failed doctest test for __init__.Mvar.given
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 929, in given
+  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 934, in given
 
 ----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 986, in __init__.Mvar.given
+File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 991, in __init__.Mvar.given
 Failed example:
     !! this is one step from a reverse chain ?
 Exception raised:
@@ -105,10 +128,10 @@ Traceback (most recent call last):
   File "/usr/lib/python2.7/doctest.py", line 2166, in runTest
     raise self.failureException(self.format_failure(new.getvalue()))
 AssertionError: Failed doctest test for __init__.Mvar.marginal
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1040, in marginal
+  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1045, in marginal
 
 ----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1048, in __init__.Mvar.marginal
+File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1053, in __init__.Mvar.marginal
 Failed example:
     assert reduce(operator.and_,M) == A.diag()
 Exception raised:
@@ -117,7 +140,7 @@ Exception raised:
         compileflags, 1) in test.globs
       File "<doctest __init__.Mvar.marginal[3]>", line 1, in <module>
         assert reduce(operator.and_,M) == A.diag()
-      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1427, in __and__
+      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1432, in __and__
         Dmean = Plane.__and__(self,other).mean
       File "/home/suki/Tutorials/personal-projects/mvar/plane.py", line 112, in __and__
         Nself=self.getNull()
@@ -125,9 +148,9 @@ Exception raised:
         return getNull(self.vectors)
       File "/home/suki/Tutorials/personal-projects/mvar/plane.py", line 20, in getNull
         var,vectors = square(vectors)
-      File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 71, in square
-        (var,vectors) = _subSquare(vectors,var)
-      File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 124, in _subSquare
+      File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 49, in square
+        (Ivar,Ivectors)=_subSquare(vectors=vectors[infinite,:],var=numpy.ones_like(var[infinite]),full=True)
+      File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 126, in _subSquare
         (val,vec)=eig(cov)
       File "/usr/lib/pymodules/python2.7/numpy/linalg/linalg.py", line 1187, in eigh
         raise LinAlgError, 'Eigenvalues did not converge'
@@ -142,10 +165,10 @@ Traceback (most recent call last):
   File "/usr/lib/python2.7/doctest.py", line 2166, in runTest
     raise self.failureException(self.format_failure(new.getvalue()))
 AssertionError: Failed doctest test for __init__.Mvar.transform
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 612, in transform
+  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 617, in transform
 
 ----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 624, in __init__.Mvar.transform
+File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 629, in __init__.Mvar.transform
 Failed example:
     assert (A**numpy.real(K1)).transform() == A.transform(numpy.real(K1)) 
 Exception raised:
@@ -165,10 +188,10 @@ Traceback (most recent call last):
   File "/usr/lib/python2.7/doctest.py", line 2166, in runTest
     raise self.failureException(self.format_failure(new.getvalue()))
 AssertionError: Failed doctest test for __init__.Mvar.width
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 789, in width
+  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 794, in width
 
 ----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 794, in __init__.Mvar.width
+File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 799, in __init__.Mvar.width
 Failed example:
     assert Matrix([A[n].var[0] for n in range(A.ndim)]) == A.width()**2
 Exception raised:
@@ -179,7 +202,7 @@ Exception raised:
         assert Matrix([A[n].var[0] for n in range(A.ndim)]) == A.width()**2
     IndexError: index out of bounds
 ----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 796, in __init__.Mvar.width
+File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 801, in __init__.Mvar.width
 Failed example:
     assert Matrix(A.corr.diagonal()) == Matrix.ones
 Exception raised:
@@ -188,18 +211,7 @@ Exception raised:
         compileflags, 1) in test.globs
       File "<doctest __init__.Mvar.width[1]>", line 1, in <module>
         assert Matrix(A.corr.diagonal()) == Matrix.ones
-    AssertionError
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 799, in __init__.Mvar.width
-Failed example:
-    assert norm.corr == norm.cov
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.width[3]>", line 1, in <module>
-        assert norm.corr == norm.cov
-      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 552, in fget
+      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 557, in fget
         return (self/self.width()).cov
       File "/home/suki/Tutorials/personal-projects/mvar/decorate/automath.py", line 71, in __div__
         return self*other**(-1)
@@ -209,13 +221,63 @@ Exception raised:
       File "<string>", line 2, in __mul__
       File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 140, in caller
         return found(*args,**kwargs)
-      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1803, in __vectorMul__
+      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1808, in __vectorMul__
         var=self.var,
-      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 360, in __init__
-        ),'real numbers only'
-    AssertionError: real numbers only
+      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 368, in __init__
+        self.copy(self.square())
+      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 524, in square
+        var=result.var,
+      File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 49, in square
+        (Ivar,Ivectors)=_subSquare(vectors=vectors[infinite,:],var=numpy.ones_like(var[infinite]),full=True)
+      File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 126, in _subSquare
+        (val,vec)=eig(cov)
+      File "/usr/lib/pymodules/python2.7/numpy/linalg/linalg.py", line 1187, in eigh
+        raise LinAlgError, 'Eigenvalues did not converge'
+    LinAlgError: Eigenvalues did not converge
 ----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 800, in __init__.Mvar.width
+File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 803, in __init__.Mvar.width
+Failed example:
+    norm = A/A.width()
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.width[2]>", line 1, in <module>
+        norm = A/A.width()
+      File "/home/suki/Tutorials/personal-projects/mvar/decorate/automath.py", line 71, in __div__
+        return self*other**(-1)
+      File "<string>", line 2, in __mul__
+      File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 50, in F
+        return decorated(*before(*args),**kwargs)
+      File "<string>", line 2, in __mul__
+      File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 140, in caller
+        return found(*args,**kwargs)
+      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1808, in __vectorMul__
+        var=self.var,
+      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 368, in __init__
+        self.copy(self.square())
+      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 524, in square
+        var=result.var,
+      File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 49, in square
+        (Ivar,Ivectors)=_subSquare(vectors=vectors[infinite,:],var=numpy.ones_like(var[infinite]),full=True)
+      File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 126, in _subSquare
+        (val,vec)=eig(cov)
+      File "/usr/lib/pymodules/python2.7/numpy/linalg/linalg.py", line 1187, in eigh
+        raise LinAlgError, 'Eigenvalues did not converge'
+    LinAlgError: Eigenvalues did not converge
+----------------------------------------------------------------------
+File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 804, in __init__.Mvar.width
+Failed example:
+    assert norm.corr == norm.cov
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.width[3]>", line 1, in <module>
+        assert norm.corr == norm.cov
+    NameError: name 'norm' is not defined
+----------------------------------------------------------------------
+File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 805, in __init__.Mvar.width
 Failed example:
     assert Matrix([norm[n].var[0] for n in range(norm.ndim)]) == Matrix.ones
 Exception raised:
@@ -224,7 +286,7 @@ Exception raised:
         compileflags, 1) in test.globs
       File "<doctest __init__.Mvar.width[4]>", line 1, in <module>
         assert Matrix([norm[n].var[0] for n in range(norm.ndim)]) == Matrix.ones
-    AssertionError
+    NameError: name 'norm' is not defined
 
 
 ======================================================================
@@ -235,10 +297,10 @@ Traceback (most recent call last):
   File "/usr/lib/python2.7/doctest.py", line 2166, in runTest
     raise self.failureException(self.format_failure(new.getvalue()))
 AssertionError: Failed doctest test for __init__.Mvar.KLdiv
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 2054, in KLdiv
+  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 2059, in KLdiv
 
 ----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 2073, in __init__.Mvar.KLdiv
+File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 2078, in __init__.Mvar.KLdiv
 Failed example:
     assert Matrix(A.KLdiv(B)) == (A*m).KLdiv(B*m)
 Exception raised:
@@ -249,7 +311,7 @@ Exception raised:
         assert Matrix(A.KLdiv(B)) == (A*m).KLdiv(B*m)
     AssertionError
 ----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 2099, in __init__.Mvar.KLdiv
+File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 2104, in __init__.Mvar.KLdiv
 Failed example:
     assert KL.dist2() < (Z**2)
 Exception raised:
@@ -257,17 +319,6 @@ Exception raised:
       File "/usr/lib/python2.7/doctest.py", line 1254, in __run
         compileflags, 1) in test.globs
       File "<doctest __init__.Mvar.KLdiv[19]>", line 1, in <module>
-        assert KL.dist2() < (Z**2)
-    AssertionError
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 2106, in __init__.Mvar.KLdiv
-Failed example:
-    assert KL.dist2() < (Z**2)
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.KLdiv[25]>", line 1, in <module>
         assert KL.dist2() < (Z**2)
     AssertionError
 
@@ -300,23 +351,23 @@ Exception raised:
       File "<string>", line 2, in __mul__
       File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 140, in caller
         return found(*args,**kwargs)
-      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1780, in _mvarMul
-        result = (self*mvarA*mvarB+mvar*selfA*selfB)
+      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1785, in _mvarMul
+        result = (self*mvar0*mvar1+mvar*self0*self1)
       File "<string>", line 2, in __mul__
       File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 50, in F
         return decorated(*before(*args),**kwargs)
       File "<string>", line 2, in __mul__
       File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 140, in caller
         return found(*args,**kwargs)
-      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1754, in _matrixMul
+      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1759, in _matrixMul
         vectors=self.vectors*matrix,
-      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 363, in __init__
+      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 368, in __init__
         self.copy(self.square())
-      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 519, in square
+      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 524, in square
         var=result.var,
-      File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 71, in square
-        (var,vectors) = _subSquare(vectors,var)
-      File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 124, in _subSquare
+      File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 49, in square
+        (Ivar,Ivectors)=_subSquare(vectors=vectors[infinite,:],var=numpy.ones_like(var[infinite]),full=True)
+      File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 126, in _subSquare
         (val,vec)=eig(cov)
       File "/usr/lib/pymodules/python2.7/numpy/linalg/linalg.py", line 1187, in eigh
         raise LinAlgError, 'Eigenvalues did not converge'
@@ -351,23 +402,23 @@ Exception raised:
       File "<string>", line 2, in __mul__
       File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 140, in caller
         return found(*args,**kwargs)
-      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1780, in _mvarMul
-        result = (self*mvarA*mvarB+mvar*selfA*selfB)
+      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1785, in _mvarMul
+        result = (self*mvar0*mvar1+mvar*self0*self1)
       File "<string>", line 2, in __mul__
       File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 50, in F
         return decorated(*before(*args),**kwargs)
       File "<string>", line 2, in __mul__
       File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 140, in caller
         return found(*args,**kwargs)
-      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1754, in _matrixMul
+      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1759, in _matrixMul
         vectors=self.vectors*matrix,
-      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 363, in __init__
+      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 368, in __init__
         self.copy(self.square())
-      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 519, in square
+      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 524, in square
         var=result.var,
-      File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 71, in square
-        (var,vectors) = _subSquare(vectors,var)
-      File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 124, in _subSquare
+      File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 49, in square
+        (Ivar,Ivectors)=_subSquare(vectors=vectors[infinite,:],var=numpy.ones_like(var[infinite]),full=True)
+      File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 126, in _subSquare
         (val,vec)=eig(cov)
       File "/usr/lib/pymodules/python2.7/numpy/linalg/linalg.py", line 1187, in eigh
         raise LinAlgError, 'Eigenvalues did not converge'
@@ -382,10 +433,10 @@ Traceback (most recent call last):
   File "/usr/lib/python2.7/doctest.py", line 2166, in runTest
     raise self.failureException(self.format_failure(new.getvalue()))
 AssertionError: Failed doctest test for __init__.Mvar.density
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1944, in density
+  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1949, in density
 
 ----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1960, in __init__.Mvar.density
+File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1965, in __init__.Mvar.density
 Failed example:
     assert Matrix(0) == ratio.var()
 Exception raised:
@@ -405,10 +456,10 @@ Traceback (most recent call last):
   File "/usr/lib/python2.7/doctest.py", line 2166, in runTest
     raise self.failureException(self.format_failure(new.getvalue()))
 AssertionError: Failed doctest test for __init__.Mvar.entropy
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1965, in entropy
+  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1970, in entropy
 
 ----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 2027, in __init__.Mvar.entropy
+File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 2032, in __init__.Mvar.entropy
 Failed example:
     assert deltas.dist2() < (Z**2)  
 Exception raised:
@@ -428,10 +479,10 @@ Traceback (most recent call last):
   File "/usr/lib/python2.7/doctest.py", line 2166, in runTest
     raise self.failureException(self.format_failure(new.getvalue()))
 AssertionError: Failed doctest test for __init__.Mvar.given
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 929, in given
+  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 934, in given
 
 ----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 986, in __init__.Mvar.given
+File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 991, in __init__.Mvar.given
 Failed example:
     !! this is one step from a reverse chain ?
 Exception raised:
@@ -452,10 +503,10 @@ Traceback (most recent call last):
   File "/usr/lib/python2.7/doctest.py", line 2166, in runTest
     raise self.failureException(self.format_failure(new.getvalue()))
 AssertionError: Failed doctest test for __init__.Mvar.marginal
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1040, in marginal
+  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1045, in marginal
 
 ----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1048, in __init__.Mvar.marginal
+File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1053, in __init__.Mvar.marginal
 Failed example:
     assert reduce(operator.and_,M) == A.diag()
 Exception raised:
@@ -464,7 +515,7 @@ Exception raised:
         compileflags, 1) in test.globs
       File "<doctest __init__.Mvar.marginal[3]>", line 1, in <module>
         assert reduce(operator.and_,M) == A.diag()
-      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1427, in __and__
+      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1432, in __and__
         Dmean = Plane.__and__(self,other).mean
       File "/home/suki/Tutorials/personal-projects/mvar/plane.py", line 112, in __and__
         Nself=self.getNull()
@@ -472,9 +523,9 @@ Exception raised:
         return getNull(self.vectors)
       File "/home/suki/Tutorials/personal-projects/mvar/plane.py", line 20, in getNull
         var,vectors = square(vectors)
-      File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 71, in square
-        (var,vectors) = _subSquare(vectors,var)
-      File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 124, in _subSquare
+      File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 49, in square
+        (Ivar,Ivectors)=_subSquare(vectors=vectors[infinite,:],var=numpy.ones_like(var[infinite]),full=True)
+      File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 126, in _subSquare
         (val,vec)=eig(cov)
       File "/usr/lib/pymodules/python2.7/numpy/linalg/linalg.py", line 1187, in eigh
         raise LinAlgError, 'Eigenvalues did not converge'
@@ -489,10 +540,10 @@ Traceback (most recent call last):
   File "/usr/lib/python2.7/doctest.py", line 2166, in runTest
     raise self.failureException(self.format_failure(new.getvalue()))
 AssertionError: Failed doctest test for __init__.Mvar.transform
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 612, in transform
+  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 617, in transform
 
 ----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 621, in __init__.Mvar.transform
+File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 626, in __init__.Mvar.transform
 Failed example:
     assert A.transform(N)== (A**N).transform()
 Exception raised:
@@ -503,7 +554,7 @@ Exception raised:
         assert A.transform(N)== (A**N).transform()
     AssertionError
 ----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 622, in __init__.Mvar.transform
+File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 627, in __init__.Mvar.transform
 Failed example:
     assert A.transform(N)== A.transform()**N  
 Exception raised:
@@ -531,10 +582,10 @@ Traceback (most recent call last):
   File "/usr/lib/python2.7/doctest.py", line 2166, in runTest
     raise self.failureException(self.format_failure(new.getvalue()))
 AssertionError: Failed doctest test for __init__.Mvar.width
-  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 789, in width
+  File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 794, in width
 
 ----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 794, in __init__.Mvar.width
+File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 799, in __init__.Mvar.width
 Failed example:
     assert Matrix([A[n].var[0] for n in range(A.ndim)]) == A.width()**2
 Exception raised:
@@ -545,7 +596,7 @@ Exception raised:
         assert Matrix([A[n].var[0] for n in range(A.ndim)]) == A.width()**2
     IndexError: index out of bounds
 ----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 796, in __init__.Mvar.width
+File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 801, in __init__.Mvar.width
 Failed example:
     assert Matrix(A.corr.diagonal()) == Matrix.ones
 Exception raised:
@@ -554,18 +605,7 @@ Exception raised:
         compileflags, 1) in test.globs
       File "<doctest __init__.Mvar.width[1]>", line 1, in <module>
         assert Matrix(A.corr.diagonal()) == Matrix.ones
-    AssertionError
-----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 799, in __init__.Mvar.width
-Failed example:
-    assert norm.corr == norm.cov
-Exception raised:
-    Traceback (most recent call last):
-      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
-        compileflags, 1) in test.globs
-      File "<doctest __init__.Mvar.width[3]>", line 1, in <module>
-        assert norm.corr == norm.cov
-      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 552, in fget
+      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 557, in fget
         return (self/self.width()).cov
       File "/home/suki/Tutorials/personal-projects/mvar/decorate/automath.py", line 71, in __div__
         return self*other**(-1)
@@ -575,13 +615,63 @@ Exception raised:
       File "<string>", line 2, in __mul__
       File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 140, in caller
         return found(*args,**kwargs)
-      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1803, in __vectorMul__
+      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1808, in __vectorMul__
         var=self.var,
-      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 360, in __init__
-        ),'real numbers only'
-    AssertionError: real numbers only
+      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 368, in __init__
+        self.copy(self.square())
+      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 524, in square
+        var=result.var,
+      File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 49, in square
+        (Ivar,Ivectors)=_subSquare(vectors=vectors[infinite,:],var=numpy.ones_like(var[infinite]),full=True)
+      File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 126, in _subSquare
+        (val,vec)=eig(cov)
+      File "/usr/lib/pymodules/python2.7/numpy/linalg/linalg.py", line 1187, in eigh
+        raise LinAlgError, 'Eigenvalues did not converge'
+    LinAlgError: Eigenvalues did not converge
 ----------------------------------------------------------------------
-File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 800, in __init__.Mvar.width
+File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 803, in __init__.Mvar.width
+Failed example:
+    norm = A/A.width()
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.width[2]>", line 1, in <module>
+        norm = A/A.width()
+      File "/home/suki/Tutorials/personal-projects/mvar/decorate/automath.py", line 71, in __div__
+        return self*other**(-1)
+      File "<string>", line 2, in __mul__
+      File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 50, in F
+        return decorated(*before(*args),**kwargs)
+      File "<string>", line 2, in __mul__
+      File "/home/suki/Tutorials/personal-projects/mvar/decorate/__init__.py", line 140, in caller
+        return found(*args,**kwargs)
+      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 1808, in __vectorMul__
+        var=self.var,
+      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 368, in __init__
+        self.copy(self.square())
+      File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 524, in square
+        var=result.var,
+      File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 49, in square
+        (Ivar,Ivectors)=_subSquare(vectors=vectors[infinite,:],var=numpy.ones_like(var[infinite]),full=True)
+      File "/home/suki/Tutorials/personal-projects/mvar/square.py", line 126, in _subSquare
+        (val,vec)=eig(cov)
+      File "/usr/lib/pymodules/python2.7/numpy/linalg/linalg.py", line 1187, in eigh
+        raise LinAlgError, 'Eigenvalues did not converge'
+    LinAlgError: Eigenvalues did not converge
+----------------------------------------------------------------------
+File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 804, in __init__.Mvar.width
+Failed example:
+    assert norm.corr == norm.cov
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.7/doctest.py", line 1254, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __init__.Mvar.width[3]>", line 1, in <module>
+        assert norm.corr == norm.cov
+    NameError: name 'norm' is not defined
+----------------------------------------------------------------------
+File "/home/suki/Tutorials/personal-projects/mvar/__init__.py", line 805, in __init__.Mvar.width
 Failed example:
     assert Matrix([norm[n].var[0] for n in range(norm.ndim)]) == Matrix.ones
 Exception raised:
@@ -590,10 +680,10 @@ Exception raised:
         compileflags, 1) in test.globs
       File "<doctest __init__.Mvar.width[4]>", line 1, in <module>
         assert Matrix([norm[n].var[0] for n in range(norm.ndim)]) == Matrix.ones
-    AssertionError
+    NameError: name 'norm' is not defined
 
 
 ----------------------------------------------------------------------
-Ran 240 tests in 2.517s
+Ran 240 tests in 2.251s
 
-FAILED (failures=13, errors=2)
+FAILED (failures=14, errors=2)

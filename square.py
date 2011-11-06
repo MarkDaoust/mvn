@@ -35,7 +35,9 @@ def square(vectors,var=None,full=False):
     if var is None:
         var =numpy.ones(vectors.shape[0]) 
 
-    infinite=helpers.approx(1/scipy.sqrt(var)) | ~numpy.isfinite(var)
+    finite= numpy.isfinite(var) & numpy.isfinite(vectors.asarray()).all(1)  
+
+    infinite = ~finite
 
     Ivar=numpy.array([])
     Ivectors=Matrix(numpy.zeros((0,vectors.shape[1])))

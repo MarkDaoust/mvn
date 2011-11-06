@@ -655,7 +655,7 @@ class quadTester(myTests):
         self.assertTrue( 
             Var == (
                 Mean**2 
-                -2*numpy.array(Mean)*dots + dots**2 
+                -2*numpy.multiply(Mean,dots) + dots**2 
             ).mean() 
         )
 
@@ -856,7 +856,7 @@ class innerTester(myTests):
             Var == (
                 Mean**2 
                 - 
-                2*numpy.array(Mean)*dot + dot**2 
+                2*numpy.multiply(Mean,dot) + dot**2 
             ).mean() 
         )
 

@@ -37,7 +37,7 @@ This module contains one thing: the "Mvar" class.
 
 Mvar is the main idea of the module: Multivariate normal distributions 
     packaged to act like a vector. Perfect for kalman filtering, sensor fusion, 
-    (and maybe Expectation Maximization)  
+    Expectation Maximization.
 
 there are also a couple of loose functions like 'wiki', which is just to demonstrate 
 the equivalency between my blending algorithm, and the wikipedia version of it.
@@ -70,6 +70,7 @@ numpy.seterr(all = 'ignore')
 import helpers
 from helpers import sqrt
 from square import square
+
 from matrix import Matrix
 from mixture import Mixture
 
@@ -249,6 +250,7 @@ def getMean(data,mean,weights):
 
 
 
+
 @fromData.register(Matrix)
 def fromMatrix(data,mean=None,weights=None,bias=True,**kwargs):
     """
@@ -280,15 +282,17 @@ class Mvar(Plane):
     Multivariate normal distributions packaged to act like a vector 
     (Ref: andrew moore / data mining / gaussians )
     (Ref: http://en.wikipedia.org/wiki/Vector_space)
-    
-    The class fully supports complex numbers.
+    (Ref: http://www.johndcook.com/blog/2010/01/19/dont-invert-that-matrix/)
     
     basic math operators (+,-,*,/,**,&) have been overloaded to work 'normally'
     But there are several surprising features in the math these things produce,
     so watchout. 
-    
-    designed for kalman filtering, sensor fusion, or maybe expectation 
-    maximization and principal component analysis 
+
+    The & operator does a baysian inference update. 
+        posterior = prior & evidenc #the bays update is semetric
+        
+    the goal is to make kalman filtering, sensor fusion, expectation 
+    maximization and principal component analysis easy
     (ref: http://en.wikipedia.org/wiki/Expectation-maximization_algorithm)
 
     kalman filtering: state[t+1] = (state[t]*STM + noise) & measurment
@@ -312,7 +316,8 @@ class Mvar(Plane):
     infoBase = numpy.e
 
     ############## Creation
-    def __init__(self,
+    def __init__(
+        self,
         vectors=Matrix.eye,
         var=numpy.ones,
         mean=numpy.zeros,
@@ -326,7 +331,7 @@ class Mvar(Plane):
         var: (variance) defaults to ones
         mean: defaults to zeros
         
-        >>> assert A.var*numpy.array(A.vectors.H)*A.vectors == A.cov
+        >>> assert numpy.multiply(A.vectors.H,A.var)*A.vectors == A.cov
                 
         set 'square' to false if you know your vectors already form a unitary matrix. 
         set 'squeeze' to false if you don't want small variances, <1e-12, to  automatically removed
@@ -528,11 +533,11 @@ class Mvar(Plane):
         """
         get or set the covariance matrix
         
-        >>> assert A.cov==A.var*numpy.array(A.vectors.H)*A.vectors
+        >>> assert A.cov==numpy.multiply(A.vectors.H,A.var)*A.vectors
         >>> assert abs(A).cov==A.scaled.H*A.scaled
         """
         def fget(self):
-            return self.var*numpy.array(self.vectors.H)*self.vectors
+            return numpy.multiply(self.vectors.H,self.var)*self.vectors
 
         def fset(self,cov):
             new=Mvar.fromCov(
@@ -560,7 +565,7 @@ class Mvar(Plane):
         >>> assert A.vectors.H*A.scaled==A.transform()
         """
         def fget(self):
-            return Matrix(sqrt(self.var[:,None])*numpy.array(self.vectors))
+            return Matrix(numpy.multiply(sqrt(self.var[:,None]),self.vectors))
         
     
     @decorate.prop
@@ -606,7 +611,7 @@ class Mvar(Plane):
             varP=numpy.real_if_close(self.var**(power/2.0))
             vectors=self.vectors
 
-        return Matrix(varP*vectors.H.array()),vectors
+        return numpy.multiply(vectors.H,varP),vectors
 
 
     def transform(self,power=1):
@@ -1158,7 +1163,7 @@ class Mvar(Plane):
         OFvectors = other.vectors[Ofinite]
         OFvar = other.var[Ofinite]
 
-        cov=lambda vectors,var: var*numpy.array(vectors.H)*vectors
+        cov=lambda vectors,var: numpy.multiply(vectors.H,var)*vectors
 
         #compare the finite and infinite covariances 
         return (
@@ -1774,10 +1779,10 @@ class Mvar(Plane):
         Note that the result does not depend on the mean of the 
         second mvar(!) (really any mvar after the leftmost mvar or matrix)
         """
-        selfA,selfB = self._transformParts()
-        mvarA,mvarB = mvar._transformParts()
+        self0,self1 = self._transformParts()
+        mvar0,mvar1 = mvar._transformParts()
 
-        result = (self*mvarA*mvarB+mvar*selfA*selfB)
+        result = (self*mvar0*mvar1+mvar*self0*self1)
         
         result.mean += (
             self.mean-self.mean*mvar.transform(0)+
@@ -2328,7 +2333,7 @@ def givenVector(self,index,value):
     u=self.vectors[:,free]
     v=self.vectors[:,fixed]
 
-    uv = self.var*numpy.array(u.H)*v
+    uv = numpy.multiply(u.H,self.var)*v
 
     result = Mu-(Mv-value)**-1*uv.H
 

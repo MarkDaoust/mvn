@@ -65,7 +65,7 @@ class Matrix(numpy.matrix):
         return numpy.matrix.__add__(self,other)
             
     def __repr__(self):
-        return 'M'+numpy.matrix.__repr__(self)[1:]
+        return '\nM'+numpy.matrix.__repr__(self)[1:]
 
     __str__ = __repr__
 
@@ -77,6 +77,9 @@ class Matrix(numpy.matrix):
 
     def squeeze(self):
         return numpy.array(self).squeeze()
+        
+    def asarray(self):
+        return numpy.asarray(self)
 
     @staticmethod
     def eye(*args,**kwargs):
