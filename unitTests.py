@@ -138,11 +138,11 @@ class densityTester(myTests):
             Ea = self.A.entropy(locations)
             Eb = self.B.entropy(locations)
 
-            Eab  = (AB).density(locations)
+            Eab  = (AB).entropy(locations)
             delta = Eab-(Ea+Eb)
             self.assertTrue(Matrix(0) == delta.var())
 
-            Ea_b = (A_B).density(locations)
+            Ea_b = (A_B).entropy(locations)
             delta = Ea_b-(Ea-Eb)
             self.assertTrue(Matrix(0) == delta.var())
 
