@@ -100,6 +100,65 @@ class creationTester(myTests):
         self.assertTrue( self.B is not self.A )
         self.assertTrue( self.A.mean is self.B.mean )
 
+class densityTester(myTests):
+    def testDensity(self):
+        """
+        Another way to think of the & operation is as doing a 
+        pointwize product of the probability (densities) and then 
+        normalizing the total probability of 1. 
+
+        But it works in both directions, blend and un-blend
+        is like multiply and divide.
+        """
+        if not (self.A.flat or self.B.flat):
+            #remember you can undo a blend.
+            self.assertTrue((~self.B) & self.A & self.B == self.A)
+
+            #setup
+            AB  = self.A &  self.B
+            A_B = self.A & ~self.B
+                
+            locations = AB.sample([10,10])
+
+            # A&B == k*A.*B
+            Da = self.A.density(locations)
+            Db = self.B.density(locations)
+
+            Dab  = (AB).density(locations)
+
+            ratio = Dab /(Da*Db)
+            self.assertTrue(Matrix(0) == ratio.var())
+
+            # A&(~B) == k*A./B
+            Da_b = (A_B).density(locations)
+            ratio = Da_b/(Da/Db)
+            self.assertTrue(Matrix(0) == ratio.var())
+
+            #log
+            Ea = self.A.entropy(locations)
+            Eb = self.B.entropy(locations)
+
+            Eab  = (AB).density(locations)
+            delta = Eab-(Ea+Eb)
+            self.assertTrue(Matrix(0) == delta.var())
+
+            Ea_b = (A_B).density(locations)
+            delta = Ea_b-(Ea-Eb)
+            self.assertTrue(Matrix(0) == delta.var())
+
+
+    def testDensity2(self):
+        data = self.A.sample([5,5])
+        self.assertTrue(
+            Matrix(self.A.density(data)) == 
+            numpy.exp(-self.A.entropy(data))
+        )
+
+        
+
+
+
+
 
 class equalityTester(myTests):
     def testEq(self):
@@ -579,6 +638,7 @@ class blendTester(myTests):
         self.assertTrue( (self.A & self.A).cov == self.A.cov/2)
         self.assertTrue( (self.A & self.A).mean == self.A.mean)
         
+        
     def testNotFlat(self):
         if not (self.A.flat or self.B.flat):
             self.assertTrue( self.A & self.B == 1/(1/self.A+1/self.B))
@@ -936,7 +996,7 @@ class innerTester(myTests):
                 A.mean.H*A.mean*B.mean.H*B.mean
             ) - (A.mean*B.mean.H)**2 )
 
-        #distribute the calls to tracea
+        #distribute the calls to trace
         self.assertTrue( Var == 
             numpy.trace(A.cov*B.cov) + 
             numpy.trace(A.mean.H*A.mean*B.cov) + 

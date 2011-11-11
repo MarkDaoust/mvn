@@ -137,6 +137,7 @@ class MultiMethod(object):
                     types = types[:-1]
                 else:
                     break
+
             return found(*args,**kwargs)
 
         # we use the decorator module to match the signature to the prototype

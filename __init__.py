@@ -60,7 +60,6 @@ remember: circular logic works because circluar logic works.
  
 """
 ############  imports
-import copy
 
 ## 3rd party
 import numpy
@@ -602,9 +601,7 @@ class Mvar(Plane):
         by changing the order that matrixes are multiplied
 
         >>> parts = A._transformParts(N) 
-        >>> assert parts[0]*numpy.diagflat(parts[1])*parts[2] == A.transform(N)
-        >>> assert numpy.multiply(parts[0],parts[1])*parts[2] == A.transform(N)
-
+        >>> assert parts[0]*parts[1] == A.transform(N)
         """
         if power == 0:
             vectors=self.vectors
@@ -613,7 +610,7 @@ class Mvar(Plane):
             varP=numpy.real_if_close(self.var**(power/2.0))
             vectors=self.vectors
 
-        return vectors.H,varP,vectors
+        return numpy.multiply(vectors.H,varP),vectors
 
 
     def transform(self,power=1):
@@ -646,7 +643,7 @@ class Mvar(Plane):
         ),"negative number cannot be raised to a fractional power"
 
         parts = self._transformParts(power)
-        return numpy.multiply(parts[0],parts[1])*parts[2]
+        return parts[0]*parts[1]
 
     def sign(self):
         return helpers.sign(self.var)
@@ -882,7 +879,7 @@ class Mvar(Plane):
         return perfect+sensor
 
     @decorate.MultiMethod
-    def dist2(self,locations=numpy.zeros):
+    def dist2(self,locations=numpy.zeros,mean=None):
         """
         return the square of the mahalabois distance from the Mvar to each vector.
         the vectors should be along the last dimension of the array.
@@ -900,7 +897,8 @@ class Mvar(Plane):
         >>> D2 = (A*T).dist2(S*T)
         >>> assert Matrix(D1)==D2
         
-        The expected distance squared of a sample from it's parent, is the number of dimensions
+        The expected distance squared of a sample from it's parent, is the 
+        number of dimensions
         >>> A.dist2(A).mean = A.ndim
 
         >>> #warning: this works, but there is probably a better way.
@@ -916,19 +914,34 @@ class Mvar(Plane):
         if callable(locations):
             locations = locations(self.mean.shape)
 
+        locations = numpy.asarray(locations)
+        
+        if mean is None:
+            #make sure the mean is a flat numpy array
+            mean=numpy.array(self.mean).squeeze()
+            #and subtract it from the locations (vectors aligned to the last dimension)
+        
+        deltas=numpy.array(locations)-mean
+
+        #scaled=numpy.inner(deltas,self.transform(-1))
+        scaled=numpy.array(numpy.inner(deltas,(self**-1).scaled))
+
+        #return numpy.multiply(scaled,deltas).sum(axis=locations.ndim-1)
+        return (scaled*scaled.conjugate()).sum(axis=locations.ndim-1)
+
+        
+    @dist2.register(Mvar,Mvar)
+    def _dist2Mvar(self,locations,mean=None):
+        if mean is not None:
+            self = Mvar(
+                var = self.var,
+                vectors = self.vectors
+            ) + mean
+            
         #todo: implement noncentral chi2
         if isinstance(locations,Mvar):
             return (self + [-1]*locations).quad()
-
-        locations = numpy.asarray(locations)
-        #make sure the mean is a flat numpy array
-        mean=numpy.array(self.mean).squeeze()
-        #and subtract it from the locations (vectors aligned to the last dimension)
-        deltas=numpy.array(locations)-mean
-        
-        scaled=numpy.array(numpy.inner(deltas,(self**-1).scaled))
-
-        return (scaled*scaled.conjugate()).sum(axis=locations.ndim-1)
+    
 
         
     ############## indexing
@@ -1156,14 +1169,11 @@ class Mvar(Plane):
         #compare what's left of the means   
         if Smean != Omean:
             return False
-   
-        H=lambda M:M.H*M
 
         SFvectors=self.vectors[Sfinite]
         SFvar=self.var[Sfinite]
 
         OFvectors = other.vectors[Ofinite]
-        OFvar = other.var[Ofinite]
 
         cov=lambda vectors,var: numpy.multiply(vectors.H,var)*vectors
 
@@ -1781,10 +1791,10 @@ class Mvar(Plane):
         Note that the result does not depend on the mean of the 
         second mvar(!) (really any mvar after the leftmost mvar or matrix)
         """
-        self0,self1,self2 = self._transformParts()
-        mvar0,mvar1,mvar2 = mvar._transformParts()
+        self0,self1 = self._transformParts()
+        mvar0,mvar1 = mvar._transformParts()
 
-        result = (self*mvar0*mvar1*mvar2+mvar*self0*self1*self2)
+        result = (self*mvar0*mvar1+mvar*self0*self1)
         
         result.mean += (
             self.mean-self.mean*mvar.transform(0)+
@@ -1925,13 +1935,13 @@ class Mvar(Plane):
         raise TyprError('Not implemented for these types')
 
     @__add__.register(Mvar)
-    def __add__(self,other):
+    def _addDefault(self,other):
         result = self.copy()
         result.mean = result.mean + other 
         return result
 
     @__add__.register(Mvar,Mvar)
-    def __add__(self,other):
+    def _addMvar(self,other):
         """
         Implementation:
             >>> assert (A+B)==Mvar(
@@ -1971,7 +1981,7 @@ class Mvar(Plane):
 
     def entropy(self,data=None,base=None):
         """
-        information required to encode a using a code based on B
+        information required to encode A using a code based on B
         definition:
             A.entropy(B) -> sum(p(B)*log(p(A)))
 
@@ -2043,7 +2053,7 @@ class Mvar(Plane):
 
         if isinstance(data,Mvar):
             baseE = (
-                numpy.log(data.pdet())+
+                numpy.log(abs(data.pdet()))+
                 data.rank*numpy.log(2*numpy.pi*numpy.e)
             )/2
             if data is not self:
@@ -2052,7 +2062,7 @@ class Mvar(Plane):
             baseE=(
                 self.dist2(data)+
                 self.rank*numpy.log(2*numpy.pi)+
-                numpy.log(self.pdet())
+                numpy.log(abs(self.pdet()))
             )/2
 
         return baseE/numpy.log(base)
@@ -2118,12 +2128,12 @@ class Mvar(Plane):
             base=self.infoBase
 
         if isinstance(other,Mvar):
-            det = self.det()
+            det = abs(self.det())
             if det:
                 baseE= (
                     (other/self).trace()+
                     ((self**-1)*(self.mean-other.mean).H).cov-
-                    numpy.log(other.pdet()/self.pdet())-
+                    numpy.log(abs(other.pdet()/self.pdet()))-
                     self.rank
                 )/2
                 return (baseE/numpy.log(base))[0,0]
@@ -2403,6 +2413,27 @@ if __name__ == '__main__':
     #overwrite everything we just created with the copy that was 
     #created when we imported mvar; there can only be one.
     from testObjects import *
+
+
+    AB  = A &  B
+    A_B = A & ~B
+        
+    locations = AB.sample([10,10])
+
+    # A&B == k*A.*B
+    Da = A.density(locations)
+    Db = B.density(locations)
+
+    Dab  = (AB).density(locations)
+
+    ratio = Dab /(Da*Db)
+    assert(Matrix(0) == ratio.var())
+
+    # A&(~B) == k*A./B
+    Da_b = (A_B).density(locations)
+    ratio = Da_b/(Da/Db)
+    assert(Matrix(0) == ratio.var())
+
     
     A/B == A*(B**(-1))
 
