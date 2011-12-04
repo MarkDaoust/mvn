@@ -279,7 +279,7 @@ def fromMatrix(data,mean=None,weights=None,bias=True,**kwargs):
 class Mvar(Plane):
     """
     Multivariate normal distributions packaged to act like a vector 
-    (Ref: andrew moore / data mining / gaussians )
+    (Ref: http://www.autonlab.org/tutorials/ )
     (Ref: http://en.wikipedia.org/wiki/Vector_space)
     (Ref: http://www.johndcook.com/blog/2010/01/19/dont-invert-that-matrix/)
     
@@ -885,31 +885,38 @@ class Mvar(Plane):
         the vectors should be along the last dimension of the array.
 
         in this case the dist2 is the vector's length**2
-        >>> E = Mvar.eye(A.ndim)
-        >>> N = 50
-        >>> S = numpy.random.randn(N,A.ndim)
-        >>> assert Matrix(E.dist2(S)) == (S**2).sum(-1)
+            >>> E = Mvar.eye(A.ndim)
+            >>> N = 50
+            >>> S = numpy.random.randn(N,A.ndim)
+            >>> assert Matrix(E.dist2(S)) == (S**2).sum(-1)
 
         This is Invariant to linear transforms
-        >>> S=Matrix(A.sample(N))
-        >>> T=Matrix.randn((A.ndim,A.ndim))
-        >>> D1 = A.dist2(S)
-        >>> D2 = (A*T).dist2(S*T)
-        >>> assert Matrix(D1)==D2
+            >>> S=Matrix(A.sample(N))
+            >>> T=Matrix.randn((A.ndim,A.ndim))
+            >>> D1 = A.dist2(S)
+            >>> D2 = (A*T).dist2(S*T)
+            >>> assert Matrix(D1)==D2
         
         The expected distance squared of a sample from it's parent, is the 
         number of dimensions
-        >>> A.dist2(A).mean = A.ndim
+            >>> A.dist2(A).mean = A.ndim
 
-        >>> #warning: this works, but there is probably a better way.
-        >>> N=1000
-        >>> Z=3
-        >>> deltas = Mvar.fromData(A.dist2(A.sample(N)) - A.ndim)
-        >>> deltas.var/=N
-        >>> assert deltas.dist2() < (Z**2)
+            >>> #warning: this works, but there is probably a better way.
+            >>> N=1000
+            >>> Z=3
+            >>> deltas = Mvar.fromData(A.dist2(A.sample(N)) - A.ndim)
+            >>> deltas.var/=N
+            >>> assert deltas.dist2() < (Z**2)
 
         for Mvars it currenty just returns an mvar (mean & variance), 
         but that should be a non-central chi**2 distribution
+        
+        negative variances result in negative dist2's.
+
+            >>> locations = B.sample([5,5])
+            >>> assert -A.dist2(locations) == (~A).dist2(locations)                 
+        
+        
         """
         if callable(locations):
             locations = locations(self.mean.shape)
@@ -922,12 +929,13 @@ class Mvar(Plane):
             #and subtract it from the locations (vectors aligned to the last dimension)
         
         deltas=numpy.array(locations)-mean
+        
+        parts = self._transformParts(-2)
+        scaled = numpy.inner(deltas,parts[1])
+        scaled = numpy.inner(scaled,parts[0])
+        scaled=numpy.array(scaled)
 
-        #scaled=numpy.inner(deltas,self.transform(-1))
-        scaled=numpy.array(numpy.inner(deltas,(self**-1).scaled))
-
-        #return numpy.multiply(scaled,deltas).sum(axis=locations.ndim-1)
-        return (scaled*scaled.conjugate()).sum(axis=locations.ndim-1)
+        return (scaled*deltas).sum(axis=locations.ndim-1)
 
         
     @dist2.register(Mvar,Mvar)
