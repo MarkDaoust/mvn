@@ -6,8 +6,8 @@ This module contains one function: square
 import numpy
 import scipy
 
-import helpers
-from matrix import Matrix
+import mvar.helpers as helpers
+from mvar.matrix import Matrix
 
 def square(vectors,var=None,full=False):
     """

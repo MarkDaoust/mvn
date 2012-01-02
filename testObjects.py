@@ -3,12 +3,11 @@
 import random
 import pickle
 import numpy
-
-from __init__ import Mvar
-from matrix import Matrix
-import helpers
-
 import os
+
+from mvar import Mvar
+from mvar.matrix import Matrix
+import mvar.helpers as helpers
 
 (dir,_) = os.path.split(os.path.abspath(__file__))
 
@@ -48,6 +47,7 @@ def getObjects(values):
         objects = makeObjects(values.flat,values.ndim,values.seed)
         
     testDict[frozenValues] = objects
+
     testDict['last']=objects
     globals().update(objects)
 
@@ -115,7 +115,7 @@ def makeObjects(flat=None,ndim=None,seed=None):
     K1 = (numpy.random.randn())
     K2 = (numpy.random.randn())
 
-    N=randint(-3,3)
+    N=randint(-5,5)
 
     testDict={
         'ndim':ndim,

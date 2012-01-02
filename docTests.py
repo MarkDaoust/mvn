@@ -2,12 +2,19 @@
 import sys
 import unittest
 import doctest
+import cPickle
 
 import testObjects
 
+
+
 def getTests(module,testFixture):
-    module.__dict__.update(testFixture)
-    testCases=doctest.DocTestSuite(module)
+    jar = cPickle.dumps(testFixture)
+
+    def setUp(test):
+       test.globs.update(cPickle.loads(jar))
+    
+    testCases=doctest.DocTestSuite(module, setUp = setUp)
     return testCases
     
 

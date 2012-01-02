@@ -9,7 +9,7 @@ import sys
 import numpy
 import itertools
 
-import __init__ as mvar
+import mvar
 sqrt = mvar.sqrt 
 Mvar = mvar.Mvar
 Matrix = mvar.Matrix
@@ -255,9 +255,6 @@ class productTester(myTests):
     def testMul(self):
         self.assertTrue( self.A**2==self.A*self.A )
 
-    def testDiv(self):
-        self.assertTrue( self.A/self.B == self.A*self.B**(-1) )
-
     def testMvarMul(self):
         self.assertTrue( (self.A*self.B).cov == (self.A*self.B.transform()+self.B*self.A.transform()).cov/2 )
         if not (self.A.flat or self.B.flat): 
@@ -316,7 +313,8 @@ class productTester(myTests):
         self.assertTrue( (self.A*self.M).mean==self.A.mean*self.M )
 
     def testDiv(self):
-        self.assertTrue( self.A/self.B == self.A*(self.B**(-1)) )
+        self.assertTrue( self.A/self.B == self.A*self.B**(-1) )
+        
         m=self.M*self.M2.T
         self.assertTrue( self.A/m == self.A*(m**(-1)) )
         self.assertTrue( self.A/self.K1 == self.A*(self.K1**(-1)) )
@@ -339,6 +337,17 @@ class propertyTester(myTests):
         self.assertTrue( self.A.transform(2) == abs(self.A).cov )
         if not(self.A.flat and self.N<0):
             self.assertTrue( self.A.transform()**self.N == self.A.transform(self.N) )
+            
+    def testCov2(self):
+        self.assertTrue( self.A.cov == (self.A**2).transform() )
+        self.assertTrue( self.A.cov == self.A.transform()*self.A.transform() )
+        self.assertTrue( self.A.cov == self.A.transform()**2 )
+        self.assertTrue( self.A.cov == self.A.transform(2) )
+        self.assertTrue( 
+            (self.A*self.B.transform() 
+            + self.B*self.A.transform()).cov/2 
+            == (self.A*self.B).cov 
+        )
 
     def testScaled(self):
         self.assertTrue( self.A.scaled.H*self.A.scaled==abs(self.A).cov )
@@ -360,24 +369,13 @@ class propertyTester(myTests):
     def testTransform(self):
         self.assertTrue( self.A.transform() == self.A.transform(1) )
         self.assertTrue( self.A.transform() == self.A.scaled.H*self.A.vectors )
-    
-    def testCov(self):
-        self.assertTrue( self.A.cov == (self.A**2).transform() )
-        self.assertTrue( self.A.cov == self.A.transform()*self.A.transform() )
-        self.assertTrue( self.A.cov == self.A.transform()**2 )
-        self.assertTrue( self.A.cov == self.A.transform(2) )
-        self.assertTrue( 
-            (self.A*self.B.transform() 
-            + self.B*self.A.transform()).cov/2 
-            == (self.A*self.B).cov 
-        )
 
 
 class mergeTester(myTests):
     def testStack(self):
         self.AB= Mvar.stack(self.A,self.B)
-        self.assertTrue( self.AB[:self.A.ndim]==self.A )
-        self.assertTrue( self.AB[self.A.ndim:]==self.B )
+        self.assertTrue( self.AB[:,:self.A.ndim]==self.A )
+        self.assertTrue( self.AB[:,self.A.ndim:]==self.B )
         self.assertTrue( Mvar.stack(Mvar.infs(2),Mvar.infs(5))==Mvar.infs(7) )
         self.assertTrue( Mvar.stack(Mvar.zeros(2),Mvar.zeros(5))==Mvar.zeros(7) )
         
@@ -447,6 +445,36 @@ class powerTester(myTests):
                     self.A*self.A.transform(k1-1) + 
                     Mvar(mean=self.A.mean-self.A.mean*self.A.transform(0))
                 ))
+                
+class widthTester(myTests):
+    def testWidth(self):
+        self.assertTrue(
+            Matrix([self.A[:,n].var[0] for n in range(self.A.ndim)]) == 
+            self.A.width()**2
+        )
+
+        self.assertTrue(
+            Matrix(self.A.corr.diagonal()) == 
+            Matrix.ones
+        )
+
+        norm = self.A/self.A.width()
+        self.assertTrue(norm.corr == norm.cov)
+        self.assertTrue(
+            Matrix([norm[:,n].var[0] for n in range(norm.ndim)]) == 
+            Matrix.ones
+        )
+        
+        self.assertTrue(
+            Matrix((self.A**0).var) ==
+            Matrix.ones
+        )
+        
+        data = self.A.sample(100)
+        a = Mvar.fromData(data)
+        self.assertTrue(Matrix(numpy.std (data,0)) == a.width()   )    
+        self.assertTrue(Matrix(numpy.var (data,0)) == a.width()**2)
+        self.assertTrue(Matrix(numpy.mean(data,0)) == a.mean      )
 
 class linalgTester(myTests):
     def testTrace(self):
@@ -478,19 +506,19 @@ class linalgTester(myTests):
 
 class givenTester(myTests):            
     def testGivenScalar(self):
-        a = self.A.given(index=0,value=1)
+        a = self.A.given(dims=0,value=1)
         self.assertTrue( a.mean[:,0]==1 )
         self.assertTrue( a.vectors[:,0]==numpy.zeros )
 
         a=self.A.copy(deep=True)
-        a[0]=1
-        self.assertTrue( a==self.A.given(index=0,value=1) )
+        a[:,0]=1
+        self.assertTrue( a==self.A.given(dims=0,value=1) )
 
 
     def testGivenLinear(self):
         L1=Mvar(mean=[0,0],vectors=[[1,1],[1,-1]], var=[numpy.inf,0.5])
         L2=Mvar(mean=[1,0],vectors=[0,1],var=numpy.inf) 
-        self.assertTrue( L1.given(index=0,value=1) == L1&L2 )
+        self.assertTrue( L1.given(dims=0,value=1) == L1&L2 )
         self.assertTrue( (L1&L2).mean==[1,1] )
         self.assertTrue( (L1&L2).cov==[[0,0],[0,2]] )
 
@@ -498,10 +526,10 @@ class givenTester(myTests):
         Y=Mvar(mean=[0,1],vectors=Matrix.eye, var=[numpy.inf,1])
         X=Mvar(mean=[1,0],vectors=Matrix.eye,var=[1,numpy.inf])
         x=Mvar(mean=1,var=1)
-        self.assertTrue( Y.given(index=0,value=x) == X&Y )
+        self.assertTrue( Y.given(dims=0,value=x) == X&Y )
 
     def testGivenVector(self):
-        self.assertTrue( mvar.givenVector(self.A,index=0,value=1)==self.A.given(index=0,value=1) )
+        self.assertTrue( mvar.givenVector(self.A,dims=0,value=1)==self.A.given(dims=0,value=1) )
 
 class chainTester(myTests):
     def testBasic(self):
@@ -562,9 +590,9 @@ class chainTester(myTests):
 
         joint = self.A.chain(sensor)
         measured = joint.copy()
-        measured[self.ndim:]=measurment
+        measured[:,self.ndim:]=measurment
 
-        self.assertTrue(measured[:self.ndim] == self.A&self.B)
+        self.assertTrue(measured[:,:self.ndim] == self.A&self.B)
 
 
 class inversionTester(myTests):

@@ -92,36 +92,33 @@ def underConstruction(name):
 
 class MultiMethod(object):
     """
-    signature preserving multimethod decorator
-    
-    inspired by GVR's '5 minute multimethod' class and decorator
-    http://www.artima.com/weblogs/viewpost.jsp?thread=101605    
+    Signature preserving multimethod decorator
+
+    inspired by GVR's `5 minute multimethods <http://www.artima.com/weblogs/viewpost.jsp?thread=101605>`_    
 
     sample usage:
 
-    Test=underConstruction('Test')
-
-    @MultiMethod.sign(Test)
-    class Test(object):
-        @MultiMethod
-        def __add__(self,other):
-            raise TypeError('notImplemented')
-        
-        @__add__.register(Test):
-        def addDefault(self,anything):
-            raise TypeError('notImplemented')
-        
-        @__add__.register(Test,Test)
-        def addTest(self,other):
-            raise TypeError('notImplemented')
-
-        @__add__.register(Test,dict)
-        def addMapping(self,mapping):
-            raise TypeError('notImplemented')
-
-        @__add__.register(Test,[int,float])
-        def addNumber(self,number):
-            raise TypeError('notImplemented')
+    >>> @MultiMethod.sign(underConstruction('Test'))
+    ... class Test(object):
+    ...     @MultiMethod
+    ...     def __add__(self,other):
+    ...         raise TypeError('notImplemented')
+    ...     
+    ...     @__add__.register(Test):
+    ...     def addDefault(self,anything):
+    ...         raise TypeError('notImplemented')
+    ...     
+    ...     @__add__.register(Test,Test)
+    ...     def addTest(self,other):
+    ...         raise TypeError('notImplemented')
+    ... 
+    ...     @__add__.register(Test,dict)
+    ...     def addMapping(self,mapping):
+    ...         raise TypeError('notImplemented')
+    ... 
+    ...     @__add__.register(Test,[int,float])
+    ...     def addNumber(self,number):
+    ...         raise TypeError('notImplemented')
 
     """
     def __new__(baseClass,defaultFun):

@@ -1,10 +1,10 @@
 #! /usr/bin/env python
 import numpy
 
-import helpers
-import decorate
-from matrix import Matrix 
-from square import square
+import mvar.helpers as helpers
+import mvar.decorate as decorate
+from mvar.matrix import Matrix 
+from mvar.square import square
 
 def getNull(vectors):
     shape=vectors.shape        

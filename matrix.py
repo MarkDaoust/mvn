@@ -1,9 +1,12 @@
 #! /usr/bin/env python
+"""
+***************************
+Modified Numpy Matrix Class
+***************************
+"""
+
 import numpy
-import collections
 import itertools
-import functools
-import re
 
 import helpers            
 

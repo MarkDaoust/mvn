@@ -1,17 +1,15 @@
 #! /usr/bin/env python
 import sys
-import os
+
 import optparse
 import unittest
-import doctest
-import pickle
 
-import __init__ as mvar
+import mvar
 
-import testObjects
+import mvar.testObjects as testObjects
 
-import docTests
-import unitTests
+import mvar.docTests as docTests
+import mvar.unitTests as unitTests
 
 def makeParser():
     parser=optparse.OptionParser()
