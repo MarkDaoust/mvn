@@ -32,32 +32,43 @@
 #todo: figure out the relationship between these and spherical harmonics
 #todo: investigate higher order cumulants, 'principal cumulant analysis??'
 
+
 """
-This module contains one thing: the "Mvar" class.
+*********************************
+Multivariate Normal Distributions
+*********************************
 
-Mvar is the main idea of the module: Multivariate normal distributions 
-    packaged to act like a vector. Perfect for kalman filtering, sensor fusion, 
-    Expectation Maximization.
+============
+Introduction
+============
+`Multivariate Normal Distributions <http://en.wikipedia.org/wiki/Multivariate_normal_distribution>`_ 
+packaged to act like a `vector <http://en.wikipedia.org/wiki/Multivariate_normal_distribution>`_. 
 
-there are also a couple of loose functions like 'wiki', which is just to demonstrate 
-the equivalency between my blending algorithm, and the wikipedia version of it.
-        http://en.wikipedia.org/wiki/Kalman_filtering#Update
+The goal is to make these objects work as intuitively as possible, to make algorithms 
+like `Kalman Filtering <http://en.wikipedia.org/wiki/Kalman_filter>`_, 
+`Principal Component Analysis <http://en.wikipedia.org/wiki/Principal_component_analysis>`_, 
+and `Expectation Maximization <http://en.wikipedia.org/wiki/Expectation%E2%80%93maximization_algorithm>`_ 
+easy to implement, and understand.
 
-The docstrings are full of examples. The objects used in the examples are created 
-by test.sh, and stored in test_objects.pkl. You can get the most recent versions of them by 
-importing testObjects.py, which will give you a module containing the objects used
+The documentation is full of examples. The objects used in the examples are 
+created by :py:func:`mvar.testObjects.makeObjects`, and stored in 
+:py:mod:`mvar.testObjects`. 
 
-in the doc examples
-    A,B and C are instances of the Mvar class  
-    K1 and K2 are random numbers
-    M and M2 are matrixes
-    E is an apropriately sized eye matrix
-    N is an integer
+In all the documentation examples:
+    | **ndim** is the number of dimensions of the example objects
+    | **A**, **B** and **C** are instances of the Mvar class
+    | **K1** and **K2** are random real numbers
+    | **M** and **M2** are matrixes
+    | **E** is an apropriately sized eye Matrix
+    | **N** is an integer
 
-remember: circular logic works because circluar logic works.
-    a lot of the examples are demonstrations of what the code is doing, or expected
-    invariants. They don't prove I'm right, but only that I'm being consistant
- 
+But remember that circular logic works because circluar logic works. A lot of 
+the examples are demonstrations of what the code is doing, or expected invariants. 
+They don't prove I'm right, but only that I'm being consistant.
+
+================
+Main Mvar Module
+================
 """
 ############  imports
 
@@ -277,38 +288,38 @@ def fromMatrix(data,mean=None,weights=None,bias=True,**kwargs):
 
 @decorate.MultiMethod.sign(Mvar)
 class Mvar(Plane):
-    """
-    Multivariate normal distributions packaged to act like a vector 
-    (Ref: http://www.autonlab.org/tutorials/ )
-    (Ref: http://en.wikipedia.org/wiki/Vector_space)
-    (Ref: http://www.johndcook.com/blog/2010/01/19/dont-invert-that-matrix/)
+    """  
+    .. inheritance-diagram:: mvar.Mvar
     
-    basic math operators (+,-,*,/,**,&) have been overloaded to work 'normally'
-    But there are several surprising features in the math these things produce,
-    so watchout. 
+    Principal References:
+        | http://www.autonlab.org/tutorials/gaussian.html 
+        | http://en.wikipedia.org/wiki/Kalman_filter
+        | http://www.johndcook.com/blog/2010/01/19/dont-invert-that-matrix/
+ 
+    Basic math operators (+,-,*,/,**,&,|) have been overloaded to work as 
+    consistantly as possible. There are several surprising features in the math 
+    these things produce, so watchout. 
 
-    The & operator does a baysian inference update. 
-        posterior = prior & evidenc #the bays update is semetric
+    The & operator does a baysian inference update (like the kalman filter 
+    update step).
+    
+    >>> result = prior & evidence                             #doctest: +SKIP
+
+    This considerably simplifies some manipulations, kalman filtering, 
+    for example becomes: 
+            
+    >>> state[t+1] = (state[t]*STM + noise) & measurment         #doctest: +SKIP
         
-    the goal is to make kalman filtering, sensor fusion, expectation 
-    maximization and principal component analysis easy
-    (ref: http://en.wikipedia.org/wiki/Expectation-maximization_algorithm)
-
-    kalman filtering: state[t+1] = (state[t]*STM + noise) & measurment
-    Sensor fusion:    result = measurment1 & measurrment2 & measurment3
+    Sensor fusion, for uncorrelated sensors reduces to:    
+            
+    >>> result = measurment1 & measurment2 & measurment3         #doctest: +SKIP
         
     
     Attributes:
-        mean: mean of the distribution
-        var:  the variance asociated with each vector
-        vectors: unit eigen-vectors, as rows
+        | **mean** : mean of the distribution
+        | **var** :  the variance asociated with each vector
+        | **vectors** : unit eigen-vectors, as rows
         
-    Properties:
-        ndim: the number of dimensions of the space we're working in
-        cov : get or set the covariance matrix    
-        scaled: get the vectors, scaled by one standard deviation (transforms from unit-eigen-space to data-space) 
-      
-    No work has been done to make things fast, because there is no point until they work at all 
     """
     fromData=staticmethod(fromData)    
 
