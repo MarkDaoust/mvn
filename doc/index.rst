@@ -6,25 +6,25 @@
 Multivariate Normal Distributions
 =================================
 
-.. plot::
-    :include-source:
+.. plot:: ./examples/blend.py main
 
-    from mvar.examples.introPlot import main
-    main()
-    
+.. plot:: ./examples/marginals.py main
 
 .. toctree::
     :maxdepth: 2
     :numbered:
 
     mvar
+    plane
     decorate
     matrix
-    plane
     mixture
     testObjects
+    plotTools
+    helpers
+    examples
+    
 
-  
 Indices and tables
 ==================
 
