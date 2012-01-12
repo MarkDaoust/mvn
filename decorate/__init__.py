@@ -1,4 +1,10 @@
 #! /usr/bin/env python
+"""
+*****************
+Useful Decorators
+*****************
+"""
+
 import sys
 import types
 import inspect
@@ -14,18 +20,18 @@ from right import right
 
 def curry(fun,*args):
     """
-    @curry
-    def F1(a,b,c):
-        return a+b+c
+    >>> @curry
+    >>> def F1(a,b,c):
+    >>>     return a+b+c
 
     is a much nicer way of saying:
 
-    def F1(a):
-        def F2(b):
-            def F3(c):
-                return a+b+c
-            return F3
-        return F2
+    >>> def F1(a):
+    >>>     def F2(b):
+    >>>         def F3(c):
+    >>>             return a+b+c
+    >>>         return F3
+    >>>     return F2
     """
     def curried(*moreArgs):
         A=args+moreArgs
@@ -37,12 +43,12 @@ def curry(fun,*args):
 
 def prepare(before):
     """
-    create a decorator that runs the *args through the provided function, before 
-    running the decorated function
+    create a decorator that runs the positional arguments through the provided 
+    function, before running the decorated function
 
-    @prepare(lambda *args:[cleanup(arg) for arg in args])
-    def doSomething(x,y,z):
-        pass
+    >>> @prepare(lambda *args:[cleanup(arg) for arg in args])
+    >>> def doSomething(x,y,z):
+    >>>     pass
 
     """
     @decorator
@@ -56,18 +62,18 @@ def cleanup(after):
     create a decorator that runs the output of the decorated function, through 
     the provided function
 
-    def isImplemented(result):
-        if result is NotImplemented:
-            raise TypeError('NotImplemented')
-
-    @cleanup(isImplemented)
-    @MultiMethod
-    def doSomething(x,y,z):
-        return NotImplemented
-
-    @doSomething.register([int,float],[int,float],[int,float])
-    def doSomething(x,y,z):
-        return x+y+z
+    >>> def isImplemented(result):
+    >>>     if result is NotImplemented:
+    >>>         raise TypeError('NotImplemented')
+    >>>
+    >>> @cleanup(isImplemented)
+    >>> @MultiMethod
+    >>> def doSomething(x,y,z):
+    >>>     return NotImplemented
+    >>>
+    >>> @doSomething.register([int,float],[int,float],[int,float])
+    >>> def doSomething(x,y,z):
+    >>>     return x+y+z
     """
     @decorator
     def F(decorated,*args,**kwargs):
@@ -200,7 +206,7 @@ class MultiMethod(object):
         constructed
         """
         static=(
-            value.__get__(())
+            value.__func__
             for (key,value)
             in cls.__dict__.iteritems()
             if isinstance(value,(staticmethod,classmethod))

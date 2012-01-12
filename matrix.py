@@ -14,6 +14,10 @@ from decorator import decorator
 
 @decorator
 def expandCallable(fun,self,other):
+    """
+    If the 'other' argument is a callable object call it with self.shape as the 
+    only argument.
+    """
     return (
         fun(self,other(self.shape))
         if callable(other) else
@@ -23,21 +27,23 @@ def expandCallable(fun,self,other):
 class Matrix(numpy.matrix):
     """
     'Imporved' version of the martix class.
-    the only modifications are:
-        division (and rdiv) doesn't try to do elementwise division, it tries to 
-            multiply by the inverse of the other
             
-        The equality operator, ==, has also been modified to run numpy.allclose
-        (good enough for me), so the matrix is treated as one thing, not 
-        a collection of things.
-            __eq__ accepts callables as arguments, like helpers.autostack, and 
-            calls them with the matrixes size tuple as the only argument 
-            
-            >>> assert Matrix([[0,0],[0,0],[0,0]]) == numpy.zeros
-            >>> assert Matrix([[1,0],[0,1]]) == Matrix.eye
+    mostly a collection of minor tweaks and convienience functions.
     """
+    
     rtol = 1e-5
+    """
+    Absolute tolerence for :py:meth:`mvar.matrix.Matrix.__eq__`
+    
+    passed as a parameter to :py:func:`numpy.allclose` to determine 'equality'
+    """
+    
     atol = 1e-8
+    """
+    Relative tolerence for :py:meth:`mvar.matrix.Matrix.__eq__`
+    
+    passed as a parameter to :py:func:`numpy.allclose` to determine 'equality'    
+    """    
     
     sign = helpers.sign
 
@@ -48,24 +54,53 @@ class Matrix(numpy.matrix):
 
     @expandCallable
     def __eq__(self,other):
+        """
+        Treats the matrix as a single object, and returns True or False.
+        
+        uses class members :py:attr:`mvar.matrix.Matrix.atol` and 
+        :py:attr:`mvar.matrix.Matrix.rtol` through :py:func:`numpy.allclose` to 
+        determine 'equality'
+        
+        Throws :py:class:`ValueError` if there is a shape miss-match 
+        
+        uses the :py:func:`mvar.matrix.expandCallable` decorator so that 
+        this works
+        
+            >>> assert Matrix([[0,0],[0,0],[0,0]]) == numpy.zeros
+            >>> assert Matrix([[1,0],[0,1]]) == Matrix.eye
+ 
+        """
         other = Matrix(other)
         if self.shape==other.shape:
             return numpy.allclose(self,other,self.rtol,self.atol)
         else:
             raise ValueError('shape miss-match')
 
+    @expandCallable
+    def __add__(self,other):
+        """
+        :py:func:`numpy.matrix.__add__` with the 
+        :py:func:`mvar.matrix.expandCallable` decorator applied
+        """
+        return numpy.matrix.__add__(self,other)
+        
     def __ne__(self,other):
-        return not(self ==  other)
+        """
+        return not (self == other)
+        """
+        return not (self ==  other)
     
     def __div__(self,other):
+        """
+        self/other == self*other**-1
+        """
         return self*other**(-1)
 
     def __rdiv__(self,other):
+        """
+        other/self == other*self**-1
+        """
         return other*self**(-1)
-
-    @expandCallable
-    def __add__(self,other):
-        return numpy.matrix.__add__(self,other)
             
     def __repr__(self):
         return '\nM'+numpy.matrix.__repr__(self)[1:]
@@ -73,19 +108,42 @@ class Matrix(numpy.matrix):
     __str__ = __repr__
 
     def diagonal(self):
+        """
+        return the diagonal of a matrix as a 1-D array
+        see: :py:func:`numpy.diagonal`
+        """
         return numpy.squeeze(numpy.array(numpy.matrix.diagonal(self)))
     
     def flatten(self):
+        """
+        copy the matrix to an array and flatten it
+        see :py:func:`numpy.squeeze`
+        """
         return numpy.array(self).flatten()
 
     def squeeze(self):
+        """
+        copy the matrix to an array and squeeze it
+        see: :py:func:`numpy.squeeze`
+        """
         return numpy.array(self).squeeze()
         
     def asarray(self):
+        """
+        return the data as an array
+        see: :py:func:`numpy.asarray`
+        """
         return numpy.asarray(self)
+        
+    def array(self):
+        """
+        return a copy of the data in an array
+        see: :py:func:`numpy.array`
+        """
+        return numpy.array(self)
 
-    @staticmethod
-    def eye(*args,**kwargs):
+    @classmethod
+    def eye(cls,*args,**kwargs):
         """
         improved version of numpy.eye
         
@@ -93,37 +151,82 @@ class Matrix(numpy.matrix):
         argument. 
         
         >>> assert Matrix.eye((2,2)) == Matrix.eye(2,2) == Matrix.eye(2)
+        
+        see: :py:func:`numpy.eye`
         """
         #if isinstance(args[0],collections.Iterable):
         if hasattr(args[0],'__iter__'):
             args=itertools.chain(args[0],args[1:])
-        return Matrix(numpy.eye(*args,**kwargs))
+        return cls(numpy.eye(*args,**kwargs))
 
-    @staticmethod
-    def ones(shape,dtype=None,order='C'):
-        return Matrix(numpy.ones(shape,dtype=None,order='C'))
+    @classmethod
+    def ones(cls,shape=[],**kwargs):
+        """
+        return a matrix filled with ones
+        see: :py:func:`numpy.ones`
+        """
+        return cls(numpy.ones(shape,**kwargs))
 
-    @staticmethod
-    def zeros(shape,dtype=None,order='C'):
-        return Matrix(numpy.zeros(shape,dtype=None,order='C'))
+    @classmethod
+    def zeros(cls,shape=[],**kwargs):
+        """
+        return a matrix filled with zeros
+        see: :py:func:`numpy.zeros`
+        """
+        return cls(numpy.zeros(shape,**kwargs))
 
-    @staticmethod
-    def infs(shape,dtype=None,order='C'):
-        return numpy.inf*Matrix.ones(shape,dtype=None,order='C')
+    @classmethod
+    def infs(cls,shape=[],**kwargs):
+        """
+        return a matrix filled with infs
+        """
+        return numpy.inf*Matrix.ones(shape,**kwargs)
 
-    @staticmethod
-    def nans(shape,dtype=None,order='C'):
-        return numpy.nan*Matrix.ones(shape,dtype=None,order='C')
+    @classmethod
+    def nans(cls,shape=[],**kwargs):
+        """
+        return a matrix on filled with nans
+        """
+        return numpy.nan*Matrix.ones(shape,**kwargs)
 
-    @staticmethod
-    def rand(shape):
-        return Matrix(numpy.random.rand(*shape))
+    @classmethod
+    def rand(cls,shape=[]):
+        """
+        return a matrix of uniformly distributed random numbers on [0,1]
+        see: :py:func:`numpy.random.rand`        
+        """
+        return cls(numpy.random.rand(*shape))
 
-    @staticmethod
-    def randn(shape):
-        return Matrix(numpy.random.randn(*shape))
+    @classmethod
+    def randn(cls,shape=[]):
+        """
+        return a matrix of normally distributed random numbers with unit variance
+        see: :py:func:`numpy.random.randn`        
+        """
+        return cls(numpy.random.randn(*shape))
+        
+    @classmethod
+    def stack(cls,rows,default = 0):
+        """
+        2d concatenation, expanding callables
+        
+        >>> E3 = numpy.eye(3)
+        >>> Matrix.stack([ 
+        ...     [         8*E3,Matrix.zeros],
+        ...     [  Matrix.ones,           4],
+        ... ])
+        Matrix([[ 8.,  0.,  0.,  0.],
+                [ 0.,  8.,  0.,  0.],
+                [ 0.,  0.,  8.,  0.],
+                [ 1.,  1.,  1.,  4.]])
+        """
+        return cls(helpers.autostack(rows,default))
 
-    det = numpy.linalg.det
-
-    def array(self):
-        return numpy.array(self)
+    def det(self):
+        """
+        return the determinant of the matrix
+        see: :py:func:`numpy.linalg.det`
+        """
+        return numpy.linalg.det(self)
+        
+        

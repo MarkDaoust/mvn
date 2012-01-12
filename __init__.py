@@ -38,9 +38,6 @@
 Multivariate Normal Distributions
 *********************************
 
-============
-Introduction
-============
 `Multivariate Normal Distributions <http://en.wikipedia.org/wiki/Multivariate_normal_distribution>`_ 
 packaged to act like a `vector <http://en.wikipedia.org/wiki/Multivariate_normal_distribution>`_. 
 
@@ -65,10 +62,6 @@ In all the documentation examples:
 But remember that circular logic works because circluar logic works. A lot of 
 the examples are demonstrations of what the code is doing, or expected invariants. 
 They don't prove I'm right, but only that I'm being consistant.
-
-================
-Main Mvar Module
-================
 """
 ############  imports
 
@@ -77,6 +70,10 @@ import numpy
 numpy.seterr(all = 'ignore')
 
 import scipy
+import pylab
+import matplotlib
+import matplotlib.lines
+import matplotlib.patches
 
 ## local
 import helpers
@@ -94,16 +91,11 @@ from plane import Plane
 
 import mvncdf
 
-
-
-
-Mvar=decorate.underConstruction('Mvar')
-Mvar.T=decorate.underConstruction('Mvar.T')
-
 def format(something):
     '''
-    take an arraylike object and return a Matrix, array, or the object 
-    (unmodified), depending on the dimensionality of the input 
+    take an arraylike object and return a :py:class:`mvar.matrix.Matrix` (for 
+    2d data), a :py:func:`numpy.array` (for Nd data), or the unmodified object 
+    (for 0d data)
     '''
     A=numpy.array(something)
                  
@@ -116,129 +108,6 @@ def format(something):
     return something
 
 
-@decorate.prepare(lambda data,mean:[format(data),format(mean)])
-@decorate.MultiMethod
-def fromData(data,mean=None,**kwargs):
-    """
-    optional arguments:
-        mean - array like, (1,ndim) 
-        weights - array like, (N,) 
-        bias - bool
-
-        anything else is passed through to from cov
-
-    >>> assert Mvar.fromData(A)==A 
-
-    >>> assert Mvar.fromData([1,2,3]).ndim == 1
-
-    >>> data = [[1,2,3]]
-    >>> new=Mvar.fromData(data)
-    >>> assert new.mean == data
-    >>> assert Matrix(new.var) == Matrix.zeros
-    >>> assert new.vectors == Matrix.zeros
-    >>> assert new.cov == Matrix.zeros
-    
-    bias is passed to numpy's cov function.
-    
-    any kwargs are just passed on the Mvar constructor.
-    
-    this creates an Mvar with the same mean and covariance as the supplied 
-    data with each row being a sample and each column being a dimenson
-    
-    remember numpy's default covariance calculation divides by (n-1) not 
-    (n) set bias = false to use n-1,
-    """
-    return fromMatrix(Matrix(data),**kwargs)
-
-@fromData.register(Mvar,type(None))
-def fromMvar(self,mean=None):
-    """
-    >>> assert fromData(A)==A
-    """
-    return self.copy(deep = True)
-
-@fromData.register(Mvar)
-def fromMvarOffset(self,mean=Matrix.zeros):
-    """
-    think paralell axis theorem
-    
-    >>> a=A[:,0]
-    >>> assert fromData(a,mean=0).mean == Matrix.zeros
-    >>> assert fromData(a,mean=0).cov == a.cov+a.mean.H*a.mean
-
-    >>> assert fromData(A,mean=Matrix.zeros).mean == Matrix.zeros
-    >>> assert fromData(A,mean=Matrix.zeros).cov == A.cov+A.mean.H*A.mean
-    """
-    if callable(mean):
-        mean=mean(self.ndim)
-
-    delta=(self-mean)
-
-    vectors = delta.mean
-
-    subVectors=delta.vectors 
-    subWeights=delta.var
-     
-    return Mvar(
-        mean = mean,
-        var = numpy.concatenate([[1],subWeights]),
-        vectors = numpy.concatenate([vectors,subVectors]),
-    )
-
-@fromData.register(numpy.ndarray)
-def fromArray(data,mean=None,weights=None,bias=True):
-    """
-    >>> data1 = numpy.random.randn(100,2)+5*numpy.random.randn(1,2)
-    >>> data2 = numpy.random.randn(100,2)+5*numpy.random.randn(1,2)
-    >>>
-    >>> mvar1 = Mvar.fromData(data1)
-    >>> mvar2 = Mvar.fromData(data2)
-    >>>
-    >>> assert Mvar.fromData([mvar1,mvar2]) == Mvar.fromData(numpy.vstack([data1,data2]))
-
-    >>> N1=1000
-    >>> N2=10
-    >>> data1 = numpy.random.randn(N1,2)+5*numpy.random.randn(1,2)
-    >>> data2 = numpy.random.randn(N2,2)+5*numpy.random.randn(1,2)
-    >>>
-    >>> mvar1 = Mvar.fromData(data1)
-    >>> mvar2 = Mvar.fromData(data2)
-    >>>
-    >>> assert Mvar.fromData([mvar1,mvar2],weights=[N1,N2]) == Mvar.fromData(numpy.vstack([data1,data2]))
-    """
-    if data.dtype is not numpy.dtype('object'):
-        return fromMatrix(Matrix(data).T,weights=weights,mean=mean,bias=bias)
-
-    ismvar=numpy.array([isinstance(vector,Mvar) for vector in data])    
-    mvars=data[ismvar]
-
-    data=numpy.array([
-        numpy.squeeze(vector.mean if mvar else vector)
-        for mvar,vector 
-        in zip(ismvar,data)
-    ])
-
-    N=getN(data,weights)-(not bias)
-    weights=getWeights(weights,data,N)
-    mean = getMean(data,mean,weights)
-
-    subVectors=numpy.vstack([
-        mvar.vectors 
-        for mvar in mvars
-    ])
-
-    subWeights=numpy.concatenate([
-        w*mvar.var
-        for w,mvar in zip(weights[ismvar],mvars)
-    ])
-
-    vectors=data-numpy.array(mean)
-
-    return Mvar(
-        mean = mean,
-        var = numpy.concatenate([weights,subWeights]),
-        vectors = numpy.concatenate([vectors,subVectors]),
-    )
 
 def getN(data,weights):
     return (
@@ -265,33 +134,8 @@ def getMean(data,mean,weights):
 
     return mean
 
-
-
-
-@fromData.register(Matrix)
-def fromMatrix(data,mean=None,weights=None,bias=True,**kwargs):
-    """
-    >>> D=Mvar.fromData([[0],[2]])
-    >>> assert D.mean == 1
-    >>> assert D.var == 1
-
-    >>> D=Mvar.fromData([[0],[2]],mean=[0])
-    >>> assert D.mean == 0
-    >>> assert D.var == 2
-
-    """
-    N = getN(data,weights)-(not bias)
-    weights = getWeights(weights,data,N)
-    mean = getMean(data,mean,weights)
-
-    vectors=data-mean
-
-    return Mvar(
-        mean=mean,
-        var=weights,
-        vectors=vectors,
-    )
-
+Mvar=decorate.underConstruction('Mvar')
+Mvar.T=decorate.underConstruction('Mvar.T')
 
 @decorate.MultiMethod.sign(Mvar)
 class Mvar(Plane):
@@ -310,7 +154,7 @@ class Mvar(Plane):
     The & operator does a baysian inference update (like the kalman filter 
     update step).
     
-    >>> result = prior & evidence                             #doctest: +SKIP
+    >>> result = prior & evidence                                #doctest: +SKIP
 
     This considerably simplifies some manipulations, kalman filtering, 
     for example becomes: 
@@ -327,10 +171,29 @@ class Mvar(Plane):
         | **var** :  the variance asociated with each vector
         | **vectors** : unit eigen-vectors, as rows
         
-    """
-    fromData=staticmethod(fromData)    
+    """ 
 
     infoBase = numpy.e
+    """
+    default base to use in formation calculations
+    
+    >>> assert Mvar.infoBase is numpy.e
+    """    
+
+    rtol = 1e-5
+    """
+    relative tolerence
+    
+    see :py:meth:`mvar.Mvar.squeeze`
+    """
+    
+    atol = 1e-8
+    """
+    absolute tolerence
+    
+    see :py:meth:`mvar.Mvar.squeeze`
+    """
+
 
     ############## Creation
     def __init__(
@@ -341,7 +204,7 @@ class Mvar(Plane):
         square=True,
         squeeze=True,
     ):
-        """        
+        """
         Create an Mvar from available attributes.
         
         vectors: defaults to zeros
@@ -350,8 +213,9 @@ class Mvar(Plane):
         
         >>> assert numpy.multiply(A.vectors.H,A.var)*A.vectors == A.cov
                 
-        set 'square' to false if you know your vectors already form a unitary matrix. 
-        set 'squeeze' to false if you don't want small variances, <1e-12, to  automatically removed
+        set 'square' to false if you know your vectors already form a unitary 
+        matrix. set 'squeeze' to false if you don't want small variances, less
+        than :py:attr:`mvar.Mvar.atol`, to  automatically removed
         """
         #stack everything to check sizes and automatically inflate any 
         #functions that were passed in
@@ -388,8 +252,165 @@ class Mvar(Plane):
             self.copy(self.squeeze())
 
     ############## alternate creation methods
-    @staticmethod
-    def fromCov(cov,**kwargs):
+    @classmethod    
+    @decorate.prepare(lambda cls,data,mean:[cls,format(data),format(mean)])
+    @decorate.MultiMethod
+    def fromData(cls,data,mean=None,**kwargs):
+        """
+        :param data:  
+        :param mean:
+        :param kwargs:
+        
+        optional arguments:
+            mean - array like, (1,ndim) 
+            weights - array like, (N,) 
+            bias - bool
+    
+            anything else is passed through to from cov
+    
+        >>> assert Mvar.fromData(A)==A 
+    
+        >>> assert Mvar.fromData([1,2,3]).ndim == 1
+    
+        >>> data = [[1,2,3]]
+        >>> new=Mvar.fromData(data)
+        >>> assert new.mean == data
+        >>> assert Matrix(new.var) == Matrix.zeros
+        >>> assert new.vectors == Matrix.zeros
+        >>> assert new.cov == Matrix.zeros
+        
+        bias is passed to numpy's cov function.
+        
+        any kwargs are just passed on the Mvar constructor.
+        
+        this creates an Mvar with the same mean and covariance as the supplied 
+        data with each row being a sample and each column being a dimenson
+        
+        remember numpy's default covariance calculation divides by (n-1) not 
+        (n) set bias = false to use n-1,
+        """
+        return cls.fromMatrix(Matrix(data),**kwargs)
+    
+    @classmethod
+    @fromData.__func__.register(type,Mvar,type(None))
+    def fromMvar(cls,self,mean=None):
+        """
+        >>> assert Mvar.fromData(A)==A
+        """
+        return self.copy(deep = True)
+    
+    @classmethod    
+    @fromData.__func__.register(type,Mvar)
+    def fromMvarOffset(cls,self,mean=Matrix.zeros):
+        """
+        think paralell axis theorem
+        
+        >>> a=A[:,0]
+        >>> assert Mvar.fromData(a,mean=0).mean == Matrix.zeros
+        >>> assert Mvar.fromData(a,mean=0).cov == a.cov+a.mean.H*a.mean
+    
+        >>> assert Mvar.fromData(A,mean=Matrix.zeros).mean == Matrix.zeros
+        >>> assert Mvar.fromData(A,mean=Matrix.zeros).cov == A.cov+A.mean.H*A.mean
+        """
+        if callable(mean):
+            mean=mean(self.ndim)
+    
+        delta=(self-mean)
+    
+        vectors = delta.mean
+    
+        subVectors=delta.vectors 
+        subWeights=delta.var
+         
+        return cls(
+            mean = mean,
+            var = numpy.concatenate([[1],subWeights]),
+            vectors = numpy.concatenate([vectors,subVectors]),
+        )
+    
+    @classmethod
+    @fromData.__func__.register(type,numpy.ndarray)
+    def fromArray(cls,data,mean=None,weights=None,bias=True):
+        """
+        >>> data1 = numpy.random.randn(100,2)+5*numpy.random.randn(1,2)
+        >>> data2 = numpy.random.randn(100,2)+5*numpy.random.randn(1,2)
+        >>>
+        >>> mvar1 = Mvar.fromData(data1)
+        >>> mvar2 = Mvar.fromData(data2)
+        >>>
+        >>> assert Mvar.fromData([mvar1,mvar2]) == Mvar.fromData(numpy.vstack([data1,data2]))
+    
+        >>> N1=1000
+        >>> N2=10
+        >>> data1 = numpy.random.randn(N1,2)+5*numpy.random.randn(1,2)
+        >>> data2 = numpy.random.randn(N2,2)+5*numpy.random.randn(1,2)
+        >>>
+        >>> mvar1 = Mvar.fromData(data1)
+        >>> mvar2 = Mvar.fromData(data2)
+        >>>
+        >>> assert Mvar.fromData([mvar1,mvar2],weights=[N1,N2]) == Mvar.fromData(numpy.vstack([data1,data2]))
+        """
+        if data.dtype is not numpy.dtype('object'):
+            return cls.fromMatrix(Matrix(data).T,weights=weights,mean=mean,bias=bias)
+    
+        ismvar=numpy.array([isinstance(vector,Mvar) for vector in data])    
+        mvars=data[ismvar]
+    
+        data=numpy.array([
+            numpy.squeeze(vector.mean if mvar else vector)
+            for mvar,vector 
+            in zip(ismvar,data)
+        ])
+    
+        N=getN(data,weights)-(not bias)
+        weights=getWeights(weights,data,N)
+        mean = getMean(data,mean,weights)
+    
+        subVectors=numpy.vstack([
+            mvar.vectors 
+            for mvar in mvars
+        ])
+    
+        subWeights=numpy.concatenate([
+            w*mvar.var
+            for w,mvar in zip(weights[ismvar],mvars)
+        ])
+    
+        vectors=data-numpy.array(mean)
+    
+        return cls(
+            mean = mean,
+            var = numpy.concatenate([weights,subWeights]),
+            vectors = numpy.concatenate([vectors,subVectors]),
+        )
+    
+    @classmethod
+    @fromData.__func__.register(type,Matrix)
+    def fromMatrix(cls,data,mean=None,weights=None,bias=True,**kwargs):
+        """
+        >>> D=Mvar.fromData([[0],[2]])
+        >>> assert D.mean == 1
+        >>> assert D.var == 1
+    
+        >>> D=Mvar.fromData([[0],[2]],mean=[0])
+        >>> assert D.mean == 0
+        >>> assert D.var == 2
+    
+        """
+        N = getN(data,weights)-(not bias)
+        weights = getWeights(weights,data,N)
+        mean = getMean(data,mean,weights)
+    
+        vectors=data-mean
+    
+        return cls(
+            mean=mean,
+            var=weights,
+            vectors=vectors,
+        )
+    
+    @classmethod
+    def fromCov(cls,cov,**kwargs):
         """
         everything in kwargs is passed directly to the constructor
         """
@@ -401,15 +422,15 @@ class Mvar(Plane):
         (var,vectors) = eig(cov) if cov.size else (Matrix.zeros([0,1]),Matrix.zeros([0,0]))
         vectors=Matrix(vectors.H)     
 
-        return Mvar(
+        return cls(
             vectors=vectors,
             var=var,
             square=False,
             **kwargs
         )
 
-    @staticmethod
-    def zeros(n=1,mean=Matrix.zeros):
+    @classmethod
+    def zeros(cls,n=1,mean=Matrix.zeros):
         """
         >>> n=abs(N)
         >>> Z=Mvar.zeros(n)
@@ -421,10 +442,10 @@ class Mvar(Plane):
         if callable(mean):
             mean=mean([1,n])
 
-        return Mvar(mean=mean)
+        return cls(mean=mean)
     
-    @staticmethod
-    def infs(n=1,mean=None):
+    @classmethod
+    def infs(cls,n=1,mean=None):
         """
         >>> n=abs(N)
         >>> inf=Mvar.infs(n)
@@ -434,13 +455,13 @@ class Mvar(Plane):
         >>> assert inf.vectors==Matrix.eye
         >>> assert inf**-1 == Mvar.zeros
         """
-        result = Mvar.zeros(n)**-1
+        result = cls.zeros(n)**-1
         if mean is not None:
             result.mean = mean
         return result
 
-    @staticmethod
-    def eye(n=1,mean = None):
+    @classmethod
+    def eye(cls,n=1,mean = None):
         """
         >>> n=abs(N)
         >>> eye=Mvar.eye(n)
@@ -450,7 +471,7 @@ class Mvar(Plane):
         >>> assert eye.vectors==Matrix.eye
         >>> assert eye**-1 == eye
         """
-        return Mvar(
+        return cls(
             mean=Matrix.zeros([1,n]) if mean is None else mean,
             vectors=Matrix.eye(n),
         )
@@ -470,7 +491,8 @@ class Mvar(Plane):
         >>> marginals = [A[:,dim] for dim in range(A.ndim)]
         >>> assert Mvar.stack(*marginals) == A.diag()
         """
-        return Mvar(mean=self.mean,var = self.width()**2)        
+        return type(self)(mean=self.mean,var = self.width()**2)   
+    
     
     ##### 'cosmetic' manipulations
     def inflate(self):
@@ -557,7 +579,7 @@ class Mvar(Plane):
             return numpy.multiply(self.vectors.H,self.var)*self.vectors
 
         def fset(self,cov):
-            new=Mvar.fromCov(
+            new=type(self).fromCov(
                 mean=self.mean,
                 cov=cov,
             )
@@ -685,7 +707,7 @@ class Mvar(Plane):
         """
         #no 'square' is necessary here because the rotation matrixes are in 
         #entierly different dimensions
-        return Mvar(
+        return type(mvars[0])(
             #stack the means
             mean=numpy.hstack([mvar.mean for mvar in mvars]),
             #stack the vector diagonally
@@ -743,10 +765,10 @@ class Mvar(Plane):
 
         simulate sensor fusion:
 
-        >>> sensor1=A.copy()
+        >>> sensor1=A
         >>> sensor1.mean*=0
         >>>
-        >>> sensor2=B.copy()
+        >>> sensor2=B
         >>> sensor2.mean*=0
         >>>
         >>> actual=numpy.arange(0,A.ndim)
@@ -874,7 +896,7 @@ class Mvar(Plane):
 
         reference: andrew moore/data mining/gaussians
         """
-        twice = Mvar(
+        twice = type(self)(
             mean=numpy.hstack([self.mean,self.mean]),
             vectors=numpy.hstack([self.vectors,self.vectors]),
             var=self.var,
@@ -890,9 +912,9 @@ class Mvar(Plane):
         
 
         #define the sensor noise
-        sensor = sensor if sensor is not None else Mvar.zeros(transform.shape[1])
+        sensor = sensor if sensor is not None else type(self).zeros(transform.shape[1])
         #add some leading seros so it fits
-        sensor=Mvar.zeros(self.ndim).stack(sensor)
+        sensor=type(self).zeros(self.ndim).stack(sensor)
 
         return perfect+sensor
 
@@ -960,13 +982,13 @@ class Mvar(Plane):
     @dist2.register(Mvar,Mvar)
     def _dist2Mvar(self,locations,mean=None):
         if mean is not None:
-            self = Mvar(
+            self = type(self)(
                 var = self.var,
                 vectors = self.vectors
             ) + mean
             
         #todo: implement noncentral chi2
-        if isinstance(locations,Mvar):
+        if isinstance(locations,type(self)):
             return (self + [-1]*locations).quad()
     
 
@@ -1048,10 +1070,10 @@ class Mvar(Plane):
 
         #create the mean, for the new object,and set the values of interest
         if value is None:
-            #value=Mvar.zeros(n=N,mean = Matrix.nans)
+            #value=type(self).zeros(n=N,mean = Matrix.nans)
             value=~self[:,dims] 
         else:                
-            value=Mvar.fromData(value)
+            value=type(self).fromData(value)
 
     
         mean=Matrix.zeros([1,self.ndim])
@@ -1071,7 +1093,7 @@ class Mvar(Plane):
         var[value.shape[0]:]=numpy.Inf
 
         #blend with the self
-        return self & Mvar(
+        return self & type(self)(
             var=var,
             mean=mean,
             vectors=vectors,
@@ -1109,7 +1131,7 @@ class Mvar(Plane):
         N = index.sum()
         vectors = Matrix.zeros([N,self.ndim])
         vectors[range(N),index]=1
-        return self+Mvar(
+        return self+type(self)(
             var = Matrix.infs,
             vectors = vectors,
         )
@@ -1130,7 +1152,7 @@ class Mvar(Plane):
         DIMS = numpy.asarray(DIMS) if hasattr(DIMS,'__iter__') else DIMS
         PCA  = numpy.asarray( PCA) if hasattr(PCA ,'__iter__') else PCA
         
-        return Mvar(
+        return type(self)(
             mean=self.mean[:,DIMS],
             vectors=self.vectors[PCA,DIMS],
             var=self.var[PCA],
@@ -1173,11 +1195,10 @@ class Mvar(Plane):
             >>> assert Mvar.eye(n) == Mvar.eye
             >>> assert Mvar.infs(n) == Mvar.infs
         """
-        if not isinstance(other,Mvar):
-            if callable(other):
-                other = other(self.ndim)
+        if callable(other):
+            other = other(self.ndim)
 
-        other=Mvar.fromData(other)
+        other=type(self).fromData(other)
         
         #check the number of dimensions of the space
         assert  self.ndim == other.ndim,"""
@@ -1577,7 +1598,7 @@ class Mvar(Plane):
         V=self.vectors            
         dmean=self.mean-self.mean*V.H*V        
         
-        return Mvar(
+        return type(self)(
             mean=self.mean*transform+dmean,
             vectors=self.vectors,
             var=self.var**power,
@@ -1793,7 +1814,7 @@ class Mvar(Plane):
         assert numpy.isreal(scalar)
         scalar = numpy.real(scalar)
 
-        return Mvar(
+        return type(self)(
             mean= scalar*self.mean,
             var = scalar*self.var,
             vectors = self.vectors,
@@ -1821,7 +1842,7 @@ class Mvar(Plane):
             >>> assert (A*M).mean==A.mean*M
 
         """
-        return Mvar(
+        return type(self)(
             mean=self.mean*matrix,
             var=self.var,
             vectors=self.vectors*matrix,
@@ -1870,7 +1891,7 @@ class Mvar(Plane):
         assert (vector.ndim == 1), 'vector multiply, only accepts 1d arrays' 
         assert (vector.size == 1 or  vector.size == self.ndim),'vector multiply, vector.size must match mvar.ndim'
         
-        return Mvar(
+        return type(self)(
             mean=numpy.multiply(self.mean,vector),
             vectors=numpy.multiply(self.vectors,vector),
             var=self.var,
@@ -1903,7 +1924,7 @@ class Mvar(Plane):
         transformed = self if matrix is None else self*matrix
         flattened   = (transformed*self.mean.H).inflate()
 
-        return Mvar(
+        return type(self)(
             mean=flattened.mean+numpy.trace(self.cov if matrix is None else matrix*self.cov) ,
             var=4.0*flattened.var+2.0*numpy.trace(transformed.cov*self.cov),
         )
@@ -1920,7 +1941,7 @@ class Mvar(Plane):
         be careful dot producting something with itself you you might actually 
         want rand()**2, use mvar.quad for that
         """        
-        return Mvar(
+        return type(self)(
             mean=self.mean*other.mean.H,
             var=(
                 (self*other).trace() + 
@@ -2005,7 +2026,7 @@ class Mvar(Plane):
             ...     var = numpy.concatenate([A.var,B.var]),
             ... )
         """
-        return Mvar(
+        return type(self)(
             mean=self.mean+other.mean,
             vectors=numpy.vstack([self.vectors,other.vectors]),
             var = numpy.concatenate([self.var,other.var]),
@@ -2203,7 +2224,7 @@ class Mvar(Plane):
             else: 
                 return numpy.inf 
         else:
-            baseE= self.entropy(other)-Mvar.fromData(other).entropy()            
+            baseE= self.entropy(other)-type(self).fromData(other).entropy()            
             return (baseE/numpy.log(base))
 
     @decorate.prop
@@ -2313,10 +2334,6 @@ class Mvar(Plane):
             'slope' controls how quickly the the alpha drops to zero
             'minalpha' is used to make sure that very large elipses are not invisible.  
         """
-        import matplotlib
-        import matplotlib.lines
-        import matplotlib.patches
-
         shape = self.shape
 
         if shape[1] != 2:
@@ -2364,6 +2381,9 @@ class Mvar(Plane):
             #while transmitting any kwargs.
             **kwargs
         )
+        
+
+        
 
 
 ## extras    
@@ -2427,7 +2447,7 @@ def givenVector(self,dims,value):
     vectors[:,fixed]=0
     vectors[:,free]=result.vectors
     
-    return Mvar(
+    return type(self)(
         mean=mean,
         vectors=vectors,
         var=result.var
@@ -2450,15 +2470,13 @@ def mooreChain(self,sensor,transform=None):
         T=(self*transform+sensor)
         vv=self.cov        
 
-        return Mvar.fromCov(
+        return type(self).fromCov(
             mean=numpy.hstack([self.mean,T.mean]),
             cov=numpy.vstack([
                 numpy.hstack([vv,vv*transform]),
                 numpy.hstack([(vv*transform).H,T.cov]),
             ])
         )
-
-
 
 def binindex(index,numel):
     """
