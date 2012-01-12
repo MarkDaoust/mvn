@@ -559,12 +559,13 @@ class Mvar(Plane):
 
     def squeeze(self):
         """
-        drop any vector/variance pairs with (self.var) under 1e-12,
+        drop any vector/variance pairs where the variance is out of tolerence
+        (:py:attr:`mvar.Mvar.rtol`, :py:attr:`mvar.Mvar.atol`, :py:func:`helpers.approx`)
 
         >>> assert A.inflate().squeeze().shape == A.shape
         """
         result=self.copy()
-        
+#        small=helpers.approx(self.var,rtol = self.rtol, atol = self.atol)
         small=helpers.approx(self.var)
         
         if small.size:
@@ -1169,6 +1170,13 @@ class Mvar(Plane):
         self[:N,:]
         
         return a distribution using only the first N principal components.
+        
+        >>> data = Matrix.randn([1000,2])*(Matrix.eye(2)+Matrix.randn([2,2]))+Matrix.randn([1,2])
+        >>> XY = Mvar.fromData(data)
+        >>> X = Mvar.fromData(data[:,0])
+        >>> Y = Mvar.fromData(data[:,1])
+        >>> assert X == XY[:,0]
+        >>> assert Y == XY[:,1]
         """
         PCA,DIMS = index
          
@@ -1282,7 +1290,7 @@ class Mvar(Plane):
         >>> AV = A*A.vectors.H
         >>> assert Matrix(AV>AV.mean) == 2**-AV.ndim 
 
-        see :py:method:`mvar.Mvar.inbox`
+        see :py:meth:`mvar.Mvar.inbox`
         """
         return self.inBox(
             lower,
@@ -1291,8 +1299,8 @@ class Mvar(Plane):
         
     def __ge__(self,lower):
         """
-        see :py:method:`mvar.Mvar.gt`
-        see :py:method:`mvar.Mvar.inbox`
+        see :py:meth:`mvar.Mvar.gt`
+        see :py:meth:`mvar.Mvar.inbox`
         """
         return self>lower
 
@@ -1304,7 +1312,7 @@ class Mvar(Plane):
         >>> AV = A*A.vectors.H
         >>> assert Matrix(AV<AV.mean) == 2**-AV.ndim 
 
-        see :py:method:`mvar.Mvar.inbox`
+        see :py:meth:`mvar.Mvar.inbox`
         """
         return self.inBox(
             -numpy.inf*numpy.ones(self.mean.size),
@@ -1313,8 +1321,8 @@ class Mvar(Plane):
 
     def __le__(self,lower):
         """
-        see :py:method:`mvar.Mvar.lt`
-        see :py:method:`mvar.Mvar.inbox`
+        see :py:meth:`mvar.Mvar.lt`
+        see :py:meth:`mvar.Mvar.inbox`
         """
         return self>lower
 
@@ -1326,10 +1334,10 @@ class Mvar(Plane):
         todo: this could (should) be expanded to return a gaussian mixture, 
               with one (Mvar) component instead of just a  weight...
         """
-        #todo: vectorize?
+#todo: vectorize?
         lower=lower-self.mean
         upper=upper-self.mean
-
+#todo: multimethod?
         if isinstance(lower,Mvar):
             l=lower.mean
             lower.mean=Matrix.zeros
@@ -1448,10 +1456,9 @@ class Mvar(Plane):
     def __or__(self,other):
         """
         self | other
-        I don't  know what this means yet
+        >>> assert  (A | B) == (A+B) - (A&B)
         """
-        #todo: create a 'GMM' class so that | has real meaning
-        return self+other-(self&other)
+        return (self+other)-(self&other)
 
     def __xor__(self,other):
         """
@@ -2151,7 +2158,7 @@ class Mvar(Plane):
 
         if data is None:
             data = self
-
+#todo: multimethod
         if isinstance(data,Mvar):
             baseE = (
                 numpy.log(abs(data.pdet()))+
@@ -2233,7 +2240,7 @@ class Mvar(Plane):
         """
         if base is None:
             base=self.infoBase
-
+#todo: multimethod?
         if isinstance(other,Mvar):
             det = abs(self.det())
             if det:
