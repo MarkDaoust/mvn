@@ -91,49 +91,6 @@ from plane import Plane
 
 import mvncdf
 
-def format(something):
-    '''
-    take an arraylike object and return a :py:class:`mvar.matrix.Matrix` (for 
-    2d data), a :py:func:`numpy.array` (for Nd data), or the unmodified object 
-    (for 0d data)
-    '''
-    A=numpy.array(something)
-                 
-    if A.ndim == 2:
-        something=numpy.asmatrix(A)
-        something.__class__=Matrix
-    elif A.ndim != 0:
-        something=A
-    
-    return something
-
-
-
-def getN(data,weights):
-    return (
-        data.shape[0] 
-        if weights is None 
-        else numpy.sum(weights)
-    )
-
-
-def getWeights(weights,data,N):
-    return (
-        numpy.ones(data.shape[0])
-        if weights is None 
-        else numpy.array(weights)
-    )/float(N)
-
-def getMean(data,mean,weights):
-    if mean is None:
-        mean = numpy.multiply(weights[:,None],data).sum(0)
-    elif callable(mean):
-        mean = mean(data.shape[1])
-
-    mean = numpy.asmatrix(mean)
-
-    return mean
-
 Mvar=decorate.underConstruction('Mvar')
 Mvar.T=decorate.underConstruction('Mvar.T')
 
@@ -205,6 +162,12 @@ class Mvar(Plane):
         squeeze=True,
     ):
         """
+        :param vectors:
+        :param var:
+        :param mean:
+        :param square:
+        :param squeeze:
+            
         Create an Mvar from available attributes.
         
         vectors: defaults to zeros
@@ -252,14 +215,77 @@ class Mvar(Plane):
             self.copy(self.squeeze())
 
     ############## alternate creation methods
+    @classmethod
+    def format(cls,something):
+        '''
+        take an arraylike object and return a :py:class:`mvar.matrix.Matrix` (for 
+        2d data), a :py:func:`numpy.array` (for Nd data), or the unmodified object 
+        (for 0d data)
+        
+        >>> assert Mvar.format(A) is A
+        >>> assert isinstance(Mvar.format([1,2,3]),numpy.ndarray)
+        >>> assert isinstance(Mvar.format([[1,2,3]]),Matrix)
+        >>> assert isinstance(Mvar.format([[[2]]]),numpy.ndarray)
+        '''
+        A=numpy.array(something)
+                     
+        if A.ndim == 2:
+            something=numpy.asmatrix(A)
+            something.__class__=Matrix
+        elif A.ndim != 0:
+            something=A
+        
+        return something
+    
+    
+    @classmethod
+    def _getN(cls,data,weights):
+        """
+        :param data:
+        :param weights:
+        """
+        return (
+            data.shape[0] 
+            if weights is None 
+            else numpy.sum(weights)
+        )
+    
+    @classmethod
+    def _getWeights(cls,weights,data,N):
+        """
+        :param data:
+        :param weights:        
+        """
+        return (
+            numpy.ones(data.shape[0])
+            if weights is None 
+            else numpy.array(weights)
+        )/float(N)
+    
+    @classmethod
+    def _getMean(cls,data,mean,weights):
+        """
+        :param data:
+        :param weights:        
+        """
+        if mean is None:
+            mean = numpy.multiply(weights[:,None],data).sum(0)
+        elif callable(mean):
+            mean = mean(data.shape[1])
+    
+        mean = numpy.asmatrix(mean)
+    
+        return mean
+    
+    
     @classmethod    
-    @decorate.prepare(lambda cls,data,mean:[cls,format(data),format(mean)])
+    @decorate.prepare(lambda cls,data,mean:[cls,cls.format(data),cls.format(mean)])
     @decorate.MultiMethod
     def fromData(cls,data,mean=None,**kwargs):
         """
         :param data:  
         :param mean:
-        :param kwargs:
+        :param ** kwargs:
         
         optional arguments:
             mean - array like, (1,ndim) 
@@ -295,6 +321,9 @@ class Mvar(Plane):
     @fromData.__func__.register(type,Mvar,type(None))
     def fromMvar(cls,self,mean=None):
         """
+        :param self:  
+        :param mean:
+            
         >>> assert Mvar.fromData(A)==A
         """
         return self.copy(deep = True)
@@ -303,6 +332,9 @@ class Mvar(Plane):
     @fromData.__func__.register(type,Mvar)
     def fromMvarOffset(cls,self,mean=Matrix.zeros):
         """
+        :param self:  
+        :param mean:
+            
         think paralell axis theorem
         
         >>> a=A[:,0]
@@ -332,6 +364,11 @@ class Mvar(Plane):
     @fromData.__func__.register(type,numpy.ndarray)
     def fromArray(cls,data,mean=None,weights=None,bias=True):
         """
+        :param data:  
+        :param mean:
+        :param weights:
+        :param bias:
+        
         >>> data1 = numpy.random.randn(100,2)+5*numpy.random.randn(1,2)
         >>> data2 = numpy.random.randn(100,2)+5*numpy.random.randn(1,2)
         >>>
@@ -362,9 +399,9 @@ class Mvar(Plane):
             in zip(ismvar,data)
         ])
     
-        N=getN(data,weights)-(not bias)
-        weights=getWeights(weights,data,N)
-        mean = getMean(data,mean,weights)
+        N=cls._getN(data,weights)-(not bias)
+        weights=cls._getWeights(weights,data,N)
+        mean = cls._getMean(data,mean,weights)
     
         subVectors=numpy.vstack([
             mvar.vectors 
@@ -388,6 +425,11 @@ class Mvar(Plane):
     @fromData.__func__.register(type,Matrix)
     def fromMatrix(cls,data,mean=None,weights=None,bias=True,**kwargs):
         """
+        :param data:
+        :param mean:
+        :param weights:
+        :param bias:
+            
         >>> D=Mvar.fromData([[0],[2]])
         >>> assert D.mean == 1
         >>> assert D.var == 1
@@ -397,9 +439,9 @@ class Mvar(Plane):
         >>> assert D.var == 2
     
         """
-        N = getN(data,weights)-(not bias)
-        weights = getWeights(weights,data,N)
-        mean = getMean(data,mean,weights)
+        N = cls._getN(data,weights)-(not bias)
+        weights = cls._getWeights(weights,data,N)
+        mean = cls._getMean(data,mean,weights)
     
         vectors=data-mean
     
@@ -412,6 +454,9 @@ class Mvar(Plane):
     @classmethod
     def fromCov(cls,cov,**kwargs):
         """
+        :param cov:
+        :param ** kwargs:
+            
         everything in kwargs is passed directly to the constructor
         """
         cov=Matrix(cov)
@@ -432,6 +477,9 @@ class Mvar(Plane):
     @classmethod
     def zeros(cls,n=1,mean=Matrix.zeros):
         """
+        :param n:
+        :param mean:
+            
         >>> n=abs(N)
         >>> Z=Mvar.zeros(n)
         >>> assert Z.mean==Matrix.zeros
@@ -447,6 +495,9 @@ class Mvar(Plane):
     @classmethod
     def infs(cls,n=1,mean=None):
         """
+        :param n:
+        :param mean:
+            
         >>> n=abs(N)
         >>> inf=Mvar.infs(n)
         >>> assert inf.mean==Matrix.zeros
@@ -463,6 +514,9 @@ class Mvar(Plane):
     @classmethod
     def eye(cls,n=1,mean = None):
         """
+        :param n:
+        :param mean:
+        
         >>> n=abs(N)
         >>> eye=Mvar.eye(n)
         >>> assert eye.mean==Matrix.zeros
@@ -479,6 +533,9 @@ class Mvar(Plane):
     @classmethod
     def rand(cls,ndims=2,flatness = 0):
         """
+        :param ndims:
+        :param flatness:
+            
         generate a random multivariate-normal distribution
         (just for testing purposes, no theoretical basis)
         """
@@ -491,6 +548,7 @@ class Mvar(Plane):
             randn()*randn([1,ndims])
         )
 
+#something is wrong here
     @decorate.MultiMethod
     def diag(self,**kwargs):
         """
@@ -608,6 +666,7 @@ class Mvar(Plane):
             )
             self.copy(new)
 
+#set the correlation matrix? freeze the marginals, set the correlations
     @decorate.prop
     class corr():
         """
@@ -642,7 +701,7 @@ class Mvar(Plane):
     class ndim():
         """
         get the number of dimensions of the space the mvar exists in
-        >>> assert A.ndim==A.mean.size
+        >>> assert A.ndim==A.mean.size==A.mean.shape[1]
         >>> assert A.ndim==A.vectors.shape[1]
         """
         def fget(self):
@@ -660,6 +719,8 @@ class Mvar(Plane):
 
     def _transformParts(self,power=1):
         """
+        :param power:
+    
         sometimes you can get a more precise result from a matrix multiplication 
         by changing the order that matrixes are multiplied
 
@@ -678,6 +739,8 @@ class Mvar(Plane):
 
     def transform(self,power=1):
         """
+        :param power:
+            
         >>> assert A.transform() == A.transform(1)
             
         >>> assert A.cov == (A**2).transform()
@@ -714,6 +777,9 @@ class Mvar(Plane):
     ########## Utilities
     def stack(*mvars,**kwargs):
         """
+        :param * mvars:
+        :param ** kwargs:
+        
         >>> AB=A.stack(B)
         >>> assert AB[:,:A.ndim]==A
         >>> assert AB[:,A.ndim:]==B
@@ -741,6 +807,8 @@ class Mvar(Plane):
     
     def sample(self,shape = (1,)):
         """
+        :param shape:
+            
         take samples from the distribution
 
         the vectors are aligned to the last dimension of the returned array
@@ -775,6 +843,8 @@ class Mvar(Plane):
 
     def measure(self,actual):
         """
+        :param actual:
+            
         This method is to simulate a sensor. 
      
         It treats the Mvar as a the description of a sensor, 
@@ -881,13 +951,11 @@ class Mvar(Plane):
         given a distribution of actual values and an Mvar to act as a sensor 
         this method returns the joint distribution of actual and measured values
 
-        self:       is the value we're  taking a measurment of
-
-        transform:  specifies the transform from the actual value to the sensor output
-                    defalults to Matrix.eye
-
-        sensor:     specifies the sensor's bias and noise
-                    defaults to Mvar.zeros
+        :param self:       is the value we're  taking a measurment of
+        :param transform:  specifies the transform from the actual value to 
+                           the sensor output defalults to Matrix.eye
+        :param sensor:     specifies the sensor's bias and noise
+                           defaults to Mvar.zeros
 
         so if you supply neither of the optional arguments you get:
         >>> assert A.chain()==A*numpy.hstack([E,E]) 
@@ -944,6 +1012,9 @@ class Mvar(Plane):
     @decorate.MultiMethod
     def dist2(self,locations=numpy.zeros,mean=None):
         """
+        :param locations:
+        :param mean:
+            
         return the square of the mahalabois distance from the Mvar to each vector.
         the vectors should be along the last dimension of the array.
 
@@ -1004,6 +1075,10 @@ class Mvar(Plane):
         
     @dist2.register(Mvar,Mvar)
     def _dist2Mvar(self,locations,mean=None):
+        """        
+        :param locations:
+        :param mean:
+        """
         if mean is not None:
             self = type(self)(
                 var = self.var,
@@ -1020,6 +1095,9 @@ class Mvar(Plane):
     
     def given(self,dims,value=None):
         """
+        :param dims:
+        :params value:
+            
         return an mvar representing the conditional probability distribution, 
         given the values, on the given dims
 
@@ -1125,6 +1203,9 @@ class Mvar(Plane):
         
     def __setitem__(self,index,value):
         """
+        :param index:
+        :params value:
+
         self[PCA,dims]=value
         
         This is an opertor interface to self.given 
@@ -1142,6 +1223,8 @@ class Mvar(Plane):
 
     def marginal(self,index):
         """
+        :param index:
+            
         like __getitem__, but the result has the same dimensions as the self. 
 
         >>> assert A.marginal(slice(None)) == A
@@ -1162,6 +1245,8 @@ class Mvar(Plane):
 
     def __getitem__(self,index):
         """
+        :param index:
+        
         self[:,index]
         
         return the marginal distribution, over the indexed dimensions.
@@ -1192,6 +1277,8 @@ class Mvar(Plane):
 
     def __eq__(self,other):
         """
+        :param other:
+            
         self == other
 
         mostly it does what you would expect
@@ -1283,6 +1370,8 @@ class Mvar(Plane):
 
     def __gt__(self,lower):
         """
+        :param lower:
+            
         >>> assert Matrix(A > Matrix.infs(A.ndim)) == 0
         >>> assert Matrix(A >-Matrix.infs(A.ndim)) == 1
         
@@ -1298,6 +1387,8 @@ class Mvar(Plane):
         
     def __ge__(self,lower):
         """
+        :param lower:
+            
         see :py:meth:`mvar.Mvar.gt`
         see :py:meth:`mvar.Mvar.inbox`
         """
@@ -1305,6 +1396,8 @@ class Mvar(Plane):
 
     def __lt__(self,upper):
         """
+        :param upper:
+            
         >>> assert Matrix(A < Matrix.infs(A.ndim)) == 1
         >>> assert Matrix(A <-Matrix.infs(A.ndim)) == 0
         
@@ -1320,6 +1413,8 @@ class Mvar(Plane):
 
     def __le__(self,lower):
         """
+        :param lower: 
+            
         see :py:meth:`mvar.Mvar.lt`
         see :py:meth:`mvar.Mvar.inbox`
         """
@@ -1327,6 +1422,9 @@ class Mvar(Plane):
 
     def inBox(self,lower,upper):
         """
+        :param lower:
+        :param upper:
+            
         returns the probability that all components of a sampe are between the 
         lower and upper limits 
 
@@ -1365,6 +1463,8 @@ class Mvar(Plane):
         
     def bBox(self,nstd=2):
         """
+        :param nstd:
+            
         return a 2xndim Matrix where the frst row is mean-n*std, 
         and the second row is mean+n*std
         >>> nstd = 2
@@ -1469,6 +1569,8 @@ class Mvar(Plane):
     
     def __or__(self,other):
         """
+        :param other:
+            
         self | other
         >>> assert  (A | B) == (A+B) - (A&B)
         """
@@ -1476,12 +1578,16 @@ class Mvar(Plane):
 
     def __xor__(self,other):
         """
+        :param other:
+            
         I don't  know what this means yet
         """
         return self+other-2*(self&other)
 
     def __and__(self,other):
         """
+        :param other:
+            
         self & other
         
         This is awsome.
@@ -1558,6 +1664,8 @@ class Mvar(Plane):
 
     def __pow__(self,power):
         """
+        :param power:
+            
         self**power
 
         >>> #the transform version doesn't work for flat objects if the transform power is less than 0
@@ -1649,10 +1757,12 @@ class Mvar(Plane):
             square=False,
         )
 
-    @decorate.prepare(lambda self,other:(self,format(other)))
+    @decorate.prepare(lambda self,other:(self,type(self).format(other)))
     @decorate.MultiMethod
     def __mul__(self,other):        
         """
+        :param other:
+            
         self*other
         
         coercion notes:
@@ -1766,10 +1876,12 @@ class Mvar(Plane):
         """
         return NotImplemented
 
-    @decorate.prepare(lambda self,other:(self,format(other)))
+    @decorate.prepare(lambda self,other:(self,type(self).format(other)))
     @decorate.MultiMethod    
     def __rmul__(self,other):
         """
+        :param other:
+            
         other*self
         
         multiplication order doesn't matter for constants
@@ -1823,6 +1935,8 @@ class Mvar(Plane):
     @__rmul__.register(Mvar)
     def _scalarMul(self,scalar):
         """
+        :param scalar:
+            
         self*scalar, scalar*self
 
         >>> assert A*K1 == K1*A
@@ -1868,6 +1982,8 @@ class Mvar(Plane):
     @__mul__.register(Mvar,Matrix)
     def _matrixMul(self,matrix):
         """
+        :param matrix:
+        
         self*matrix
         
             matrix multiplication transforms the mean and ellipse of the 
@@ -1894,12 +2010,17 @@ class Mvar(Plane):
 
     @__rmul__.register(Mvar,Matrix)
     def _rmatrixMul(self,matrix):
+        """
+        :param matrix:
+        """
         return matrix*self.transform()
 
     @__mul__.register(Mvar,Mvar)
     @__rmul__.register(Mvar,Mvar)
     def _mvarMul(self,mvar):
         """
+        :param mvar:
+            
         self*mvar
 
         multiplying two Mvars together is defined to fit with power
@@ -1928,6 +2049,8 @@ class Mvar(Plane):
     @__rmul__.register(Mvar,numpy.ndarray)
     def __vectorMul__(self,vector):
         """
+        :param vector:
+            
         >>> assert A*range(A.ndim) == A*numpy.diagflat(range(A.ndim))
         >>> assert A+[-1]*A == A+A*(-1*E)
         """
@@ -1947,6 +2070,8 @@ class Mvar(Plane):
         #       of the length & length^2 this just has the right mean and
         #       variance
         """
+        :param matrix:
+            
         ref: http://en.wikipedia.org/wiki/Quadratic_form_(statistics)
 
         when used without a transform matrix this will get you the distribution 
@@ -1979,6 +2104,8 @@ class Mvar(Plane):
     @__mul__.register(Mvar,Mvar.T)
     def inner(self,other):
         """
+        :param other:
+            
         >>> assert A.inner(B) == B.inner(A)
 
         use this to dot product two mvars together, dot is like rand()*rand()
@@ -1999,6 +2126,8 @@ class Mvar(Plane):
     @__mul__.register(Mvar.T,Mvar)
     def outer(self,other):
         """
+        :param other:
+            
         >>> assert(numpy.trace(A.outer(B))) == A.inner(B).mean
         """
         return numpy.outer(self.mean,other.mean)
@@ -2006,6 +2135,8 @@ class Mvar(Plane):
     @decorate.MultiMethod
     def __add__(self,other):
         """
+        :param other:
+            
         self+other
         
         When using addition keep in mind that rand()+rand() is not like scaling 
@@ -2056,6 +2187,9 @@ class Mvar(Plane):
 
     @__add__.register(Mvar)
     def _addDefault(self,other):
+        """        
+        :param other:
+        """
         result = self.copy()
         result.mean = result.mean + other 
         return result
@@ -2063,6 +2197,8 @@ class Mvar(Plane):
     @__add__.register(Mvar,Mvar)
     def _addMvar(self,other):
         """
+        :param other:
+            
         Implementation:
             >>> assert (A+B)==Mvar(
             ...     mean=A.mean+B.mean,
@@ -2080,6 +2216,8 @@ class Mvar(Plane):
         
     def density(self,locations):
         """
+        :param locations:
+            
         self(locations)
 
         Returns the probability density in the specified locations, 
@@ -2101,6 +2239,9 @@ class Mvar(Plane):
 
     def entropy(self,data=None,base=None):
         """
+        :param data:
+        :param base:
+            
         information required to encode A using a code based on B
         definition:
 
@@ -2192,6 +2333,9 @@ class Mvar(Plane):
         
     def KLdiv(self,other,base=None):
         """
+        :param other:
+        :param base:
+            
         A.KLdiv(B) -> sum(p(B)*log(p(B)/p(A)))
 
         Return the KLdiv in the requested base.        
@@ -2350,10 +2494,31 @@ class Mvar(Plane):
     __str__=__repr__
 
     ################ Art
-    def plot(self, Ax=None, **kwargs):
-        return self._plotters.get(self.ndim,self.plotND)(self,Ax,**kwargs)
+    def plot(self, ax=None, **kwargs):
+        """
+        :param ax:
+        :param ** kwargs:
+        """
+        return self._plotters.get(self.ndim,self.plotND)(self,ax,**kwargs)
         
-    def plot1D(self, Ax = None, count = 1.0,fill = True, nstd = 5,nsteps = 500, orientation = 'horizontal', **kwargs):
+    def plot1D(self, 
+        ax = None, 
+        count = 1.0,
+        fill = True, 
+        nstd = 5,
+        nsteps = 500, 
+        orientation = 'horizontal',
+        **kwargs
+    ):
+        """
+        :param ax:
+        :param count:
+        :param fill:
+        :param nstd:
+        :param nsteps:
+        :param orientation:
+        :param ** kwargs:
+        """
         xlims = self.bBox(nstd).squeeze()
         x = numpy.linspace(xlims[0],xlims[1],nsteps)
         y = count*self.density(x[:,None])
@@ -2362,46 +2527,58 @@ class Mvar(Plane):
         vertical   = ['vertical'  ,'v','V']
         if orientation in horizontal:
             (xx,yy) = (y,x)
-            filler = Ax.fill_betweenx
+            filler = ax.fill_betweenx
         elif orientation in vertical:
             (xx,yy) = (x,y)
-            filler = Ax.fill_between
+            filler = ax.fill_between
         else:
             raise ValueError(
                 'orientation should be in either (%s) or (%s), not (%s)' % 
                 (horizontal,vertical,orientation)
             )
 
-        if Ax is None:
-            Ax=pylab.gca()        
+        if ax is None:
+            ax=pylab.gca()        
         
         if fill:
             result = filler(x,y,0,**kwargs)
         else:
-            result = Ax.plot(x,y,**kwargs)
+            result = ax.plot(x,y,**kwargs)
             
         return result
         
-    def plot2D(self,Ax = None, nstd = 2, **kwargs):
+    def plot2D(self,ax = None, nstd = 2, **kwargs):
         """
+        :param ax:
+        :param nstd:
+        :param ** kwargs:
+            
         plot a :py:meth:`mvar.Mvar.patch`, with axis autoscaling
         """
-        if Ax is None:
-            Ax=pylab.gca()
+        if ax is None:
+            ax=pylab.gca()
  
         bBox = self.bBox(nstd).array()
         widths = numpy.diff(bBox,axis=0)
         pads = 0.05*widths*[[-1],[1]]
         corners = bBox+pads
-        Ax.update_datalim(corners)
-        Ax.autoscale_view()           
+        ax.update_datalim(corners)
+        ax.autoscale_view()           
                         
-        return Ax.add_patch(self.patch(**kwargs))
+        return ax.add_patch(self.patch(**kwargs))
         
-    def plot3D(self,Ax = None, **kwargs):
+    def plot3D(self,ax = None, **kwargs):
+        """
+        :param ax:
+        :param ** kwargs:
+        """
         raise NotImplementedError()
         
-    def plotND(self,Ax = None, **kwargs):
+    def plotND(self,ax = None, **kwargs):
+        """
+        :param ax:
+        :param ** kwargs:
+        """
         raise NotImplementedError()
         
     _plotters={1:plot1D,2:plot2D,3:plot3D}
@@ -2413,6 +2590,12 @@ class Mvar(Plane):
     
     def patch(self,nstd=2,alpha='auto',slope=0.5,minalpha=0.05,**kwargs):
         """
+        :param nstd:
+        :param alpha:
+        :param slope:
+        :param minalpha:
+        :param ** kwargs:
+            
         get a matplotlib Ellipse patch representing the Mvar, all \**kwargs are 
         passed on to the call to matplotlib.patches.Ellipse
 
@@ -2486,6 +2669,9 @@ class Mvar(Plane):
 
 def wiki(P,M):
     """
+    :param P:
+    :param M:
+        
     Direct implementation of the wikipedia blending algorithm
     
     The quickest way to prove it's equivalent is by examining these:
@@ -2509,6 +2695,9 @@ def wiki(P,M):
 
 def givenVector(self,dims,value):
     """
+    :param dims:
+    :param value:
+    
     direct implementation of the "given" algorithm in
     Andrew moore's data-mining/gussian slides
 
@@ -2553,6 +2742,9 @@ def givenVector(self,dims,value):
 
 def mooreChain(self,sensor,transform=None):
         """
+        :param sensor:
+        :param transform:
+            
         given a distribution of actual values and an Mvar to act as a sensor 
         this method returns the joint distribution of real and measured values
 
@@ -2574,14 +2766,17 @@ def mooreChain(self,sensor,transform=None):
             ])
         )
 
-def binindex(index,numel):
+def binindex(index,size):
     """
+    :param index:
+    :param size:
+        
     convert an index to binary so it can be easily inverted
     """
     if hasattr(index,'dtype') and index.dtype==bool:
         return index
     
-    binindex=numpy.zeros(numel,dtype=bool)
+    binindex=numpy.zeros(size,dtype=bool)
     binindex[index]=True
 
     return binindex
