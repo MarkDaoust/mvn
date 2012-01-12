@@ -520,8 +520,7 @@ class Mvar(Plane):
     ##### 'cosmetic' manipulations
     def inflate(self):
         """
-        add the zero length direction vectors so no information is lost when using 
-        the vectors parameter
+        add the zero length direction vectors to make the matrix square
 
         >>> if A.shape[0] == A.shape[1]:
         ...     assert A*A.vectors.H*A.vectors==A
@@ -1363,6 +1362,21 @@ class Mvar(Plane):
         upper = upper*Iwidth
 
         return mvncdf.mvstdnormcdf(lower,upper,self.cov)
+        
+    def bBox(self,nstd=2):
+        """
+        return a 2xndim Matrix where the frst row is mean-n*std, 
+        and the second row is mean+n*std
+        >>> nstd = 2
+        >>> assert A.bBox(nstd) == Matrix.stack([
+        ...     [A.mean-nstd*A.width()],
+        ...     [A.mean+nstd*A.width()]
+        ... ])
+        """
+        return Matrix.stack([
+            [self.mean-nstd*self.width()],
+            [self.mean+nstd*self.width()],
+        ])
         
     def __abs__(self):
         """
@@ -2336,16 +2350,68 @@ class Mvar(Plane):
     __str__=__repr__
 
     ################ Art
-
-    def plot(self,axis=None,**kwargs):
-        import pylab
+    def plot(self, Ax=None, **kwargs):
+        return self._plotters.get(self.ndim,self.plotND)(self,Ax,**kwargs)
         
-        if axis is None:
-            axis=pylab.gca()
+    def plot1D(self, Ax = None, count = 1.0,fill = True, nstd = 5,nsteps = 500, orientation = 'horizontal', **kwargs):
+        xlims = self.bBox(nstd).squeeze()
+        x = numpy.linspace(xlims[0],xlims[1],nsteps)
+        y = count*self.density(x[:,None])
+        
+        horizontal = ['horizontal','h','H']
+        vertical   = ['vertical'  ,'v','V']
+        if orientation in horizontal:
+            (xx,yy) = (y,x)
+            filler = Ax.fill_betweenx
+        elif orientation in vertical:
+            (xx,yy) = (x,y)
+            filler = Ax.fill_between
+        else:
+            raise ValueError(
+                'orientation should be in either (%s) or (%s), not (%s)' % 
+                (horizontal,vertical,orientation)
+            )
 
-        axis.add_artist(self.patch(**kwargs))
+        if Ax is None:
+            Ax=pylab.gca()        
+        
+        if fill:
+            result = filler(x,y,0,**kwargs)
+        else:
+            result = Ax.plot(x,y,**kwargs)
+            
+        return result
+        
+    def plot2D(self,Ax = None, nstd = 2, **kwargs):
+        """
+        plot a :py:meth:`mvar.Mvar.patch`, with axis autoscaling
+        """
+        if Ax is None:
+            Ax=pylab.gca()
+ 
+        bBox = self.bBox(nstd).array()
+        widths = numpy.diff(bBox,axis=0)
+        pads = 0.05*widths*[[-1],[1]]
+        corners = bBox+pads
+        Ax.update_datalim(corners)
+        Ax.autoscale_view()           
+                        
+        return Ax.add_patch(self.patch(**kwargs))
+        
+    def plot3D(self,Ax = None, **kwargs):
+        raise NotImplementedError()
+        
+    def plotND(self,Ax = None, **kwargs):
+        raise NotImplementedError()
+        
+    _plotters={1:plot1D,2:plot2D,3:plot3D}
+    """
+    >>> assert mvar._plotters[1] is mvar.plot1D
+    >>> assert mvar._plotters[2] is mvar.plot2D
+    >>> assert mvar._plotters[3] is mvar.plot3D    
+    """
     
-    def patch(self,nstd=2,alpha='auto',slope=1,minalpha=0.05,**kwargs):
+    def patch(self,nstd=2,alpha='auto',slope=0.5,minalpha=0.05,**kwargs):
         """
         get a matplotlib Ellipse patch representing the Mvar, all \**kwargs are 
         passed on to the call to matplotlib.patches.Ellipse
@@ -2524,9 +2590,13 @@ def binindex(index,numel):
 
 if __name__ == '__main__':
     print 'hello'
+
     #overwrite everything we just created with the copy that was 
-#    #created when we imported mvar; there can only be one.
-#    from testObjects import *
+    #created when we imported mvar; there can only be one.
+    from testObjects import *
+
+    B & A & B == A
+
 #    
 #    A < -Matrix.infs(A.ndim)
 #
