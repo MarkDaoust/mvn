@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
-# mvar documentation build configuration file, created by
-# sphinx-quickstart on Tue Dec 27 08:49:10 2011.
+# Mvar documentation build configuration file, created by
+# sphinx-quickstart on Sun Jan  8 09:37:09 2012.
 #
 # This file is execfile()d with the current directory set to its containing dir.
 #
@@ -44,6 +44,7 @@ extensions = [
      
 ]
 
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
@@ -57,8 +58,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'mvar'
-copyright = u'2011, suki'
+project = u'Mvar'
+copyright = u'2012, suki'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -81,7 +82,7 @@ release = '0'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = []
+exclude_patterns = ['_build']
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
@@ -181,21 +182,26 @@ html_static_path = ['_static']
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'mvardoc'
+htmlhelp_basename = 'Mvardoc'
 
 
 # -- Options for LaTeX output --------------------------------------------------
 
-# The paper size ('letter' or 'a4').
-#latex_paper_size = 'letter'
+latex_elements = {
+# The paper size ('letterpaper' or 'a4paper').
+#'papersize': 'letterpaper',
 
 # The font size ('10pt', '11pt' or '12pt').
-#latex_font_size = '10pt'
+#'pointsize': '10pt',
+
+# Additional stuff for the LaTeX preamble.
+#'preamble': '',
+}
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'mvar.tex', u'mvar Documentation',
+  ('index', 'Mvar.tex', u'Mvar Documentation',
    u'suki', 'manual'),
 ]
 
@@ -213,9 +219,6 @@ latex_documents = [
 # If true, show URL addresses after external links.
 #latex_show_urls = False
 
-# Additional stuff for the LaTeX preamble.
-#latex_preamble = ''
-
 # Documents to append as an appendix to all manuals.
 #latex_appendices = []
 
@@ -228,10 +231,68 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'mvar', u'mvar Documentation',
+    ('index', 'mvar', u'Mvar Documentation',
      [u'suki'], 1)
 ]
 
+# If true, show URL addresses after external links.
+#man_show_urls = False
+
+
+# -- Options for Texinfo output ------------------------------------------------
+
+# Grouping the document tree into Texinfo files. List of tuples
+# (source start file, target name, title, author,
+#  dir menu entry, description, category)
+texinfo_documents = [
+  ('index', 'Mvar', u'Mvar Documentation',
+   u'suki', 'Mvar', 'One line description of project.',
+   'Miscellaneous'),
+]
+
+# Documents to append as an appendix to all manuals.
+#texinfo_appendices = []
+
+# If false, no module index is generated.
+#texinfo_domain_indices = True
+
+# How to display URL addresses: 'footnote', 'no', or 'inline'.
+#texinfo_show_urls = 'footnote'
+
+
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'http://docs.python.org/': None}
+intersphinx_mapping = {
+    'http://docs.python.org/': None,
+    'http://docs.scipy.org/doc/numpy/':None,
+    'http://docs.scipy.org/doc/scipy/reference':None,
+}
+
+autoclass_content = 'both'#'class'#'init'
+
+autodoc_member_order = 'bysource'#'alphabetical'#'groupwise'
+
+autodoc_default_flags = [
+    "show-inheritance",
+    "members",
+    "private-members",
+    #"undoc-members",
+    "special-members",
+    #"inherited-members",
+]
+
+#this isn't working
+#def skip_dict(app, what, name, obj, skip, options):
+#    print '*************'    
+#    print app
+#    print what
+#    print name
+#    print obj
+#    print skip
+#    print options
+#    if name == '__dict__':
+#        return True
+#    return False
+#
+#def setup(app):
+#    app.connect('autodoc-skip-member', skip_dict)
