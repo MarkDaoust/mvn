@@ -1,13 +1,16 @@
 #! /usr/bin/env python
+"""
+************
+Test Objects
+************
+"""
 
-import random
 import pickle
 import numpy
 import os
 
 from mvar import Mvar
 from mvar.matrix import Matrix
-import mvar.helpers as helpers
 
 (dir,_) = os.path.split(os.path.abspath(__file__))
 
@@ -56,7 +59,6 @@ def getObjects(values):
     return objects
 
 def makeObjects(flat=None,ndim=None,seed=None):
-    rand=numpy.random.rand
     randn=numpy.random.randn
     randint=lambda x,y: int(numpy.round((x-0.5)+numpy.random.rand()*(y-x+0.5)))
 
@@ -83,7 +85,7 @@ def makeObjects(flat=None,ndim=None,seed=None):
     elif flat in shapes:
         flat=[item() for item in triple(shapes[flat])]
     elif isinstance(flat,int):
-        flat=triple(x)
+        flat=triple(flat)
     
     assert all(f<=ndim for f in flat), "flatness can't be larger than ndim"
         
@@ -91,10 +93,8 @@ def makeObjects(flat=None,ndim=None,seed=None):
     rvec= lambda n=1,ndim=ndim:Matrix(randn(n,ndim))
 
     A,B,C=[
-        Mvar(
-            mean=5*randn()*rvec(),
-            vectors=5*randn()*rvec(n=ndim-F),
-        ) for F in flat
+        Mvar.rand(ndim,F)
+        for F in flat
     ]
 
 # above we only get real varances, this would change them:

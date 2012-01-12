@@ -475,7 +475,30 @@ class Mvar(Plane):
             mean=Matrix.zeros([1,n]) if mean is None else mean,
             vectors=Matrix.eye(n),
         )
+        
+    @classmethod
+    def rand(cls,ndims=2,flatness = 0):
+        """
+        generate a random multivariate-normal distribution
+        (just for testing purposes, no theoretical basis)
+        """
+        randn = Matrix.randn
+        eye= Matrix.eye
+        
+        return cls.fromData(
+            randn([ndims+1,ndims])*
+            (eye(ndims)+randn([ndims,ndims])/3)+
+            randn()*randn([1,ndims])
+        )
 
+    @decorate.MultiMethod
+    def diag(self,**kwargs):
+        """
+        default multimethod is only reachable with python3
+        """
+        return Mvar(var = self,**kwargs)
+    
+    @diag.register(Mvar)
     def diag(self):
         """
         Return a distribution with the same marginals, but zero correlation 
