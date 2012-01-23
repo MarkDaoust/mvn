@@ -1,5 +1,7 @@
 #! /usr/bin/env python
 
+#from hist
+#todo: cleanup the multimethods so there are no complicated call diagrams
 #todo: mixtures should know: the variance of the mean of the sample is the 
 #      variance of the sample divided by the sample size.given
 #todo: revert-Mvar mul --> Matrix*Mvar == Mvar.fromData(Matrix)*Mvar
@@ -30,7 +32,7 @@
 #todo: understand the EM and K-means algorithms (available in scipy)
 #todo: understand the relationship between these and a hessian matrix.
 #todo: figure out the relationship between these and spherical harmonics
-#todo: investigate higher order cumulants, 'principal cumulant analysis??'
+#todo: investigate higher order cumulants, 'principal cumulant analysis??' <- or not http://www.johndcook.com/blog/2010/09/20/skewness-andkurtosis/
 
 
 """
@@ -156,29 +158,28 @@ class Mvar(Plane):
     def __init__(
         self,
         vectors=Matrix.eye,
-        var=numpy.ones,
-        mean=numpy.zeros,
-        square=True,
-        squeeze=True,
+        var=Matrix.ones,
+        mean=Matrix.zeros,
+        **kwargs
     ):
         """
-        :param vectors:
-        :param var:
-        :param mean:
-        :param square:
-        :param squeeze:
-            
-        Create an Mvar from available attributes.
-        
-        vectors: defaults to zeros
-        var: (variance) defaults to ones
-        mean: defaults to zeros
+        Create an Mvar from the mean and decomposed covariance matrix
         
         >>> assert numpy.multiply(A.vectors.H,A.var)*A.vectors == A.cov
-                
+
+        all parameters should be (real valued and array like) or (callable with 
+        a size tuple as the only argument)
+        
+        :param vectors: *shape=(N,M)*, like eigenvectors but doesn't need to be a unitary matrix
+        :param var: *shape=(M,)*, like eigenvalues, defaults to :py:meth:`Matrix.ones`, 
+        :param mean: *shape=(1,N)*, Mean of the distribution
+        :param ** kwargs: key words are retransmitted to :py:meth:`mvar.Mvar.cannonize`
+        
         set 'square' to false if you know your vectors already form a unitary 
         matrix. set 'squeeze' to false if you don't want small variances, less
         than :py:attr:`mvar.Mvar.atol`, to  automatically removed
+        
+        
         """
         #stack everything to check sizes and automatically inflate any 
         #functions that were passed in
@@ -193,6 +194,7 @@ class Mvar(Plane):
         mean= mean if callable(mean) else numpy.array(mean).flatten()[None,:]
         vectors= vectors if callable(vectors) else Matrix(vectors)
         
+#todo split 'autostack' into 'autoexpand' and 'stack'
         stack=Matrix(helpers.autostack([
             [var,vectors],
             [1  ,mean   ],
@@ -208,6 +210,13 @@ class Mvar(Plane):
             and numpy.isreal(numpy.asarray(self.vectors)).all()
         ),'real numbers only'
 
+        self.cannonize(**kwargs)
+        
+    def cannonize(self,square=True,squeeze=True):
+        """
+        called at the end if :py:meth:`mvar.Mvar.__init__`, used to put the object 
+        into a cannonical form
+        """
         if square:
             self.copy(self.square())
 
@@ -653,29 +662,73 @@ class Mvar(Plane):
         """
         get or set the covariance matrix
         
-        >>> assert A.cov==numpy.multiply(A.vectors.H,A.var)*A.vectors
-        >>> assert abs(A).cov==A.scaled.H*A.scaled
+        >>> assert A.cov == numpy.multiply(A.vectors.H,A.var)*A.vectors
+        >>> assert abs(A).cov == A.scaled.H*A.scaled
+        
+        >>> a = A.copy()
+        >>> a.cov = B.cov
+        >>> assert a.cov == B.cov
+        
+        >>> a = A.copy()
+        >>> #implicit covariance extraction
+        >>> a.cov = B
+        >>> assert a.cov == B.cov        
         """
         def fget(self):
             return numpy.multiply(self.vectors.H,self.var)*self.vectors
 
         def fset(self,cov):
-            new=type(self).fromCov(
-                mean=self.mean,
-                cov=cov,
-            )
-            self.copy(new)
+            if isinstance(cov,Mvar):
+                self.var = cov.var
+                self.vectors = cov.vectors
+            else:
+                new=type(self).fromCov(
+                    mean=self.mean,
+                    cov=cov,
+                )
+                
+                self.copy(new)
 
-#set the correlation matrix? freeze the marginals, set the correlations
     @decorate.prop
     class corr():
         """
-        get the correlation matrix used by the object
+        get or set the correlation matrix used by the object
         
         >>> assert A.corr==(A/A.width()).cov
+        
+        >>> a = A.copy()
+        >>> a.corr = B.corr
+        >>> assert Matrix(a.width()) == A.width()
+        >>> assert Matrix(a.mean) == A.mean
+        >>> assert Matrix(a.corr) == B.corr
+        
+        >>> a = A.copy()
+        >>> # implicit extracton of correlation matrix
+        >>> a.corr = B
+        >>> assert Matrix(a.width()) == A.width()
+        >>> assert Matrix(a.mean) == A.mean
+        >>> assert Matrix(a.corr) == B.corr
+
+        
+        >>> a = A.copy()
+        >>> a.corr = A.corr
+        >>> assert a == A
         """
         def fget(self):
             return (self/self.width()).cov
+          
+        def fset(self,corr):
+            
+            if isinstance(corr,Mvar):
+                corr = corr/corr.width()
+                mean = self.mean
+                self.copy(corr*self.width())
+                self.mean = mean
+            else:
+                new = Mvar.fromCov(corr)*self.width()
+                new.mean = self.mean
+                self.copy(new)
+            
 
     @decorate.prop
     class scaled():
@@ -701,6 +754,7 @@ class Mvar(Plane):
     class ndim():
         """
         get the number of dimensions of the space the mvar exists in
+        
         >>> assert A.ndim==A.mean.size==A.mean.shape[1]
         >>> assert A.ndim==A.vectors.shape[1]
         """
@@ -711,6 +765,7 @@ class Mvar(Plane):
     class rank():
         """
         get the number of dimensions of the space covered by the mvar
+        
         >>> assert A.rank == A.var.size
         >>> assert A.rank == A.vectors.shape[0]
         """
@@ -902,6 +957,7 @@ class Mvar(Plane):
     def pdet(self):
         """
         returns the psudodet of the covariance matrix
+        
         >>> assert A.pdet() == A.var.prod()
         """
         return self.var.prod()
@@ -1322,7 +1378,6 @@ class Mvar(Plane):
             if the objects have different numbers of dimensions, 
             you're doing something wrong
             """
-        
 
         self=self.squeeze()
         other=other.squeeze()
@@ -1382,7 +1437,7 @@ class Mvar(Plane):
         """
         return self.inBox(
             lower,
-            numpy.inf*numpy.ones(self.mean.size)
+            Matrix.infs(self.mean.size)
         )
         
     def __ge__(self,lower):
@@ -1407,7 +1462,7 @@ class Mvar(Plane):
         see :py:meth:`mvar.Mvar.inbox`
         """
         return self.inBox(
-            -numpy.inf*numpy.ones(self.mean.size),
+            -Matrix.infs(self.mean.size),
             upper,
         )
 
@@ -1427,6 +1482,14 @@ class Mvar(Plane):
             
         returns the probability that all components of a sampe are between the 
         lower and upper limits 
+#todo: fix
+        >>> N = 1000
+        >>> data = A.sample(N)
+        >>> limits = A.sample(2)
+        >>> upper = limits.max(0)
+        >>> lower = limits.min(0)
+        >>> assert A.inBox(lower,upper) == (data<upper & data>lower).all(1).sum(dtype = float)/N
+
 
         todo: this could (should) be expanded to return a gaussian mixture, 
               with one (Mvar) component instead of just a  weight...
@@ -1434,21 +1497,31 @@ class Mvar(Plane):
 #todo: vectorize?
         lower=lower-self.mean
         upper=upper-self.mean
+
 #todo: multimethod?
         if isinstance(lower,Mvar):
             l=lower.mean
             lower.mean=Matrix.zeros
             self = self+lower
             lower=l
+            
         if isinstance(upper,Mvar):
             u=upper.mean
             upper.mean=Matrix.zeros
             self = self+upper
             upper=u
 
-        lower=numpy.array(lower).flatten()
-        upper=numpy.array(upper).flatten()
+        
 
+        lower=numpy.array(lower)
+        upper=numpy.array(upper)
+        
+        if (lower == upper).any():
+            return 0.0
+            
+        upper = upper.squeeze()
+        lower = lower.squeeze()
+        
         if self.ndim == 1:
             gaus1D=scipy.stats.norm(0,self.var**0.5)
             return gaus1D.cdf(upper)-gaus1D.cdf(lower)
@@ -1459,7 +1532,7 @@ class Mvar(Plane):
         lower = lower*Iwidth
         upper = upper*Iwidth
 
-        return mvncdf.mvstdnormcdf(lower,upper,self.cov)
+        return mvncdf.mvstdnormcdf(lower,upper,self.corr)
         
     def bBox(self,nstd=2):
         """
@@ -2128,9 +2201,10 @@ class Mvar(Plane):
         """
         :param other:
             
-        >>> assert(numpy.trace(A.outer(B))) == A.inner(B).mean
+        >>> assert A.outer(B).trace() == A.inner(B).mean
+        >>> assert A.outer(B) == B.outer(A).T
         """
-        return numpy.outer(self.mean,other.mean)
+        return Matrix(numpy.outer(self.mean,other.mean))
 
     @decorate.MultiMethod
     def __add__(self,other):
@@ -2227,7 +2301,7 @@ class Mvar(Plane):
         >>> data = A.sample([5,5])
         >>> assert Matrix(A.density(data)) == numpy.exp(-A.entropy(data))
 
-        >>> data = A.sample([10,10])
+        >>> data = (A&B).sample([10,10])
         >>> a=A.density(data)
         >>> b=B.density(data)
         >>> ab = (A&B).density(data)
@@ -2360,7 +2434,7 @@ class Mvar(Plane):
 
         Can be created by re-arranging other functions
 
-            >>> assert A.entropy(B) - B.entropy() == A.KLdiv(B)
+            >>> assert Matrix(A.KLdiv(B)) == A.entropy(B) - B.entropy()
 
             >>> b=B.sample(100)           
             >>> assert Matrix(A.entropy(b) - Mvar.fromData(b).entropy()) == A.KLdiv(b)
@@ -2790,7 +2864,9 @@ if __name__ == '__main__':
     #created when we imported mvar; there can only be one.
     from testObjects import *
 
-    B & A & B == A
+   # B & A & B == A
+
+    print A  > Matrix.infs(2)
 
 #    
 #    A < -Matrix.infs(A.ndim)
