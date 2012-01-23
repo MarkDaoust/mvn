@@ -273,7 +273,7 @@ autoclass_content = 'both'#'class'#'init'
 autodoc_member_order = 'bysource'#'alphabetical'#'groupwise'
 
 autodoc_default_flags = [
-    "show-inheritance",
+    #"show-inheritance",
     "members",
     "private-members",
     #"undoc-members",

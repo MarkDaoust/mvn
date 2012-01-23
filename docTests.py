@@ -29,6 +29,7 @@ if __name__=='__main__':
         testFixture=testObjects.makeObjects()
     
     suite.addTests(getTests(mvar,testFixture))
+    
 
 
     unittest.TextTestRunner().run(suite)

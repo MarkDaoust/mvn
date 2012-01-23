@@ -53,46 +53,68 @@ a wrapper for scipy.stats.kde.mvndst
 
 >>> scipy.stats.kde.mvn.mvndst([0.0,0.0],[10.0,10.0],[0,0],[0.5])
 (2e-016, 1.0, 0)
+>>>
 >>> scipy.stats.kde.mvn.mvndst([0.0,0.0],[100.0,100.0],[0,0],[0.0])
 (2e-016, 1.0, 0)
+>>>
 >>> scipy.stats.kde.mvn.mvndst([0.0,0.0],[1.0,1.0],[0,0],[0.0])
 (2e-016, 0.70786098173714096, 0)
+>>>
 >>> scipy.stats.kde.mvn.mvndst([0.0,0.0],[0.001,1.0],[0,0],[0.0])
 (2e-016, 0.42100802096993045, 0)
+>>>
 >>> scipy.stats.kde.mvn.mvndst([0.0,0.0],[0.001,10.0],[0,0],[0.0])
 (2e-016, 0.50039894221391101, 0)
+>>>
 >>> scipy.stats.kde.mvn.mvndst([0.0,0.0],[0.001,100.0],[0,0],[0.0])
 (2e-016, 0.50039894221391101, 0)
+>>>
 >>> scipy.stats.kde.mvn.mvndst([0.0,0.0],[0.01,100.0],[0,0],[0.0])
 (2e-016, 0.5039893563146316, 0)
+>>>
 >>> scipy.stats.kde.mvn.mvndst([0.0,0.0],[0.1,100.0],[0,0],[0.0])
 (2e-016, 0.53982783727702899, 0)
+>>>
 >>> scipy.stats.kde.mvn.mvndst([0.0,0.0],[0.1,100.0],[2,2],[0.0])
 (2e-016, 0.019913918638514494, 0)
+>>>
 >>> scipy.stats.kde.mvn.mvndst([0.0,0.0],[0.0,0.0],[0,0],[0.0])
 (2e-016, 0.25, 0)
+>>>
 >>> scipy.stats.kde.mvn.mvndst([0.0,0.0],[0.0,0.0],[-1,0],[0.0])
 (2e-016, 0.5, 0)
+>>>
 >>> scipy.stats.kde.mvn.mvndst([0.0,0.0],[0.0,0.0],[-1,0],[0.5])
 (2e-016, 0.5, 0)
+>>>
 >>> scipy.stats.kde.mvn.mvndst([0.0,0.0],[0.0,0.0],[0,0],[0.5])
 (2e-016, 0.33333333333333337, 0)
+>>>
 >>> scipy.stats.kde.mvn.mvndst([0.0,0.0],[0.0,0.0],[0,0],[0.99])
 (2e-016, 0.47747329317779391, 0)
 '''
 import numpy as np
 import scipy
-
 from scipy.stats.mvn import mvndst
 
-informcode = {
-    0: 'normal completion with ERROR < EPS',
-    1: '''completion with ERROR > EPS and MAXPTS function values used;
-          increase MAXPTS to decrease ERROR;''',
-    2: 'N > 500 or N < 1'
-}
+from mvar.matrix import Matrix
 
-def mvstdnormcdf(lower, upper, corrcoef, **kwds):
+class MvnDstError(BaseException):
+    informcode = {
+        0: 'normal completion with ERROR < EPS',
+        1: '''completion with ERROR > EPS and MAXPTS function values used;
+              increase MAXPTS to decrease ERROR''',
+        2: 'N > 500 or N < 1'
+    }
+
+    def __init__(self,informCode,error,*args,**kwargs):
+        message = ''.join([
+            self.informcode[informCode],
+            ', ERROR = %s' % error
+        ])
+        BaseException.__init__(self,message,*args,**kwargs)
+
+def mvstdnormcdf(lower, upper, corrcoef,maxpts = None, **kwds):
     '''standardized multivariate normal cumulative distribution function
 
     This is a wrapper for scipy.stats.kde.mvn.mvndst which calculates
@@ -144,15 +166,22 @@ def mvstdnormcdf(lower, upper, corrcoef, **kwds):
     >>> print mvstdnormcdf([-np.inf,-np.inf], [0.0,np.inf], 0.5)
     0.5
     >>> corr = [[1.0, 0, 0.5],[0,1,0],[0.5,0,1]]    
-    >>> print mvstdnormcdf([-np.inf,-np.inf,-100.0], [0.0,0.0,0.0], corr, abseps=1e-6)
+    >>> print mvstdnormcdf(
+    ...    [-np.inf,-np.inf,-100.0], 
+    ...    [0.0,0.0,0.0], 
+    ...    corr, abseps=1e-6
+    ... )
     0.166666399198
     >>> print mvstdnormcdf([-np.inf,-np.inf,-100.0],[0.0,0.0,0.0],corr, abseps=1e-8)
     something wrong completion with ERROR > EPS and MAXPTS function values used;
                         increase MAXPTS to decrease ERROR; 1.048330348e-006
     0.166666546218
-    >>> print mvstdnormcdf([-np.inf,-np.inf,-100.0],[0.0,0.0,0.0], corr,
-                            maxpts=100000, abseps=1e-8)
-    0.166666588293
+    >>> assert mvstdnormcdf(
+    ...    [-np.inf,-np.inf,-100.0],
+    ...    [0.0,0.0,0.0],
+    ...    corr,maxpts=100000, abseps=1e-8
+    ... ) == Matrix(0.166666588293)
+    
     
     '''
     n = len(lower)
@@ -182,29 +211,24 @@ def mvstdnormcdf(lower, upper, corrcoef, **kwds):
     else:
         raise ValueError, 'corrcoef has incorrect dimension'
 
-    if not 'maxpts' in kwds:
-        if n >2:
-            kwds['maxpts'] = 10000*n
+    if maxpts is None:
+        maxpts = 10000*n
+
 
     lowinf = np.isneginf(lower)
     uppinf = np.isposinf(upper)
     infin = 2.0*np.ones(n)
     
-    np.putmask(infin,lowinf,0)# infin.putmask(0,lowinf)
-    np.putmask(infin,uppinf,1) #infin.putmask(1,uppinf)
-    #this has to be last
-    np.putmask(infin,lowinf*uppinf,-1)
+    infin[lowinf] = 0
+    infin[uppinf] = 1
+    infin[lowinf & uppinf] = -1
 
-##    #remove infs
-##    np.putmask(lower,lowinf,-100)# infin.putmask(0,lowinf)
-##    np.putmask(upper,uppinf,100) #infin.putmask(1,uppinf)
+
+    error, cdfvalue, inform = mvndst(lower,upper,infin,correl,maxpts,**kwds)
     
-    #print lower,',',upper,',',infin,',',correl
-    #print correl.shape
-    #print kwds.items()
-    error, cdfvalue, inform = mvndst(lower,upper,infin,correl,**kwds)
     if inform:
-        print 'something wrong', informcode[inform], error
+        raise MvnDstError(inform, error)
+        
     return cdfvalue
 
 

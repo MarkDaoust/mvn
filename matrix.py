@@ -5,6 +5,8 @@ Modified Numpy Matrix Class
 ***************************
 """
 
+#todo: update 'close' to match numpy's implementation for all_close  
+
 import numpy
 import itertools
 
@@ -48,6 +50,9 @@ class Matrix(numpy.matrix):
     sign = helpers.sign
 
     def __new__(cls,data,dtype=None,copy=True):
+        """
+        !!
+        """
         self=numpy.matrix(data,dtype,copy)
         self.__class__=cls
         return self
@@ -68,14 +73,10 @@ class Matrix(numpy.matrix):
         
             >>> assert Matrix([[0,0],[0,0],[0,0]]) == numpy.zeros
             >>> assert Matrix([[1,0],[0,1]]) == Matrix.eye
- 
         """
         other = Matrix(other)
-        if self.shape==other.shape:
-            return numpy.allclose(self,other,self.rtol,self.atol)
-        else:
-            raise ValueError('shape miss-match')
-
+        return numpy.allclose(self,other,self.rtol,self.atol)
+        
     @expandCallable
     def __add__(self,other):
         """
@@ -86,6 +87,8 @@ class Matrix(numpy.matrix):
         
     def __ne__(self,other):
         """
+        inverse of __eq__
+        
         return not (self == other)
         """
         return not (self ==  other)
@@ -141,6 +144,19 @@ class Matrix(numpy.matrix):
         see: :py:func:`numpy.array`
         """
         return numpy.array(self)
+
+    @expandCallable        
+    def approx(self,other = None):
+        """
+        same function as :py:func:`numpy.allclose`, but elementwise
+        """
+        if other is None :
+            delta = numpy.abs(self)
+            other = self
+        else:
+            delta = numpy.abs(self-other)
+        
+        return (delta < self.atol+self.rtol*numpy.abs(other))
 
     @classmethod
     def eye(cls,*args,**kwargs):

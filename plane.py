@@ -1,4 +1,9 @@
 #! /usr/bin/env python
+"""
+****************
+Plane Base Class
+****************
+"""
 import numpy
 
 import mvar.helpers as helpers

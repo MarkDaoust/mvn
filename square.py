@@ -46,7 +46,11 @@ def square(vectors,var=None,full=False):
         #square up the infinite vectors
         #Ivar is unused
 
-        (Ivar,Ivectors)=_subSquare(vectors=vectors[infinite,:],var=numpy.ones_like(var[infinite]),full=True)
+        (Ivar,Ivectors)=_subSquare(
+            vectors=vectors[infinite,:],
+            var=numpy.ones_like(var[infinite]),
+            full=True
+        )
 
         #take the finite variances and vectors
         var=var[~infinite]

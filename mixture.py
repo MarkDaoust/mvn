@@ -1,4 +1,9 @@
 #! /usr/bin/env python
+"""
+*************
+Mixture Class
+*************
+"""
 
 import numpy
 import collections
