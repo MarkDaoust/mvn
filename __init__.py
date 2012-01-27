@@ -113,16 +113,16 @@ class Mvar(Plane):
     The & operator does a baysian inference update (like the kalman filter 
     update step).
     
-    >>> result = prior & evidence                                #doctest: +SKIP
+    >>> result = prior & evidence                                               #doctest: +SKIP
 
     This considerably simplifies some manipulations, kalman filtering, 
     for example becomes: 
             
-    >>> state[t+1] = (state[t]*STM + noise) & measurment         #doctest: +SKIP
+    >>> state[t+1] = (state[t]*STM + noise) & measurment                        #doctest: +SKIP
         
     Sensor fusion, for uncorrelated sensors reduces to:    
             
-    >>> result = measurment1 & measurment2 & measurment3         #doctest: +SKIP
+    >>> result = measurment1 & measurment2 & measurment3                        #doctest: +SKIP
         
     
     Attributes:
@@ -246,6 +246,24 @@ class Mvar(Plane):
         
         return something
     
+    @classmethod
+    def sum(cls,data,weights=None):
+        """
+        :param data:
+        :param weights:
+        """
+        N = cls._getN(data,weights)
+        self = cls.fromData(data,weights)
+        return self*N
+
+    @classmethod
+    def mean(cls,data,weights=None):
+        """
+        :param data:
+        :param weights:
+        """
+        N = cls._getN(data,weights)
+        return cls.sum(data,weights)*[1.0/N]
     
     @classmethod
     def _getN(cls,data,weights):
@@ -482,6 +500,7 @@ class Mvar(Plane):
             square=False,
             **kwargs
         )
+
 
     @classmethod
     def zeros(cls,n=1,mean=Matrix.zeros):
@@ -760,6 +779,17 @@ class Mvar(Plane):
         """
         def fget(self):
             return self.mean.size
+            
+    def __nonzero__(self):
+        """
+        True if not empty
+        
+        >>> assert A
+        >>> assert bool(A.ndim) == bool(A.ndim)
+        >>> assert A[:0]
+        >>> assert not A[:,:0]
+        """
+        return bool(self.ndim)
 
     @decorate.prop
     class rank():
@@ -1318,7 +1348,11 @@ class Mvar(Plane):
         >>> assert X == XY[:,0]
         >>> assert Y == XY[:,1]
         """
-        PCA,DIMS = index
+        if isinstance(index,tuple):
+            PCA,DIMS = index
+        else:
+            PCA = index
+            DIMS = slice(None)
          
         DIMS = numpy.asarray(DIMS) if hasattr(DIMS,'__iter__') else DIMS
         PCA  = numpy.asarray( PCA) if hasattr(PCA ,'__iter__') else PCA
@@ -1475,23 +1509,28 @@ class Mvar(Plane):
         """
         return self>lower
 
-    def inBox(self,lower,upper):
+    def inBox(self,lower,upper,**kwargs):
         """
         :param lower:
         :param upper:
             
         returns the probability that all components of a sampe are between the 
         lower and upper limits 
+        
+#todo: handle nan's
+
 #todo: fix
+
         >>> N = 1000
         >>> data = A.sample(N)
         >>> limits = A.sample(2)
         >>> upper = limits.max(0)
         >>> lower = limits.min(0)
-        >>> assert A.inBox(lower,upper) == (data<upper & data>lower).all(1).sum(dtype = float)/N
+        >>> print Mvar.mean(((data<upper) & (data>lower)).all(1))
+        >>> print A.inBox(lower,upper)
+        >>> assert A.inBox(lower,upper) == Mvar.mean(((data<upper) & (data>lower)).all(1))
 
-
-        todo: this could (should) be expanded to return a gaussian mixture, 
+#todo: this could be expanded to return a gaussian mixture, 
               with one (Mvar) component instead of just a  weight...
         """
 #todo: vectorize?
@@ -1511,8 +1550,6 @@ class Mvar(Plane):
             self = self+upper
             upper=u
 
-        
-
         lower=numpy.array(lower)
         upper=numpy.array(upper)
         
@@ -1521,6 +1558,33 @@ class Mvar(Plane):
             
         upper = upper.squeeze()
         lower = lower.squeeze()
+        
+        upInfs = numpy.isinf(upper)
+        lowInfs = numpy.isinf(lower)        
+        bothInfs = (upInfs & lowInfs)
+        
+        if bothInfs.any():
+                
+            #But any time the inf in upper is negative, the sign 
+            #is inverted, so count the inversions
+            infFlips =(-1.0)**(
+                numpy.sign(upper[bothInfs])< 
+                numpy.sign(lower[bothInfs])
+            ).sum()
+            
+            #if we've made it here, any slots that are both inf 
+            #have different signs, so it's like we're integrating 
+            #the marginal
+            self = self[:,~bothInfs]
+            upper = upper[~bothInfs]        
+            lower = lower[~bothInfs]
+            
+            if not self:
+                return infFlips
+                
+        else:
+            infFlips = 1.0 
+        
         
         if self.ndim == 1:
             gaus1D=scipy.stats.norm(0,self.var**0.5)
@@ -1532,7 +1596,7 @@ class Mvar(Plane):
         lower = lower*Iwidth
         upper = upper*Iwidth
 
-        return mvncdf.mvstdnormcdf(lower,upper,self.corr)
+        return infFlips*mvncdf.mvstdnormcdf(lower,upper,self.corr,**kwargs)
         
     def bBox(self,nstd=2):
         """

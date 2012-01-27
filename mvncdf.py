@@ -50,48 +50,52 @@ a wrapper for scipy.stats.kde.mvndst
 *
 
 
-
->>> scipy.stats.kde.mvn.mvndst([0.0,0.0],[10.0,10.0],[0,0],[0.5])
-(2e-016, 1.0, 0)
+>>> eps = 2e-16
+>>> exception = 0
+>>> mvndst = scipy.stats.kde.mvn.mvndst
+>>> zeros = [0,0]
 >>>
->>> scipy.stats.kde.mvn.mvndst([0.0,0.0],[100.0,100.0],[0,0],[0.0])
-(2e-016, 1.0, 0)
+>>> assert ((eps,Matrix(1.0),exception) ==
+...     mvndst(zeros,[10.0,10.0],zeros,[0.5]))
 >>>
->>> scipy.stats.kde.mvn.mvndst([0.0,0.0],[1.0,1.0],[0,0],[0.0])
-(2e-016, 0.70786098173714096, 0)
+>>> assert ((eps,Matrix(1.0),exception) ==
+...     mvndst(zeros,[100.0,100.0],zeros,[0.0]))
 >>>
->>> scipy.stats.kde.mvn.mvndst([0.0,0.0],[0.001,1.0],[0,0],[0.0])
-(2e-016, 0.42100802096993045, 0)
+>>> assert ((eps,Matrix(0.70786098173714096),exception) ==
+...     mvndst(zeros,[1.0,1.0],zeros,[0.0]))
 >>>
->>> scipy.stats.kde.mvn.mvndst([0.0,0.0],[0.001,10.0],[0,0],[0.0])
-(2e-016, 0.50039894221391101, 0)
+>>> assert ((eps,Matrix(0.42100802096993045),exception) ==
+...     mvndst(zeros,[0.001,1.0],zeros,[0.0]))
 >>>
->>> scipy.stats.kde.mvn.mvndst([0.0,0.0],[0.001,100.0],[0,0],[0.0])
-(2e-016, 0.50039894221391101, 0)
+>>> assert ((eps,Matrix(0.50039894221391101),exception) ==
+...     mvndst(zeros,[0.001,10.0],zeros,[0.0]))
 >>>
->>> scipy.stats.kde.mvn.mvndst([0.0,0.0],[0.01,100.0],[0,0],[0.0])
-(2e-016, 0.5039893563146316, 0)
+>>> assert ((eps,Matrix(0.50039894221391101),exception) ==
+...     mvndst(zeros,[0.001,100.0],zeros,[0.0]))
 >>>
->>> scipy.stats.kde.mvn.mvndst([0.0,0.0],[0.1,100.0],[0,0],[0.0])
-(2e-016, 0.53982783727702899, 0)
+>>> assert ((eps,Matrix(0.5039893563146316),exception) ==
+...     mvndst(zeros,[0.01,100.0],zeros,[0.0]))
 >>>
->>> scipy.stats.kde.mvn.mvndst([0.0,0.0],[0.1,100.0],[2,2],[0.0])
-(2e-016, 0.019913918638514494, 0)
+>>> assert ((eps,Matrix(0.53982783727702899),exception) ==
+...     mvndst(zeros,[0.1,100.0],zeros,[0.0]))
 >>>
->>> scipy.stats.kde.mvn.mvndst([0.0,0.0],[0.0,0.0],[0,0],[0.0])
-(2e-016, 0.25, 0)
+>>> assert ((eps,Matrix(0.019913918638514494),exception) ==
+...     mvndst(zeros,[0.1,100.0],[2,2],[0.0]))
 >>>
->>> scipy.stats.kde.mvn.mvndst([0.0,0.0],[0.0,0.0],[-1,0],[0.0])
-(2e-016, 0.5, 0)
+>>> assert ((eps,Matrix(0.25),exception) ==
+...     mvndst(zeros,zeros,zeros,[0.0]))
 >>>
->>> scipy.stats.kde.mvn.mvndst([0.0,0.0],[0.0,0.0],[-1,0],[0.5])
-(2e-016, 0.5, 0)
+>>> assert ((eps,Matrix(0.5),exception) ==
+...     mvndst(zeros,zeros,[-1,0],[0.0]))
 >>>
->>> scipy.stats.kde.mvn.mvndst([0.0,0.0],[0.0,0.0],[0,0],[0.5])
-(2e-016, 0.33333333333333337, 0)
+>>> assert ((eps,Matrix(0.5),exception) ==
+...     mvndst(zeros,zeros,[-1,0],[0.5]))
 >>>
->>> scipy.stats.kde.mvn.mvndst([0.0,0.0],[0.0,0.0],[0,0],[0.99])
-(2e-016, 0.47747329317779391, 0)
+>>> assert ((eps,Matrix(0.33333333333333337),exception) ==
+...     mvndst(zeros,zeros,zeros,[0.5]))
+>>>
+>>> assert ((eps,Matrix(0.47747329317779391),exception) ==
+...     mvndst(zeros,zeros,zeros,[0.99]))
 '''
 import numpy as np
 import scipy
@@ -166,21 +170,27 @@ def mvstdnormcdf(lower, upper, corrcoef,maxpts = None, **kwds):
     >>> print mvstdnormcdf([-np.inf,-np.inf], [0.0,np.inf], 0.5)
     0.5
     >>> corr = [[1.0, 0, 0.5],[0,1,0],[0.5,0,1]]    
-    >>> print mvstdnormcdf(
+    >>> assert Matrix(0.166666399198) == mvstdnormcdf(
     ...    [-np.inf,-np.inf,-100.0], 
     ...    [0.0,0.0,0.0], 
     ...    corr, abseps=1e-6
     ... )
-    0.166666399198
-    >>> print mvstdnormcdf([-np.inf,-np.inf,-100.0],[0.0,0.0,0.0],corr, abseps=1e-8)
-    something wrong completion with ERROR > EPS and MAXPTS function values used;
-                        increase MAXPTS to decrease ERROR; 1.048330348e-006
-    0.166666546218
-    >>> assert mvstdnormcdf(
+    
+    >>> 
+    >>> assert Matrix(0.166666588293) == mvstdnormcdf(
+    ...     [-np.inf,-np.inf,-100.0],
+    ...     [    0.0,    0.0,   0.0],
+    ...     corr, abseps=1e-8)                                                  #doctest: +IGNORE_EXCEPTION_DETAIL                                                 
+    Traceback (most recent call last):                                         
+    ...
+    MvnDstError: completion with ERROR > EPS and MAXPTS function values used;
+                 increase MAXPTS to decrease ERROR, ERROR = 1.8253048422e-07   
+    
+    >>> assert Matrix(0.166666588293) == mvstdnormcdf(
     ...    [-np.inf,-np.inf,-100.0],
     ...    [0.0,0.0,0.0],
-    ...    corr,maxpts=100000, abseps=1e-8
-    ... ) == Matrix(0.166666588293)
+    ...    corr,maxpts=1000000, abseps=1e-8
+    ... )
     
     
     '''
