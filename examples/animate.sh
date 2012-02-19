@@ -1,1 +1,1 @@
-convert -limit memory 32 -delay 100 *.png test3.gif
+convert -limit memory 32 -delay 100 art/*.png test3.gif

@@ -1,3 +1,9 @@
+"""
+************************
+verious helper functions
+************************
+"""
+
 import itertools
 import copy
 import operator

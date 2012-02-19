@@ -3,162 +3,214 @@ print 'starting'
 
 import os
 import sys
-import time
 import numpy
 
 import matplotlib
-matplotlib.use('cairo')
+#matplotlib.use('cairo')
+from matplotlib.gridspec import GridSpec
+from matplotlib.ticker import MultipleLocator
 
-from pylab import *
-from mvar import Mvar,Matrix
+import pylab
 
+from mvar import Mvar
+from mvar.matrix import Matrix
 
-if len(sys.argv)>1:
-    seed=int(sys.argv[1])
-else:
-    seed=numpy.random.randint(10000)
-    print 'seed: %d' % seed
+import mvar.plotTools
 
-numpy.random.seed(seed)
+from collections import OrderedDict
 
-try:
-    os.stat('art')
-except OSError:
-    os.mkdir('art')
+colors = OrderedDict([
+    ['actual'       ,[1,1,0]],
+    ['updated'      ,[0,0,1]],
+    ['noise'        ,[1,0,0]],
+    ['updated+noise',[1,0,1]],
+    ['sensor'       ,[0,1,0]],
+    ['filter result',[0,1,1]],
+])
+    
 
-open('art/seed','w').write(str(seed))
+actualParams={
+    'marker':'*',
+    'markersize':20,
+    'color':colors['actual'],
+}
 
-class publisher(object):    
-    def __init__(self,formats=('png','svg')):
+class Publisher(object):    
+    def __init__(self,targetDir,formats=('png','svg')):
         self.n=0
         self.formats=formats
+        self.targetDir=targetDir
+        
+        try:
+            os.stat(self.targetDir)
+        except OSError:
+            os.mkdir(self.targetDir)
 
-    def publish(self):    
-        xticks(range(-20,20,5))
-        yticks(range(-20,20,5))
-        grid(True)
 
-        xlim(-2.5,17.5)
-        xlabel('Position')
-        ylim(-2.5,12.5)
-        ylabel('Velocity')
-
-        E=lambda **kwargs:matplotlib.patches.Ellipse([0,0],width=0,height=0,**kwargs)
-
-        bottom_left=3
-        legend(
-            [
-                E(fc=[1,0,1]),
-                E(fc=[0,1,0]),
-                E(fc=[1,0,0]),
-                E(fc=[1,1,0]),
-                E(fc=[0,0,1]),
-                E(fc=[0,1,1]),
-            ],[
-                'Actual',
-                'Updated',
-                'Noise',
-                'Updated + Noise',
-                'Measurment',
-                'Filter Result'                
-            ],
-            loc='upper left'
-        )
+    def publish(self,fig):    
         for format in self.formats:
-            savefig("art/%0.3d.%s" % (self.n,format),format=format)
+            fig.savefig("%s/%0.3d.%s" % (self.targetDir,self.n,format),format=format)
         self.n+=1
 
-def do(real,filtered,sensor,noise,transform):
-    #update the system
-    real=real*transform
-    filtered=filtered*transform
-
-    plot(real[:,0],real[:,1],'*',color=[1,0,1],ms=20)
-    ax.add_artist(filtered.patch(minalpha=0.1,slope=0.5,facecolor=[0,1,0]))
-    title('Update')
-    P.publish()
-
-    ax.clear()
-
-    ax.add_artist(filtered.patch(minalpha=0.1,slope=0.5,facecolor=[0,1,0])) 
-
-    real=noise+real
-    filtered=noise+filtered
-
-    ax.add_artist(real.patch(minalpha=0.1,slope=0.5,facecolor=[1,0,0]))
-    ax.add_artist(filtered.patch(minalpha=0.1,slope=0.5,facecolor=[1,0,0]))
+def seed(path):
+    if len(sys.argv)>1:
+        seed=int(sys.argv[1])
+    else:
+        seed=numpy.random.randint(10000)
+        print 'seed: %d' % seed
     
-    real=real.sample()
+    numpy.random.seed(seed)
 
-    plot(real[:,0],real[:,1],'*',color=[1,0,1],ms=20)
+    open('%s/seed' % path,'w').write(str(seed))
+
+def drawLegend(ax):
+    patch=lambda color:matplotlib.patches.Ellipse([0,0],width=0,height=0,facecolor = color)
     
-    title('Add process noise')    
-    P.publish()
+    patches = [patch(color) for [name,color] in colors.iteritems()]
 
-    ax.clear()
+    ax.legend(
+        patches,list(colors.keys()),
+        loc='lower right'
+    )
+    
+def newAx(fig,transform = Matrix.eye(2)):
+    fig.clear()
 
-    plot(real[:,0],real[:,1],'*',color=[1,0,1],ms=20)
-    ax.add_artist(filtered.patch(minalpha=0.1,slope=0.5,facecolor=[1,1,0]))
-    title('Add process noise')    
-    P.publish()
+    axgrid = GridSpec(1,1)
+    
+    #get axes
+    ax = pylab.subplot(
+        axgrid[:,:],
+        projection = 'custom', 
+        transform = transform,
+    )
+    
+    ax.autoscale(False)
 
-    measure=sensor.measure(real)
-    ax.add_artist(measure.patch(minalpha=0.1,slope=0.5,facecolor=[0,0,1]))
-    title('Measure')
-    P.publish()
+#    ax.set_xticks(numpy.arange(-10.,35.,5.))
+#    ax.set_yticks(numpy.arange(-10.,35.,5.))
+    
+    ax.set_xlim([-5,20])
+    ax.set_ylim([-5,20])    
+    
+    ax.xaxis.set_major_locator(MultipleLocator(5))
 
-    filtered=filtered&measure
-    ax.add_artist(filtered.patch(minalpha=0.1,slope=0.5,facecolor=[0,1,1]))
-    title('Merge')    
-    P.publish()
-
-    ax.clear()
-    plot(real[:,0],real[:,1],'*',color=[1,0,1],ms=20)
-    ax.add_artist(filtered.patch(minalpha=0.1,slope=0.5,facecolor=[0,1,1]))
-    title('Merge')    
-    P.publish()
-
-    ax.clear()
-
-    return real,filtered 
-
+    ax.grid('on')
+    drawLegend(ax)    
+    
+    return ax
 
 if __name__=='__main__':
+
+
+    ## figure setup
+    
+    #directory for resulting figures
+    path = 'kalman'    
+    #seed the rng so results are reproducible.
+    seed(path)
+    #create publisher
+    P = Publisher(path)
+    #create figure
+    fig = pylab.figure(figsize = (7,7))
+
+
+    ## kalman filter parameters
+
     #the actual, hidden state
-    real=numpy.array([[0,4]])
+    actual=numpy.array([[0,10]])
 
     #the sensor
-    sensor=Mvar(vectors=[[1,0],[0,1]],var=[1,numpy.Inf])
+    sensor=Mvar(vectors=[[1,0],[0,1]],var=[1,numpy.inf])
 
     #the system noise
-    noise=Mvar(vectors=[[1,-0.2],[0.2,1]],var=[0.25,1])
+    noise=Mvar(vectors=[[1,-0.2],[0.2,1]],var=numpy.array([0.5,1])**2)
 
     #the shear transform to move the system forward
-    transform=Matrix([[1,0],[1,1]])
+    transform=Matrix([[1,0],[0.25,1]])
 
-    filtered=sensor.measure(real)
+    filtered=sensor.measure(actual)
 
-    P=publisher()
 
-    #create the figure and axis
-    F=figure()
-    ax=F.add_subplot(1,1,1,aspect='equal')
+    ## initial plot
 
+    ax = newAx(fig)
+    
     #plot the initial actual position
-    plot(real[:,0],real[:,1],'*',color=[1,0,1],ms=20)
-    title('Kalman Filtering: Start')
-    note=P.publish()
+    ax.plot(actual[:,0],actual[:,1],**actualParams)
+    ax.set_title('Kalman Filtering: Start')
+    P.publish(fig)
+
+
 
     #measure the actual position, and plot the measurment
-    ax.add_artist(filtered.patch(minalpha=0.1,slope=0.5,facecolor=[0,0,1]))
-    title('Initialize to first measurment')
-    P.publish()
-    ax.clear()
+    filtered.plot(facecolor=colors['sensor'])
+    ax.set_title('Initialize to first measurment')
+    P.publish(fig)
 
+    for n in range(8):
+ 
+        ## plot immediately after the step foreward
 
-    (real,filtered) =do(real,filtered,sensor,noise,transform)
-    (real,filtered) =do(real,filtered,sensor,noise,transform)
-    (real,filtered) =do(real,filtered,sensor,noise,transform)
-    (real,filtered) =do(real,filtered,sensor,noise,transform)
-    (real,filtered) =do(real,filtered,sensor,noise,transform)
-    (real,filtered) =do(real,filtered,sensor,noise,transform)
+        #create a transformed axis        
+        ax = newAx(fig,transform)
+        
+        #update the system
+        actual=actual*transform
+        filtered=filtered*transform
+    
+        #plot the updated system
+        ax.plot(actual[:,0],actual[:,1],**actualParams)
+        filtered.plot(facecolor=colors['updated'])
+        ax.set_title('Update')
+        P.publish(fig)
+
+        #realign the axes
+        ax = newAx(fig)
+    
+        #re-plot the filter result
+        filtered.plot(facecolor=colors['updated']) 
+
+        #add noise and plot the actual and filtered values
+        actual=noise+actual
+        filtered=noise+filtered
+               
+        actual.plot(facecolor=colors['noise'])
+        filtered.plot(facecolor=colors['noise'])
+
+        # sample the position of the actual distribution, to find it's new position
+        actual=actual.sample()
+        ax.plot(actual[:,0],actual[:,1],**actualParams)
+        
+        ax.set_title('Add process noise')    
+        P.publish(fig)
+
+        ax = newAx(fig)
+
+        ax.plot(actual[:,0],actual[:,1],**actualParams)
+        filtered.plot(facecolor=colors['updated+noise'])
+        ax.set_title('Add process noise')    
+        P.publish(fig)
+
+        measure=sensor.measure(actual)
+        measure.plot(facecolor=colors['sensor'])
+        ax.set_title('Measure')
+        P.publish(fig)
+        
+        
+        filtered=filtered&measure
+        filtered.plot(facecolor=colors['filter result'])
+        ax.set_title('Merge')    
+        P.publish(fig)
+
+    
+        ax = newAx(fig)
+        
+        ax.plot(actual[:,0],actual[:,1],**actualParams)
+        filtered.plot(facecolor=colors['filter result'])
+        ax.set_title('Merge')    
+        P.publish(fig)
+
+#    os.system('convert -limit memory 32 -delay 100 %s/*.png kalman.gif' % path)    
+    os.system('convert -delay 100 %s/*.png kalman.gif' % path)
+

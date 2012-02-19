@@ -67,6 +67,9 @@ They don't prove I'm right, but only that I'm being consistant.
 """
 ############  imports
 
+## builtin
+import functools
+
 ## 3rd party
 import numpy
 numpy.seterr(all = 'ignore')
@@ -92,6 +95,8 @@ import decorate
 from plane import Plane
 
 import mvncdf
+
+__all__ = ['Mvar']
 
 Mvar=decorate.underConstruction('Mvar')
 Mvar.T=decorate.underConstruction('Mvar.T')
@@ -559,21 +564,35 @@ class Mvar(Plane):
         )
         
     @classmethod
-    def rand(cls,ndims=2,flatness = 0):
+    def rand(cls,shape = 2):
         """
-        :param ndims:
-        :param flatness:
+        :param shape:
             
         generate a random multivariate-normal distribution
         (just for testing purposes, no theoretical basis)
+        
+        >> M = Mvar.rand(A.shape)
+        >> assert M.shape = A.shape
+            
+        .. plot:: ./examples/rand.py main
+
         """
+        if hasattr(shape,'__iter__'):
+            height,ndims = shape
+        else:
+            height,ndims = shape,shape   
+            
+        assert height <= ndims
+        
         randn = Matrix.randn
         eye= Matrix.eye
         
+        
+        
         return cls.fromData(
-            randn([ndims+1,ndims])*
+            randn([height+1,ndims])*
             (eye(ndims)+randn([ndims,ndims])/3)+
-            randn()*randn([1,ndims])
+            3*randn()*randn([1,ndims])
         )
 
 #something is wrong here
@@ -676,8 +695,9 @@ class Mvar(Plane):
 
     
     ############ setters/getters -> properties
+
     @decorate.prop
-    class cov():
+    class cov(object):
         """
         get or set the covariance matrix
         
@@ -709,7 +729,7 @@ class Mvar(Plane):
                 self.copy(new)
 
     @decorate.prop
-    class corr():
+    class corr(object):
         """
         get or set the correlation matrix used by the object
         
@@ -750,7 +770,7 @@ class Mvar(Plane):
             
 
     @decorate.prop
-    class scaled():
+    class scaled(object):
         """
         get the vectors, scaled by the standard deviations. 
         Useful for transforming from unit-eigen-space, to data-space
@@ -762,7 +782,7 @@ class Mvar(Plane):
         
     
     @decorate.prop
-    class flat():
+    class flat(object):
         """
         >>> assert bool(A.flat) == bool(A.vectors.shape[1] > A.vectors.shape[0]) 
         """
@@ -770,7 +790,7 @@ class Mvar(Plane):
             return max(self.vectors.shape[1] - self.vectors.shape[0],0)
 
     @decorate.prop
-    class ndim():
+    class ndim(object):
         """
         get the number of dimensions of the space the mvar exists in
         
@@ -955,8 +975,9 @@ class Mvar(Plane):
 
         see also: Mvar.chain
         """
-        sample=self.sample(1)-self.mean
-        sample[numpy.isnan(sample)]=0
+        finite = self[numpy.isfinite(self.var),:]        
+
+        sample=finite.sample(1)-self.mean
 
         return self+(sample+actual)
 
@@ -1096,86 +1117,167 @@ class Mvar(Plane):
         return perfect+sensor
 
     @decorate.MultiMethod
-    def dist2(self,locations=numpy.zeros,mean=None):
+    def mah2(self,locations=None,mean=None):
         """
         :param locations:
         :param mean:
             
-        return the square of the mahalabois distance from the Mvar to each vector.
+        Return the square of the mahalabois distance from the Mvar to each location.
         the vectors should be along the last dimension of the array.
 
-        in this case the dist2 is the vector's length**2
+        In this case the mah2 is the vector's length**2
         
             >>> E = Mvar.eye(A.ndim)
             >>> N = 50
             >>> S = numpy.random.randn(N,A.ndim)
-            >>> assert Matrix(E.dist2(S)) == (S**2).sum(-1)
+            >>> assert Matrix(E.mah2(S)) == (S**2).sum(-1)
 
         This is Invariant to linear transforms
         
             >>> S=Matrix(A.sample(N))
             >>> T=Matrix.randn((A.ndim,A.ndim))
-            >>> D1 = A.dist2(S)
-            >>> D2 = (A*T).dist2(S*T)
+            >>> D1 = A.mah2(S)
+            >>> D2 = (A*T).mah2(S*T)
             >>> assert Matrix(D1)==D2
         
         The expected distance squared of a sample from it's parent, is the 
         number of dimensions
         
-            >>> A.dist2(A).mean = A.ndim
+            >>> A.mah2(A).mean = A.ndim
+            
+       for Mvars it currenty just returns an mvar (mean & variance), 
+       but that should be a non-central chi**2 distribution
 
             >>> #warning: this works, but there is probably a better way.
             >>> N=1000
             >>> Z=3
-            >>> deltas = Mvar.fromData(A.dist2(A.sample(N)) - A.ndim)
+            >>> deltas = Mvar.fromData(A.mah2(A.sample(N)) - A.ndim)
             >>> deltas.var/=N
-            >>> assert deltas.dist2() < (Z**2)
+            >>> assert deltas.mah2() < (Z**2)
 
-        for Mvars it currenty just returns an mvar (mean & variance), 
-        but that should be a non-central chi**2 distribution
-        
-        negative variances result in negative dist2's.
+        negative variances result in negative mah2's.
 
             >>> locations = B.sample([5,5])
-            >>> assert -Matrix(A.dist2(locations)) == (~A).dist2(locations)
+            >>> assert -Matrix(A.mah2(locations)) == (~A).mah2(locations)
         """
         if callable(locations):
             locations = locations(self.mean.shape)
 
         locations = numpy.asarray(locations)
         
-        if mean is None:
-            #make sure the mean is a flat numpy array
-            mean=numpy.array(self.mean).squeeze()
-            #and subtract it from the locations (vectors aligned to the last dimension)
+        if self.ndim == 1 and locations.ndim == 1 and locations.size != 1:
+            locations = locations[:,None]
+            print locations.shape
+
         
+        if mean is None:
+             mean = self.mean.squeeze()
+        else:
+             mean = numpy.array(mean).squeeze()            
+            
         deltas=numpy.array(locations)-mean
         
-        parts = self._transformParts(-2)
+        parts = self._transformParts(-2)        
+        
         scaled = numpy.inner(deltas,parts[1])
         scaled = numpy.inner(scaled,parts[0])
         scaled=numpy.array(scaled)
-
-        return (scaled*deltas).sum(axis=locations.ndim-1)
-
         
-    @dist2.register(Mvar,Mvar)
-    def _dist2Mvar(self,locations,mean=None):
+#isn't there an easy way to write this in tensor notation?
+        return (scaled*deltas).sum(axis=locations.ndim-1)
+    
+    @mah2.register(Mvar,type(None))
+    def _mah2Self(self,locations,mean = None):
+        """
+        :param locations: no locations given, so it returns the distribution of 
+                          the length of the self random vector
+        :type locations:`type(None)`
+        :param mean:
+            
+        """
+        return scipy.stats.chi2(self.shape[0])
+        
+    @mah2.register(Mvar,Mvar)
+    def _mah2Mvar(self,locations,mean = None):
         """        
         :param locations:
         :param mean:
-        """
-        if mean is not None:
-            self = type(self)(
-                var = self.var,
-                vectors = self.vectors
-            ) + mean
             
-        #todo: implement noncentral chi2
-        if isinstance(locations,type(self)):
-            return (self + [-1]*locations).quad()
+        """    
+        delta = (self + [-1]*locations)
+#should be a generalized/non-central chi2
+        return (delta/self).quad()
     
+    def mah(self,locations=None,mean = None):
+        """
+        return the mahalabois distance from the mvar to each location
+        
+        .. plot:: ./examples/mah.py main
 
+        """
+        if locations is None:
+            return scipy.stats.chi(self.shape[0])
+        else:
+            return self.mah2(locations)**0.5
+        
+    
+    @decorate.MultiMethod
+    def dist2(self,locations=None,mean = None):
+        """
+        :param locations:
+        :param mean:
+        """
+        if callable(locations):
+            locations = locations(self.mean.shape)
+
+        locations = numpy.asarray(locations)
+        
+        if self.ndim == 1 and locations.ndim == 1 and locations.size != 1:
+            locations = locations[:,None]
+            print locations.shape
+
+        
+        if mean is None:
+             mean = self.mean.squeeze()
+        else:
+             mean = numpy.array(mean).squeeze()            
+            
+        deltas=numpy.array(locations)-mean
+        
+#isn't there an easy way to write this in tensor notation?
+        return (deltas*deltas).sum(axis=locations.ndim-1)
+
+
+    @dist2.register(Mvar,type(None))
+    def _dist2Self(self,locations,mean = None):
+        """
+        :param locations: no locations given, so it returns the distribution of the length of the self
+        :type locations:`type(None)`
+        :param mean:
+            
+        """
+        centered = self-self.mean
+        return centered.quad()
+        
+    @dist2.register(Mvar,Mvar)
+    def _dist2Mvar(self,locations,mean = None):
+        """        
+        :param locations:
+        :param mean:
+            
+        """
+#todo: find an implementation of generalized/noncentral chi2 distribution
+        return (self + [-1]*locations).quad()
+    
+    def dist(self,locations=None,mean=None):
+        """        
+        :param locations:
+        :param mean:
+            
+        returns the mahalabois distance to each location
+        """
+#todo: find an implementation of generalized/noncentral chi distribiution        
+        return dist2(self,locations,mean)**0.5
         
     ############## indexing
     
@@ -1514,14 +1616,12 @@ class Mvar(Plane):
         :param lower:
         :param upper:
             
-        returns the probability that all components of a sampe are between the 
+        returns the probability that all components of a sample are between the 
         lower and upper limits 
-        
-#todo: handle nan's
 
 #todo: fix
 
-        >>> N = 1000
+        >>> N = 100
         >>> data = A.sample(N)
         >>> limits = A.sample(2)
         >>> upper = limits.max(0)
@@ -2170,6 +2270,7 @@ class Mvar(Plane):
         Note that the result does not depend on the mean of the 
         second mvar(!) (really any mvar after the leftmost mvar or matrix)
         """
+#revert_multiply -> should match transforming data.
         self0,self1 = self._transformParts()
         mvar0,mvar1 = mvar._transformParts()
 
@@ -2437,12 +2538,12 @@ class Mvar(Plane):
             >>> a=A.sample(N)
             >>> deltas = Mvar.fromData(A.entropy(a)-A.entropy())
             >>> deltas.var/=N
-            >>> assert deltas.dist2() < (Z**2)     
+            >>> assert deltas.mah2() < (Z**2)     
             >>>
             >>> b=B.sample(N)
             >>> deltas = Mvar.fromData(A.entropy(b)-A.entropy(B))
             >>> deltas.var/=N
-            >>> assert deltas.dist2() < (Z**2)  
+            >>> assert deltas.mah2() < (Z**2)  
 
         http://en.wikipedia.org/wiki/Multivariate_normal_distribution
         """
@@ -2461,7 +2562,7 @@ class Mvar(Plane):
                 baseE+=self.KLdiv(data)
         else:
             baseE=(
-                self.dist2(data)+
+                self.mah2(data)+
                 self.rank*numpy.log(2*numpy.pi)+
                 numpy.log(abs(self.pdet()))
             )/2
@@ -2517,20 +2618,20 @@ class Mvar(Plane):
             >>> a=A.sample(N)
             >>> KL = Mvar.fromData(A.KLdiv(a)) #should be zero
             >>> KL.var/=N
-            >>> assert KL.dist2() < (Z**2)
+            >>> assert KL.mah2() < (Z**2)
             >>> 
             >>> #KLdiv 
             >>> b=B.sample(N)   
             >>> KL = Mvar.fromData(A.KLdiv(b) - A.KLdiv(B)) #difference should be zero
             >>> KL.var/=N
-            >>> assert KL.dist2() < (Z**2)
+            >>> assert KL.mah2() < (Z**2)
             >>> 
             >>> B2=B.copy(deep=True)
             >>> B2.var/=2
             >>> b2=B2.sample(N)
             >>> KL = Mvar.fromData(B.KLdiv(b2) - B.KLdiv(B2)) #should be zero
             >>> KL.var/=N
-            >>> assert KL.dist2() < (Z**2)
+            >>> assert KL.mah2() < (Z**2)
 
         http://en.wikipedia.org/wiki/Multivariate_normal_distribution#Kullback.E2.80.93Leibler_divergence
         """
@@ -2632,12 +2733,27 @@ class Mvar(Plane):
     __str__=__repr__
 
     ################ Art
+
+    plotParams = {
+        'edgecolor':'k'
+    }
+    """
+    default plot parameters
+    this could probably be broken up by number of dimensions in the plot,
+    and by the number of dimensions of the object being     
+    """
+    
+    
     def plot(self, ax=None, **kwargs):
         """
         :param ax:
         :param ** kwargs:
         """
-        return self._plotters.get(self.ndim,self.plotND)(self,ax,**kwargs)
+        
+        defaults = self.plotParams.copy()
+        defaults.update(kwargs)
+        
+        return self._plotters.get(self.ndim,self.plotND)(self,ax,**defaults)
         
     def plot1D(self, 
         ax = None, 
@@ -2656,35 +2772,36 @@ class Mvar(Plane):
         :param nsteps:
         :param orientation:
         :param ** kwargs:
-        """
+        """                
         xlims = self.bBox(nstd).squeeze()
         x = numpy.linspace(xlims[0],xlims[1],nsteps)
         y = count*self.density(x[:,None])
         
         horizontal = ['horizontal','h','H']
         vertical   = ['vertical'  ,'v','V']
-        if orientation in horizontal:
-            (xx,yy) = (y,x)
-            filler = ax.fill_betweenx
-        elif orientation in vertical:
-            (xx,yy) = (x,y)
-            filler = ax.fill_between
-        else:
-            raise ValueError(
-                'orientation should be in either (%s) or (%s), not (%s)' % 
-                (horizontal,vertical,orientation)
-            )
-
+        
         if ax is None:
             ax=pylab.gca()        
+
         
         if fill:
-            result = filler(x,y,0,**kwargs)
+            if orientation in horizontal:
+                (xx,yy) = (y,x)
+                filler = ax.fill_betweenx
+            elif orientation in vertical:
+                (xx,yy) = (x,y)
+                filler = ax.fill_between
+            else:
+                raise ValueError(
+                    'orientation should be in either (%s) or (%s), not (%s)' % 
+                    (horizontal,vertical,orientation)
+                )
+            plotter = functools.partial(filler,x,y,0)
         else:
-            result = ax.plot(x,y,**kwargs)
-            
-        return result
+            plotter = functools.partial(ax.plot,x,y)
         
+        return plotter(**kwargs)
+                
     def plot2D(self,ax = None, nstd = 2, **kwargs):
         """
         :param ax:
@@ -2701,9 +2818,16 @@ class Mvar(Plane):
         pads = 0.05*widths*[[-1],[1]]
         corners = bBox+pads
         ax.update_datalim(corners)
-        ax.autoscale_view()           
+        ax.autoscale_view()
                         
-        return ax.add_patch(self.patch(**kwargs))
+        artist = self.patch(**kwargs)
+        
+        if isinstance(artist,matplotlib.lines.Line2D):
+            insert = ax.add_line
+        else:
+            insert = ax.add_patch
+            
+        return insert(artist)
         
     def plot3D(self,ax = None, **kwargs):
         """
@@ -2724,9 +2848,10 @@ class Mvar(Plane):
     >>> assert mvar._plotters[1] is mvar.plot1D
     >>> assert mvar._plotters[2] is mvar.plot2D
     >>> assert mvar._plotters[3] is mvar.plot3D    
-    """
+    """    
     
-    def patch(self,nstd=2,alpha='auto',slope=0.5,minalpha=0.05,**kwargs):
+#multimethod distributor
+    def patch(self,nstd=2,alpha='auto',slope=0.5,minalpha=0.3,**kwargs):
         """
         :param nstd:
         :param alpha:
@@ -2758,19 +2883,28 @@ class Mvar(Plane):
                 'this method can only produce patches for 2d data'
             )
         
-
-        if shape[0] == 0:
+        if shape[0]<2:
+            facecolor = kwargs.pop('facecolor',None)
+            if facecolor is not None:
+                kwargs['markerfacecolor'] = facecolor
+                
+            edgecolor = kwargs.pop('edgecolor',None)
+            if edgecolor is not None:
+                kwargs['markeredgecolor'] = edgecolor
+                kwargs['color'] = edgecolor
+                
             if 'marker' not in kwargs:
-                kwargs['marker'] = 'o'
-            return matplotlib.lines.Line2D(self.mean[:,0],self.mean[:,1],**kwargs)
-        elif shape[0] == 1:
-            delta=nstd*self.scaled
-            front=self.mean+delta
-            back=self.mean-delta
-            data = numpy.vstack([front,back])
-            if 'marker' not in kwargs:
-                kwargs['marker'] = 'o'
-            return matplotlib.lines.Line2D(data[:,0],data[:,1],**kwargs)
+                kwargs['marker'] = 'o'            
+            
+            if shape[0] == 0:
+                return matplotlib.lines.Line2D(self.mean[:,0],self.mean[:,1],**kwargs)
+            elif shape[0] == 1:
+                delta=nstd*self.scaled
+                front=self.mean+delta
+                back=self.mean-delta
+                data = numpy.vstack([front,back])
+                    
+                return matplotlib.lines.Line2D(data[:,0],data[:,1],**kwargs)
             
 
         if alpha=='auto':
@@ -2783,8 +2917,9 @@ class Mvar(Plane):
 
         #unpack the width and height from the scale matrix 
         wh = nstd*sqrt(self.var)
-        wh[~numpy.isfinite(wh)]=10**5
+        wh[wh>1e5]=1e5
 
+        #convert from radius to diameters
         width,height=2*wh
 
         #return an Ellipse patch

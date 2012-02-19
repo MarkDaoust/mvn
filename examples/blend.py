@@ -14,8 +14,8 @@ def main():
     """
     pylab.figure(1, figsize=(5,5))
     
-    red  = Mvar.rand(ndims=2)    
-    blue = Mvar.rand(ndims=2)
+    red  = Mvar.rand(shape=2)    
+    blue = Mvar.rand(shape=2)
     
     magenta = red & blue
     
@@ -24,7 +24,7 @@ def main():
     magenta.plot(facecolor = 'm',edgecolor = 'k',slope=1)
     
     
-    pylab.xlabel('>>> Magenta = Red & Blue')    
+    pylab.xlabel('Magenta = Red & Blue')    
     pylab.show()
 
 if __name__ == '__main__':
