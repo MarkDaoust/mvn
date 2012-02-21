@@ -101,7 +101,7 @@ import numpy as np
 import scipy
 from scipy.stats.mvn import mvndst
 
-from mvar.matrix import Matrix
+from mvn.matrix import Matrix
 
 class MvnDstError(BaseException):
     informcode = {

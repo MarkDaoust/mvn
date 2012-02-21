@@ -6,10 +6,10 @@ Plane Base Class
 """
 import numpy
 
-import mvar.helpers as helpers
-import mvar.decorate as decorate
-from mvar.matrix import Matrix 
-from mvar.square import square
+import mvn.helpers as helpers
+import mvn.decorate as decorate
+from mvn.matrix import Matrix 
+from mvn.square import square
 
 def getNull(vectors):
     shape=vectors.shape        
@@ -37,7 +37,7 @@ Plane = decorate.underConstruction('Plane')
 @decorate.MultiMethod.sign(Plane)
 class Plane(object):
     """
-    plane class, meant to (eventually) factor out some code, and utility from the Mvar class
+    plane class, meant to (eventually) factor out some code, and utility from the Mvn class
     """
     def __init__(
         self,

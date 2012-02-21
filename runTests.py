@@ -4,12 +4,12 @@ import sys
 import optparse
 import unittest
 
-import mvar
+import mvn
 
-import mvar.testObjects as testObjects
+import mvn.testObjects as testObjects
 
-import mvar.docTests as docTests
-import mvar.unitTests as unitTests
+import mvn.docTests as docTests
+import mvn.unitTests as unitTests
 
 def makeParser():
     parser=optparse.OptionParser()
@@ -39,7 +39,7 @@ def getSuite(values):
     testFixture=testObjects.getObjects(values)
     
     suite.addTests(unitTests.getTests(testFixture))
-    suite.addTests(docTests.getTests(mvar,testFixture))
+    suite.addTests(docTests.getTests(mvn,testFixture))
 
     return suite
 
@@ -59,7 +59,7 @@ if __name__=='__main__':
     else:
         suite.addTests(getSuite(values))
 
-    suite.addTests(docTests.getTests(mvar.mvncdf,testObjects.getObjects(values)))
+    suite.addTests(docTests.getTests(mvn.mvncdf,testObjects.getObjects(values)))
 
     sys.stderr.write("test values: %s\n%s\n" % (' '.join(sys.argv),values))
         

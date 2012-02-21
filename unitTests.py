@@ -9,10 +9,10 @@ import sys
 import numpy
 import itertools
 
-import mvar
-sqrt = mvar.sqrt 
-Mvar = mvar.Mvar
-Matrix = mvar.Matrix
+import mvn
+sqrt = mvn.sqrt 
+Mvn = mvn.Mvn
+Matrix = mvn.Matrix
 
 import helpers
 
@@ -36,43 +36,43 @@ class commuteTester(myTests):
 
 class creationTester(myTests):
     def testFromData(self):
-        self.assertTrue( Mvar.fromData(self.A)==self.A )
+        self.assertTrue( Mvn.fromData(self.A)==self.A )
 
         data=[1,2,3]
-        one = Mvar.fromData(data)
+        one = Mvn.fromData(data)
         self.assertTrue(one.ndim == 1)
 
 
         data=[[1,2,3]]
-        many=Mvar.fromData(data)
+        many=Mvn.fromData(data)
         self.assertTrue( many.mean == data )
         self.assertTrue( Matrix(many.var) == numpy.zeros )
         self.assertTrue( many.vectors == numpy.zeros )
         self.assertTrue( many.cov == numpy.zeros )
 
     def testFromCov(self):
-        self.assertTrue(Mvar.fromCov(self.A.cov,mean=self.A.mean) == self.A)
+        self.assertTrue(Mvn.fromCov(self.A.cov,mean=self.A.mean) == self.A)
 
     def testZeros(self):
         n=abs(self.N)
-        Z=Mvar.zeros(n)
+        Z=Mvn.zeros(n)
         self.assertTrue( Z.mean==Matrix.zeros )
         self.assertTrue( Z.var.size==0 )
         self.assertTrue( Z.vectors.size==0 )
-        self.assertTrue( Z**-1 == Mvar.infs)
+        self.assertTrue( Z**-1 == Mvn.infs)
 
     def testInfs(self):
         n=abs(self.N)
-        inf=Mvar.infs(n)
+        inf=Mvn.infs(n)
         self.assertTrue( inf.mean==Matrix.zeros )
         self.assertTrue( inf.var.size==inf.mean.size==n )
         self.assertTrue( Matrix(inf.var)==Matrix.infs )
         self.assertTrue( inf.vectors==Matrix.eye )
-        self.assertTrue( inf**-1 == Mvar.zeros )
+        self.assertTrue( inf**-1 == Mvn.zeros )
     
     def testEye(self):
         n=abs(self.N)
-        eye=Mvar.eye(n)
+        eye=Mvn.eye(n)
         self.assertTrue(eye.mean==Matrix.zeros)
         self.assertTrue(eye.var.size==eye.mean.size==n)
         self.assertTrue(Matrix(eye.var)==Matrix.ones)
@@ -176,8 +176,8 @@ class equalityTester(myTests):
 
     def testInf(self):
         self.assertTrue(
-             Mvar(mean=[1,0,0], vectors=[1,0,0], var=numpy.inf)==
-             Mvar(mean=[0,0,0], vectors=[1,0,0], var=numpy.inf)
+             Mvn(mean=[1,0,0], vectors=[1,0,0], var=numpy.inf)==
+             Mvn(mean=[0,0,0], vectors=[1,0,0], var=numpy.inf)
         )
         
     def testNot(self):
@@ -211,11 +211,11 @@ class signTester(myTests):
         self.assertTrue( (self.A+self.A).mean==2*self.A.mean )
 
         n=abs(self.N)
-        self.assertTrue( sum(itertools.repeat(self.A,n),Mvar.zeros(self.A.ndim)) == self.A*n )
-        self.assertTrue( sum(itertools.repeat(-self.A,n),Mvar.zeros(self.A.ndim)) == self.A*(-n) )
+        self.assertTrue( sum(itertools.repeat(self.A,n),Mvn.zeros(self.A.ndim)) == self.A*n )
+        self.assertTrue( sum(itertools.repeat(-self.A,n),Mvn.zeros(self.A.ndim)) == self.A*(-n) )
         
 
-        self.assertTrue( self.A+self.B ==Mvar(
+        self.assertTrue( self.A+self.B ==Mvn(
             mean=self.A.mean+self.B.mean,
             vectors=numpy.vstack([self.A.vectors,self.B.vectors]),
             var = numpy.concatenate([self.A.var,self.B.var]),
@@ -231,7 +231,7 @@ class signTester(myTests):
         self.assertTrue( self.B+(-self.A) == self.B+(-1)*self.A == self.B-self.A )
         self.assertTrue( (self.B-self.A)+self.A==self.B )
 
-        self.assertTrue( self.A-self.A == Mvar(mean=numpy.zeros_like(self.A.mean)) )
+        self.assertTrue( self.A-self.A == Mvn(mean=numpy.zeros_like(self.A.mean)) )
         self.assertTrue( (self.A-self.B)+self.B == self.A )
         self.assertTrue( (self.A-self.B).mean == self.A.mean - self.B.mean )
         self.assertTrue( (self.A-self.B).cov== self.A.cov - self.B.cov )
@@ -245,17 +245,17 @@ class signTester(myTests):
 
 class productTester(myTests):
     def testMulTypes(self):
-        self.assertTrue( isinstance(self.A*self.B,Mvar) )
-        self.assertTrue( isinstance(self.A*self.M,Mvar) )
+        self.assertTrue( isinstance(self.A*self.B,Mvn) )
+        self.assertTrue( isinstance(self.A*self.M,Mvn) )
         self.assertTrue( isinstance(self.M.T*self.A,Matrix) )
-        self.assertTrue( isinstance(self.A*self.K1,Mvar) )
-        self.assertTrue( isinstance(self.K1*self.A,Mvar) )
+        self.assertTrue( isinstance(self.A*self.K1,Mvn) )
+        self.assertTrue( isinstance(self.K1*self.A,Mvn) )
 
 
     def testMul(self):
         self.assertTrue( self.A**2==self.A*self.A )
 
-    def testMvarMul(self):
+    def testMvnMul(self):
         self.assertTrue( (self.A*self.B).cov == (self.A*self.B.transform()+self.B*self.A.transform()).cov/2 )
         if not (self.A.flat or self.B.flat): 
             self.assertTrue( (self.A*self.B).mean == (self.A*self.B.transform()+self.B*self.A.transform()).mean/2 )
@@ -373,11 +373,11 @@ class propertyTester(myTests):
 
 class mergeTester(myTests):
     def testStack(self):
-        self.AB= Mvar.stack(self.A,self.B)
+        self.AB= Mvn.stack(self.A,self.B)
         self.assertTrue( self.AB[:,:self.A.ndim]==self.A )
         self.assertTrue( self.AB[:,self.A.ndim:]==self.B )
-        self.assertTrue( Mvar.stack(Mvar.infs(2),Mvar.infs(5))==Mvar.infs(7) )
-        self.assertTrue( Mvar.stack(Mvar.zeros(2),Mvar.zeros(5))==Mvar.zeros(7) )
+        self.assertTrue( Mvn.stack(Mvn.infs(2),Mvn.infs(5))==Mvn.infs(7) )
+        self.assertTrue( Mvn.stack(Mvn.zeros(2),Mvn.zeros(5))==Mvn.zeros(7) )
         
 
 class powerTester(myTests):
@@ -443,7 +443,7 @@ class powerTester(myTests):
             self.assertTrue( 
                 self.A**k1 == (
                     self.A*self.A.transform(k1-1) + 
-                    Mvar(mean=self.A.mean-self.A.mean*self.A.transform(0))
+                    Mvn(mean=self.A.mean-self.A.mean*self.A.transform(0))
                 ))
                 
 class widthTester(myTests):
@@ -471,7 +471,7 @@ class widthTester(myTests):
         )
         
         data = self.A.sample(100)
-        a = Mvar.fromData(data)
+        a = Mvn.fromData(data)
         self.assertTrue(Matrix(numpy.std (data,0)) == a.width()   )    
         self.assertTrue(Matrix(numpy.var (data,0)) == a.width()**2)
         self.assertTrue(Matrix(numpy.mean(data,0)) == a.mean      )
@@ -516,20 +516,20 @@ class givenTester(myTests):
 
 
     def testGivenLinear(self):
-        L1=Mvar(mean=[0,0],vectors=[[1,1],[1,-1]], var=[numpy.inf,0.5])
-        L2=Mvar(mean=[1,0],vectors=[0,1],var=numpy.inf) 
+        L1=Mvn(mean=[0,0],vectors=[[1,1],[1,-1]], var=[numpy.inf,0.5])
+        L2=Mvn(mean=[1,0],vectors=[0,1],var=numpy.inf) 
         self.assertTrue( L1.given(dims=0,value=1) == L1&L2 )
         self.assertTrue( (L1&L2).mean==[1,1] )
         self.assertTrue( (L1&L2).cov==[[0,0],[0,2]] )
 
-    def testGivenMvar(self):
-        Y=Mvar(mean=[0,1],vectors=Matrix.eye, var=[numpy.inf,1])
-        X=Mvar(mean=[1,0],vectors=Matrix.eye,var=[1,numpy.inf])
-        x=Mvar(mean=1,var=1)
+    def testGivenMvn(self):
+        Y=Mvn(mean=[0,1],vectors=Matrix.eye, var=[numpy.inf,1])
+        X=Mvn(mean=[1,0],vectors=Matrix.eye,var=[1,numpy.inf])
+        x=Mvn(mean=1,var=1)
         self.assertTrue( Y.given(dims=0,value=x) == X&Y )
 
     def testGivenVector(self):
-        self.assertTrue( mvar.givenVector(self.A,dims=0,value=1)==self.A.given(dims=0,value=1) )
+        self.assertTrue( mvn.givenVector(self.A,dims=0,value=1)==self.A.given(dims=0,value=1) )
 
 class chainTester(myTests):
     def testBasic(self):
@@ -540,20 +540,20 @@ class chainTester(myTests):
         )
 
     def testMoore(self):
-        self.assertTrue( self.A.chain(self.B) == mvar.mooreChain(self.A,self.B) )
+        self.assertTrue( self.A.chain(self.B) == mvn.mooreChain(self.A,self.B) )
 
         b=self.B*self.M
-        self.assertTrue( self.A.chain(b,self.M) == mvar.mooreChain(self.A,b,self.M) )
+        self.assertTrue( self.A.chain(b,self.M) == mvn.mooreChain(self.A,b,self.M) )
 
     def testStacks(self):
         dataA=self.A.sample(100)
 
-        a=Mvar.fromData(dataA)
+        a=Mvn.fromData(dataA)
 
         #a and a are correlated
         self.assertTrue(
             a.chain()==
-            Mvar.fromData(numpy.hstack([dataA,dataA]))
+            Mvn.fromData(numpy.hstack([dataA,dataA]))
         )        
         #a and a*M are corelated        
         self.assertTrue(
@@ -563,19 +563,19 @@ class chainTester(myTests):
 
         self.assertTrue( 
             a.chain(transform=self.M) == 
-            Mvar.fromData(numpy.hstack([dataA,dataA*self.M]))
+            Mvn.fromData(numpy.hstack([dataA,dataA*self.M]))
         )
 
         self.assertTrue(
             a.chain(self.B*self.M,self.M) == 
-            a.chain(transform=self.M)+Mvar.stack(Mvar.zeros(a.ndim),self.B*self.M)
+            a.chain(transform=self.M)+Mvn.stack(Mvn.zeros(a.ndim),self.B*self.M)
         )
 
         
 
     def testAnd(self):
         """
-        __and__ is a shortcut across mvar.chain and mvar.given
+        __and__ is a shortcut across mvn.chain and mvn.given
         this is to show the relationship
 
         I haven't figured yet out how a the 'transform' parameter to chain works 
@@ -621,12 +621,12 @@ class inversionTester(myTests):
 
 
     def testParadoxes(self):
-        self.assertTrue( (self.A & ~self.A) == Mvar(mean=self.A.mean, vectors=self.A.vectors, var=Matrix.infs) )
-        self.assertTrue( (self.A & ~self.A)*self.A.vectors.H == Mvar.infs )
+        self.assertTrue( (self.A & ~self.A) == Mvn(mean=self.A.mean, vectors=self.A.vectors, var=Matrix.infs) )
+        self.assertTrue( (self.A & ~self.A)*self.A.vectors.H == Mvn.infs )
 
         self.assertTrue(  
             self.A & (self.B & ~self.B) == 
-            self.A & Mvar(
+            self.A & Mvn(
                 mean=self.B.mean, 
                 vectors=self.B.vectors, 
                 var=Matrix.infs
@@ -650,12 +650,12 @@ class inversionTester(myTests):
     def testPow(self):
         self.assertTrue(
            ( self.A)**(-1) + (~self.A)**(-1) == 
-           Mvar.zeros
+           Mvn.zeros
         )
         
         self.assertTrue(
            (( self.A)**(-1) + (~self.A)**(-1))**-1 == 
-           Mvar.zeros(self.A.ndim)**-1
+           Mvn.zeros(self.A.ndim)**-1
         )    
 
 class blendTester(myTests):
@@ -670,16 +670,16 @@ class blendTester(myTests):
     def testNotFlat(self):
         if not (self.A.flat or self.B.flat):
             self.assertTrue( self.A & self.B == 1/(1/self.A+1/self.B))
-            self.assertTrue( self.A & -self.A == Mvar(mean=numpy.zeros(self.ndim))**-1)
-            self.assertTrue( self.A & ~self.A == Mvar(mean=numpy.zeros(self.ndim))**-1)
-            self.assertTrue( self.A & self.B == mvar.wiki(self.A,self.B))
+            self.assertTrue( self.A & -self.A == Mvn(mean=numpy.zeros(self.ndim))**-1)
+            self.assertTrue( self.A & ~self.A == Mvn(mean=numpy.zeros(self.ndim))**-1)
+            self.assertTrue( self.A & self.B == mvn.wiki(self.A,self.B))
                
             self.assertTrue( self.A**-1 == self.A*self.A**-2)
             self.assertTrue( self.A & self.B == (self.A*self.A**-2+self.B*self.B**-2)**-1)
 
             D = self.A*(self.A.cov)**(-1) + self.B*(self.B.cov)**(-1)
-            self.assertTrue( mvar.wiki(self.A,self.B) == D*(D.cov)**(-1))
-            self.assertTrue( self.A & self.B == mvar.wiki(self.A,self.B))
+            self.assertTrue( mvn.wiki(self.A,self.B) == D*(D.cov)**(-1))
+            self.assertTrue( self.A & self.B == mvn.wiki(self.A,self.B))
 
         if not (self.A.flat or self.B.flat or self.C.flat):
             abc=numpy.random.permutation([self.A,self.B,self.C])
@@ -690,20 +690,20 @@ class blendTester(myTests):
 
 
     def testKnownValues1(self):
-        L1=Mvar(mean=[1,0],vectors=[0,1],var=numpy.inf)
-        L2=Mvar(mean=[0,1],vectors=[1,0],var=numpy.inf) 
+        L1=Mvn(mean=[1,0],vectors=[0,1],var=numpy.inf)
+        L2=Mvn(mean=[0,1],vectors=[1,0],var=numpy.inf) 
         self.assertTrue( (L1&L2).mean==[1,1])
         self.assertTrue( (L1&L2).var.size==0)
 
     def testKnownValues2(self):
-        L1=Mvar(mean=[0,0],vectors=[1,1],var=numpy.inf)
-        L2=Mvar(mean=[0,1],vectors=[1,0],var=numpy.inf) 
+        L1=Mvn(mean=[0,0],vectors=[1,1],var=numpy.inf)
+        L2=Mvn(mean=[0,1],vectors=[1,0],var=numpy.inf) 
         self.assertTrue( (L1&L2).mean==[1,1])
         self.assertTrue( (L1&L2).var.size==0)
 
     def testKnownValues3(self):
-        L1=Mvar(mean=[0,0],vectors=Matrix.eye, var=[1,1])
-        L2=Mvar(mean=[0,1],vectors=[1,0],var=numpy.inf) 
+        L1=Mvn(mean=[0,0],vectors=Matrix.eye, var=[1,1])
+        L2=Mvn(mean=[0,1],vectors=[1,0],var=numpy.inf) 
         self.assertTrue( (L1&L2).mean==[0,1])
         self.assertTrue( (L1&L2).var==1)
         self.assertTrue( (L1&L2).vectors==[1,0])
@@ -716,7 +716,7 @@ class quadTester(myTests):
         Da=Matrix(self.A.sample(Na))
 
         #and remake the multivariates
-        A=Mvar.fromData(Da)
+        A=Mvn.fromData(Da)
 
         # take all the dot products
         dots=(numpy.array(Da)**2).sum(1)
@@ -901,7 +901,7 @@ class quadTester(myTests):
 
         self.assertTrue(
             A.quad()==
-            Mvar(
+            Mvn(
                 mean= A.mean*A.mean.H + A.trace(),
                 var=2*(A*A).trace()+4*(A*A.mean.H).trace()
             )
@@ -922,8 +922,8 @@ class innerTester(myTests):
         Db=Matrix(B.sample(Nb))
 
         #and remake the multivariates based on the samples you just took
-        A=Mvar.fromData(Da)
-        B=Mvar.fromData(Db)
+        A=Mvn.fromData(Da)
+        B=Mvn.fromData(Db)
 
         # take every possible combination of dot products
         dot=numpy.array(Da*Db.H)
@@ -1067,7 +1067,7 @@ class innerTester(myTests):
 
         self.assertTrue(
             A.inner(B) ==
-            Mvar(
+            Mvn(
                 mean= A.mean*B.mean.H,
                 var= (A*B).trace() + (B*A.mean.H).trace() + (A*B.mean.H).trace()
             )
@@ -1091,8 +1091,8 @@ class outerTester(myTests):
         Db=B.sample(Nb)
 
         #and remake the multivariates based on the samples you just took
-        A=Mvar.fromData(Da)
-        B=Mvar.fromData(Db)
+        A=Mvn.fromData(Da)
+        B=Mvn.fromData(Db)
 
         out = numpy.outer(Da,Db).reshape((Na,A.ndim,Nb,B.ndim))
 

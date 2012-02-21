@@ -9,8 +9,8 @@ import pickle
 import numpy
 import os
 
-from mvar import Mvar
-from mvar.matrix import Matrix
+from mvn import Mvn
+from mvn.matrix import Matrix
 
 (dir,_) = os.path.split(os.path.abspath(__file__))
 
@@ -93,7 +93,7 @@ def makeObjects(flat=None,ndim=None,seed=None):
     rvec= lambda n=1,ndim=ndim:Matrix(randn(n,ndim))
 
     A,B,C=[
-        Mvar.rand(ndim,F)
+        Mvn.rand([ndim-F,ndim])
         for F in flat
     ]
 

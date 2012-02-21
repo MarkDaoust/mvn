@@ -5,7 +5,7 @@ Plot Tools
 **********
 '''
 
-from mvar.matrix import Matrix
+from mvn.matrix import Matrix
 
 import numpy
 
@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 
 from matplotlib.gridspec import GridSpec
 
-from mvar.decorate import curry
+from mvn.decorate import curry
 
 
 class my_axis(mpl_toolkits.axisartist.Axes):

@@ -19,7 +19,7 @@ def getTests(module,testFixture):
     
 
 if __name__=='__main__':
-    import mvar
+    import mvn
 
     suite=unittest.TestSuite()
 
@@ -28,7 +28,7 @@ if __name__=='__main__':
     else:
         testFixture=testObjects.makeObjects()
     
-    suite.addTests(getTests(mvar,testFixture))
+    suite.addTests(getTests(mvn,testFixture))
     
 
 

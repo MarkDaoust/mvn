@@ -35,14 +35,14 @@ class Matrix(numpy.matrix):
     
     rtol = 1e-5
     """
-    Absolute tolerence for :py:meth:`mvar.matrix.Matrix.__eq__`
+    Absolute tolerence for :py:meth:`mvn.matrix.Matrix.__eq__`
     
     passed as a parameter to :py:func:`numpy.allclose` to determine 'equality'
     """
     
     atol = 1e-8
     """
-    Relative tolerence for :py:meth:`mvar.matrix.Matrix.__eq__`
+    Relative tolerence for :py:meth:`mvn.matrix.Matrix.__eq__`
     
     passed as a parameter to :py:func:`numpy.allclose` to determine 'equality'    
     """    
@@ -62,13 +62,13 @@ class Matrix(numpy.matrix):
         """
         Treats the matrix as a single object, and returns True or False.
         
-        uses class members :py:attr:`mvar.matrix.Matrix.atol` and 
-        :py:attr:`mvar.matrix.Matrix.rtol` through :py:func:`numpy.allclose` to 
+        uses class members :py:attr:`mvn.matrix.Matrix.atol` and 
+        :py:attr:`mvn.matrix.Matrix.rtol` through :py:func:`numpy.allclose` to 
         determine 'equality'
         
         Throws :py:class:`ValueError` if there is a shape miss-match 
         
-        uses the :py:func:`mvar.matrix.expandCallable` decorator so that 
+        uses the :py:func:`mvn.matrix.expandCallable` decorator so that 
         this works
         
             >>> assert Matrix([[0,0],[0,0],[0,0]]) == numpy.zeros
@@ -81,7 +81,7 @@ class Matrix(numpy.matrix):
     def __add__(self,other):
         """
         :py:func:`numpy.matrix.__add__` with the 
-        :py:func:`mvar.matrix.expandCallable` decorator applied
+        :py:func:`mvn.matrix.expandCallable` decorator applied
         """
         return numpy.matrix.__add__(self,other)
         
