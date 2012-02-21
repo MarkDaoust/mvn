@@ -1,2 +1,2 @@
-.. automodule:: mvar.decorate
+.. automodule:: mvn.decorate
 

@@ -1,2 +1,2 @@
-.. automodule:: mvar.mixture
+.. automodule:: mvn.mixture
 

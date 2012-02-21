@@ -1,2 +1,2 @@
-.. automodule:: mvar.matrix
+.. automodule:: mvn.matrix
 

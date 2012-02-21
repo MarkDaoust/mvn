@@ -1,2 +1,2 @@
-.. automodule:: mvar.testObjects
+.. automodule:: mvn.testObjects
 

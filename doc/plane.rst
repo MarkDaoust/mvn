@@ -1,2 +1,2 @@
-.. automodule:: mvar.plane
+.. automodule:: mvn.plane
 

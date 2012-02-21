@@ -1,2 +1,2 @@
-.. automodule:: mvar
+.. automodule:: mvn
 

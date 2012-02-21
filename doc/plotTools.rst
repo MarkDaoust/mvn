@@ -1,1 +1,1 @@
-.. automodule:: mvar.plotTools
+.. automodule:: mvn.plotTools

@@ -1,1 +1,1 @@
-.. automodule:: mvar.examples
+.. automodule:: mvn.examples
