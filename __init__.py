@@ -1,35 +1,34 @@
 #! /usr/bin/env python
 
-#from hist
+#todo: better interoperability with scipy.stats
+#todo: mixtures and or "|" operator -> pymix? 
+#todo: try open-bayes? 
+#todo: try sympy's version of this?
+#todo: transform's in the "&" operator
+#todo: find a way to auto update the multimethod call dictionaries when sub-classes are created.
+#todo: find the standard approach to making things plottable in matplotlib
+#todo: try mayavi
+#todo: finish the "transposed" and and "Complex" subclasses   
 #todo: cleanup the multimethods so there are no complicated call diagrams
-#todo: mixtures should know: the variance of the mean of the sample is the 
-#      variance of the sample divided by the sample size.given
 #todo: revert-Mvn mul --> Matrix*Mvn == Mvn.fromData(Matrix)*Mvn
 #todo: add a dimension preserving "marginal" function,  
-#todo: better interfacing with numpy & scipy's distributions
 #todo: formData should be the main constructor
-#todo: the approximation tollerence should be a class attribute
-#todo: merge chain and  sensor.measure??
+#todo: merge chain and  sensor.measure?
 #todo: type handling- be more uniform, arrays work element wize, matrixes get converted to Mvns ?
 #todo: better type handling, multimethods? many things that accept an mvn should 
 #        accept Mvn.eye, Mvn.zeros, Mvn.infs 
-#todo: consider removing the autosquare if you ever want to speed things up, 
-#         I bet it would help. it would also allow other factorizations (like cholsky) 
+#todo: relay the canonization step, I think the default can (should?) be none
+#todo: add cholsky decomposition
 #todo: wikipedia/kalmanfiltering#information filter    !!   the mvn and it's 
 #       inverse are different things, maybe the linear algebra should go in a 
 #       super class, and all the covariance/information filter stuff in two sub classes 
-#todo: error handling
+#todo: Exceptions,error handling
 #todo: do something about mvns with zero dimensions ?
 #todo: understand transforms composed of Mvns as the component vectors, and 
 #          whether it is meaningful to consider mvns in both the rows and columns
-#todo: implement transpose and dot product, related to bilinear forms?
-#todo: implement a transpose,for the above 
+#todo: implement transpose and dot product, in relation to quadratic and bilinear forms ? 
 #todo: chi2 distribution/non-central chi2 for the lengths (other distributions?)
-#todo: see if div should do something like matlab backwards divide
-#todo: impliment collections so that '|' is meaningful
-#todo: cleanup my 'square' function (now that it is clear that it's an SVD)
-#todo: split the class into two levels: "fast" and 'safe'? <- "if __debug__" ?
-#todo: understand the EM and K-means algorithms (available in scipy)
+#todo: cleanup the 'square' function (now that it is clear that it's half of an SVD)
 #todo: understand the relationship between these and a hessian matrix.
 #todo: figure out the relationship between these and spherical harmonics
 #todo: investigate higher order cumulants, 'principal cumulant analysis??' <- or not http://www.johndcook.com/blog/2010/09/20/skewness-andkurtosis/
