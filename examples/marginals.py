@@ -6,8 +6,8 @@ import numpy
 import pylab
 
 
-from mvar import Mvar
-from mvar.plotTools import triax
+from mvn import Mvn
+from mvn.plotTools import triax
 
 alpha = 0.5
 """
@@ -69,8 +69,8 @@ def main():
     """
     N=numpy.round(10.0**(1+2.5*numpy.random.rand()))
     
-    #generate a random mvar
-    red=Mvar.rand(2)
+    #generate a random mvn
+    red=Mvn.rand(2)
     
     #sample some data
     blue = red.sample(N)

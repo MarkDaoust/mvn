@@ -6,7 +6,7 @@
 
 import pylab
 
-from mvar import Mvar
+from mvn import Mvn
 
 
 from matplotlib.gridspec import GridSpec
@@ -64,7 +64,7 @@ def main():
     ax1 = pylab.subplot(1,2,2)    
     
     #get data
-    A = Mvar.rand(2)
+    A = Mvn.rand(2)
     data = A.sample(10000)
     
     #squish the data to spherical variance    

@@ -12,10 +12,10 @@ from matplotlib.ticker import MultipleLocator
 
 import pylab
 
-from mvar import Mvar
-from mvar.matrix import Matrix
+from mvn import Mvn
+from mvn.matrix import Matrix
 
-import mvar.plotTools
+import mvn.plotTools
 
 from collections import OrderedDict
 
@@ -121,10 +121,10 @@ if __name__=='__main__':
     actual=numpy.array([[0,10]])
 
     #the sensor
-    sensor=Mvar(vectors=[[1,0],[0,1]],var=[1,numpy.inf])
+    sensor=Mvn(vectors=[[1,0],[0,1]],var=[1,numpy.inf])
 
     #the system noise
-    noise=Mvar(vectors=[[1,-0.2],[0.2,1]],var=numpy.array([0.5,1])**2)
+    noise=Mvn(vectors=[[1,-0.2],[0.2,1]],var=numpy.array([0.5,1])**2)
 
     #the shear transform to move the system forward
     transform=Matrix([[1,0],[0.25,1]])

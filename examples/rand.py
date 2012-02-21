@@ -4,7 +4,7 @@ import pylab
 
 import numpy
 
-from mvar import Mvar
+from mvn import Mvn
 
 from matplotlib.gridspec import GridSpec
 
@@ -35,9 +35,9 @@ def main():
         
     for dims in range(3):
         ax = axes[dims]
-        ax.set_title("Mvar.rand((%s,2))" % dims)
+        ax.set_title("Mvn.rand((%s,2))" % dims)
         for n in range(N):
-            M = Mvar.rand((dims,2))
+            M = Mvn.rand((dims,2))
             M.plot(ax,facecolor = numpy.random.rand(3))
             
     

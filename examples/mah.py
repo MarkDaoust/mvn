@@ -12,10 +12,10 @@ import pylab
 
 from matplotlib.gridspec import GridSpec
 
-from mvar import Mvar
-from mvar.matrix import Matrix
+from mvn import Mvn
+from mvn.matrix import Matrix
 
-import mvar.plotTools
+import mvn.plotTools
 
 
 alpha = 0.5
@@ -137,9 +137,9 @@ def main():
 
     #generate data
     N=75
-    red = Mvar.rand(2)
+    red = Mvn.rand(2)
     blue = Matrix(red.sample(N))
-    red = Mvar.fromData(blue)
+    red = Mvn.fromData(blue)
 
     #create figure  
     fig = pylab.figure(1, figsize=(7, 7))

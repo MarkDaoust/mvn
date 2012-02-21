@@ -1,26 +1,26 @@
 #! /usr/bin/env python
 
-from mvar import Mvar
-from mvar.matrix import Matrix
+from mvn import Mvn
+from mvn.matrix import Matrix
 
 import numpy
 import pylab
 
 
 def main():
-    M1=Mvar.rand(2)    
-    M2=Mvar.rand(2)    
+    M1=Mvn.rand(2)    
+    M2=Mvn.rand(2)    
     
     data1 = M1.sample(100)
     data2 = M2.sample(100)
     
-    M1 = Mvar.fromData(data1)
-    M2 = Mvar.fromdata(data2)
-    M3 = Mvar.fromData([M1,M2])
+    M1 = Mvn.fromData(data1)
+    M2 = Mvn.fromdata(data2)
+    M3 = Mvn.fromData([M1,M2])
     
     data3 = Matrix.stack([[data1],[data2]])
         
-    assert M3 == Mvar.fromData(data3)
+    assert M3 == Mvn.fromData(data3)
 
     A=pylab.gca()
 

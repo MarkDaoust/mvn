@@ -2,16 +2,16 @@
 
 import numpy
 
-from mvar import Mvar
-from mvar.matrix import Matrix
-from mvar.mixture import Mixture
+from mvn import Mvn
+from mvn.matrix import Matrix
+from mvn.mixture import Mixture
 
 import pylab; pylab.ion()
 
 #source = Mixture(
 #    distributions=[
-#        Mvar.fromData(Matrix.randn([500,2])*(Matrix.eye(2)+Matrix.randn([2,2]))),
-#        Mvar.fromData(Matrix.randn([500,2])*(Matrix.eye(2)+Matrix.randn([2,2]))),    
+#        Mvn.fromData(Matrix.randn([500,2])*(Matrix.eye(2)+Matrix.randn([2,2]))),
+#        Mvn.fromData(Matrix.randn([500,2])*(Matrix.eye(2)+Matrix.randn([2,2]))),    
 #    ],
 #    weights=[numpy.random.rand(),numpy.random.rand()],
 #)
@@ -21,8 +21,8 @@ D1 = Matrix.randn([1000,2])*(Matrix.eye(2)+Matrix.randn([2,2]))
 D2 = Matrix.randn([100,2])*(Matrix.eye(2)+Matrix.randn([2,2]))    
 
 
-M1 = Mvar.fromData(D1)
-M2 = Mvar.fromData(D2)
+M1 = Mvn.fromData(D1)
+M2 = Mvn.fromData(D2)
 
 print 'M1=%s' % M1
 print 'M2=%s' % M2
@@ -33,8 +33,8 @@ data = numpy.vstack([
 ])
 
 
-W1,R1 = [1e7],Mvar(mean=[ 10.0, 10.0],var=numpy.array([20.0,20.0])**2)
-W2,R2 = [1e7],Mvar(mean=[-10.0,-10.0],var=numpy.array([20.0,20.0])**2)
+W1,R1 = [1e7],Mvn(mean=[ 10.0, 10.0],var=numpy.array([20.0,20.0])**2)
+W2,R2 = [1e7],Mvn(mean=[-10.0,-10.0],var=numpy.array([20.0,20.0])**2)
 
 old_p = numpy.inf
 
@@ -56,8 +56,8 @@ for N in range(50):
         d2/(d1+d2),
     ]
 
-    R1 = Mvar.fromData(data = data,weights = W1,bias=True)
-    R2 = Mvar.fromData(data = data,weights = W2,bias=True)
+    R1 = Mvn.fromData(data = data,weights = W1,bias=True)
+    R2 = Mvn.fromData(data = data,weights = W2,bias=True)
 
     #print 'W1=%s' % sum(W1)
     #print 'W2=%s' % sum(W2)

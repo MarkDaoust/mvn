@@ -16,9 +16,9 @@ from matplotlib.gridspec import GridSpec
 import  mpl_toolkits.axisartist
 from  mpl_toolkits.axisartist.grid_helper_curvelinear import GridHelperCurveLinear
 
-from mvar import Mvar
-from mvar.matrix import Matrix
-from mvar.decorate import curry
+from mvn import Mvn
+from mvn.matrix import Matrix
+from mvn.decorate import curry
 
 
 class my_axis(mpl_toolkits.axisartist.Axes):
@@ -153,9 +153,9 @@ def main():
     N=75#numpy.round(10.0**(1.5+1*numpy.random.rand()))
 
     #generate data
-    red = Mvar.rand(2)
+    red = Mvn.rand(2)
     blue = red.sample(N)
-    red = Mvar.fromData(blue)
+    red = Mvn.fromData(blue)
 
     #create figure
     fig = pylab.figure(1, figsize=(7, 7))

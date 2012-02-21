@@ -5,7 +5,7 @@
 
 import pylab
 
-from mvar import Mvar
+from mvn import Mvn
 
 def main():
     """
@@ -14,8 +14,8 @@ def main():
     """
     pylab.figure(1, figsize=(5,5))
     
-    red  = Mvar.rand(shape=2)    
-    blue = Mvar.rand(shape=2)
+    red  = Mvn.rand(shape=2)    
+    blue = Mvn.rand(shape=2)
     
     magenta = red & blue
     
