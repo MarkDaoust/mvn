@@ -1,4 +1,4 @@
 pushd doc
-rm -rf _build/html build/plot_directive
+rm -rf _build/html _build/examples
 make html
 popd
