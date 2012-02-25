@@ -1,5 +1,8 @@
 #! /usr/bin/env python
 """
+demonstration of bayseian inference between two mvn's
+aka "covariance intersection" 
+
 .. plot:: ./examples/blend.py main
 """
 
@@ -21,8 +24,7 @@ def main():
     
     red.plot(    facecolor = 'r',edgecolor = 'k',slope=1)
     blue.plot(   facecolor = 'b',edgecolor = 'k',slope=1)
-    magenta.plot(facecolor = 'm',edgecolor = 'k',slope=1)
-    
+    magenta.plot(facecolor = 'm',edgecolor = 'k',slope=1)   
     
     pylab.xlabel('Magenta = Red & Blue')    
     pylab.show()
