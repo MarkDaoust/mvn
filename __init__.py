@@ -3,7 +3,7 @@
 #todo: better interoperability with scipy.stats
 #todo: mixtures and or "|" operator -> pymix? 
 #todo: try open-bayes? 
-#todo: try sympy's version of this?
+#todo: try sympy's version of this (sympy.stats)?
 #todo: transform's in the "&" operator
 #todo: find a way to auto update the multimethod call dictionaries when sub-classes are created.
 #todo: find the standard approach to making things plottable in matplotlib
@@ -112,7 +112,7 @@ class Mvn(Plane):
  
     Basic math operators (+,-,*,/,**,&,|) have been overloaded to work as 
     consistantly as possible. There are several surprising features in the math 
-    these things produce, so watchout. 
+    these things produce, so watchout.  
 
     The & operator does a baysian inference update (like the kalman filter 
     update step).
@@ -573,7 +573,7 @@ class Mvn(Plane):
         >> M = Mvn.rand(A.shape)
         >> assert M.shape = A.shape
             
-        .. plot:: ./examples/rand.py main
+        .. plot:: ../examples/rand.py main
 
         """
         if hasattr(shape,'__iter__'):
@@ -1188,11 +1188,11 @@ class Mvn(Plane):
     @mah2.register(Mvn,type(None))
     def _mah2Self(self,locations,mean = None):
         """
+        :param mean:                
         :param locations: no locations given, so it returns the distribution of 
                           the length of the self random vector
-        :type locations:`type(None)`
-        :param mean:
-            
+                          :type locations:`type(None)`
+        
         """
         return scipy.stats.chi2(self.shape[0])
         
@@ -1201,7 +1201,7 @@ class Mvn(Plane):
         """        
         :param locations:
         :param mean:
-            
+        
         """    
         delta = (self + [-1]*locations)
 #should be a generalized/non-central chi2
@@ -1211,7 +1211,7 @@ class Mvn(Plane):
         """
         return the mahalabois distance from the mvn to each location
         
-        .. plot:: ./examples/mah.py main
+        .. plot:: ../examples/mah.py main
 
         """
         if locations is None:
@@ -1250,10 +1250,11 @@ class Mvn(Plane):
     @dist2.register(Mvn,type(None))
     def _dist2Self(self,locations,mean = None):
         """
+        :param mean:        
         :param locations: no locations given, so it returns the distribution of the length of the self
-        :type locations:`type(None)`
-        :param mean:
-            
+            :type locations:`type(None)`
+        
+        
         """
         centered = self-self.mean
         return centered.quad()
