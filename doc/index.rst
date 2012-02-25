@@ -6,9 +6,9 @@
 Multivariate Normal Distributions
 =================================
 
-.. plot:: ./examples/blend.py main
-
-.. plot:: ./examples/marginals.py main
+.. plot:: ../examples/blend.py 
+    
+.. plot:: ../examples/marginals.py main
 
 .. toctree::
     :maxdepth: 2
