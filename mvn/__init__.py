@@ -580,13 +580,9 @@ class Mvn(Plane):
             height,ndims = shape
         else:
             height,ndims = shape,shape   
-            
-        assert height <= ndims
         
         randn = Matrix.randn
         eye= Matrix.eye
-        
-        
         
         return cls.fromData(
             randn([height+1,ndims])*
