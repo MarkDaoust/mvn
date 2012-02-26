@@ -1,4 +1,6 @@
 *~
 *.pyc
-art
-testresults.diff
+*.pkl
+testresult*
+mvn/doc/_build
+
