@@ -1,9 +1,19 @@
-Multivariate Normal Distributions,
+Multivariate Normal Distributions, in python.
 
-Full featured class, for easy Principal Component Analysis,
+********
+* WARNING:
+*
+*    I'm learning all of this as I do it, I may have made some mistakes.
+*        If it doesn't have automated tests, it doesn't work.
+*
+*    I'm still working on it, it doesn't have a stable API yet: 
+*        expect everything to change.
+*     
+********
+
+Full featured mvn class, for *easy* Principal Component Analysis,
 Kalman filtering, Sensor Fusion, Bayseian Analysis or 
 Expectaton Maximization.
 
-The goal has been to make these things easy, not to 
-make them efficient, so it may be inapropriate for 
-large data-sets.
+Emphasis on the easy. The goal has been to make these things simple 
+and intuitive. 
