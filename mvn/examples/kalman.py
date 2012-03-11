@@ -17,14 +17,14 @@ from mvn.matrix import Matrix
 
 import mvn.plotTools
 
-from collections import OrderedDict
+from collections import OrderedDict 
 
 colors = OrderedDict([
     ['Actual'       ,[1,1,0]],
     ['Updated'      ,[0,0,1]],
     ['Noise'        ,[1,0,0]],
     ['Updated+Noise',[1,0,1]],
-    ['Measurment'   ,[0,1,0]],
+    ['Measurement'  ,[0,1,0]],
     ['Filter Result',[0,1,1]],
 ])
     
@@ -105,7 +105,8 @@ def newAx(fig,transform = Matrix.eye(2)):
     return ax
 
 if __name__=='__main__':
-
+    if not os.path.exists('kalman'):
+        os.mkdir('kalman')
 
     ## figure setup
     
@@ -116,7 +117,7 @@ if __name__=='__main__':
     #create publisher
     P = Publisher(path)
     #create figure
-    fig = pylab.figure(figsize = (7,7))
+    fig = pylab.figure(figsize = (6,6))
 
 
     ## kalman filter parameters
@@ -125,10 +126,10 @@ if __name__=='__main__':
     actual=numpy.array([[0,5]])
 
     #the sensor
-    sensor=Mvn(vectors=[[1,0],[0,1]],var=[0.5,numpy.inf])
+    sensor=Mvn(vectors=[[1,0],[0,1]],var=[1,numpy.inf])
 
     #the system noise
-    noise=Mvn(vectors=[[1,-0.2],[0.2,1]],var=numpy.array([0.5,1])**2)
+    noise=Mvn(vectors=[[1,-0.5],[0.5,1]],var=numpy.array([0.5,1])**2)
 
     #the shear transform to move the system forward
     transform=Matrix([[1,0],[0.5,1]])
@@ -150,8 +151,8 @@ if __name__=='__main__':
 
 
     #measure the actual position, and plot the measurment
-    filtered.plot(facecolor=colors['Measurment'],**otherParams)
-    ax.set_title('Initialize to first measurment')
+    filtered.plot(facecolor=colors['Filter Result'],**otherParams)
+    ax.set_title('Initialize to first measurement')
     pylab.xlabel('Position')
     pylab.ylabel('Velocity')
     P.publish(fig)
@@ -161,7 +162,7 @@ if __name__=='__main__':
         ## plot immediately after the step foreward
 
         #create a transformed axis        
-        ax = newAx(fig,transform)
+        ax = newAx(fig)#,transform)
         
         #update the system
         actual=actual*transform
@@ -182,14 +183,13 @@ if __name__=='__main__':
         filtered.plot(facecolor=colors['Updated'],**otherParams) 
 
         #add noise and plot the actual and filtered values
-        actual=noise+actual
-        filtered=noise+filtered
+        actual_noise=noise+actual
+        filtered_noise=noise+filtered
                
-        actual.plot(facecolor=colors['Noise'],**otherParams)
-        filtered.plot(facecolor=colors['Noise'],**otherParams)
+        actual_noise.plot(facecolor=colors['Noise'],**otherParams)
+        filtered_noise.plot(facecolor=colors['Noise'],**otherParams)
 
         # sample the position of the actual distribution, to find it's new position
-        actual=actual.sample()
         ax.plot(actual[:,0],actual[:,1],**actualParams)
         
         ax.set_title('Add process noise')    
@@ -198,6 +198,23 @@ if __name__=='__main__':
         P.publish(fig)
 
         ax = newAx(fig)
+        
+        filtered.plot(facecolor=colors['Updated'],**otherParams)
+
+        actual_noise.plot(facecolor=colors['Noise'],**otherParams)
+        filtered_noise.plot(facecolor = colors['Noise'],**otherParams)
+
+        actual=actual_noise.sample()
+        ax.plot(actual[:,0],actual[:,1],**actualParams)
+        
+        ax.set_title('Add process noise')    
+        pylab.xlabel('Position')
+        pylab.ylabel('Velocity')
+        P.publish(fig)
+        
+        ax = newAx(fig)        
+
+        filtered = filtered_noise
 
         ax.plot(actual[:,0],actual[:,1],**actualParams)
         filtered.plot(facecolor=colors['Updated+Noise'],**otherParams)
@@ -207,7 +224,7 @@ if __name__=='__main__':
         P.publish(fig)
 
         measure=sensor.measure(actual)
-        measure.plot(facecolor=colors['Measurment'],**otherParams)
+        measure.plot(facecolor=colors['Measurement'],**otherParams)
         ax.set_title('Measure')
         P.publish(fig)
         
@@ -224,7 +241,7 @@ if __name__=='__main__':
         
         ax.plot(actual[:,0],actual[:,1],**actualParams)
         filtered.plot(facecolor=colors['Filter Result'],**otherParams) 
-        pylab.xlabel('Position')
+        pylab.xlabel('Position')    
         pylab.ylabel('Velocity')
         ax.set_title('Merge')    
         P.publish(fig)
