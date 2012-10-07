@@ -36,7 +36,8 @@ actualParams={
 }
 
 otherParams={
-    'minalpha':0.3
+    'minalpha':0.5,
+    'slope':0.333
 }
 
 class Publisher(object):    
@@ -74,7 +75,8 @@ def drawLegend(ax):
 
     ax.legend(
         patches,list(colors.keys()),
-        loc='lower right'
+        loc='lower center',
+        ncol = 2
     )
     
 def newAx(fig,transform = Matrix.eye(2)):
@@ -129,7 +131,7 @@ if __name__=='__main__':
     sensor=Mvn(vectors=[[1,0],[0,1]],var=[1,numpy.inf])
 
     #the system noise
-    noise=Mvn(vectors=[[1,-0.5],[0.5,1]],var=numpy.array([0.5,1])**2)
+    noise=Mvn(vectors=[[1,0],[0,1]],var=numpy.array([0.5,1])**2)
 
     #the shear transform to move the system forward
     transform=Matrix([[1,0],[0.5,1]])
@@ -157,7 +159,7 @@ if __name__=='__main__':
     pylab.ylabel('Velocity')
     P.publish(fig)
 
-    for n in range(8):
+    for n in range(6):
  
         ## plot immediately after the step foreward
 
@@ -191,18 +193,6 @@ if __name__=='__main__':
 
         # sample the position of the actual distribution, to find it's new position
         ax.plot(actual[:,0],actual[:,1],**actualParams)
-        
-        ax.set_title('Add process noise')    
-        pylab.xlabel('Position')
-        pylab.ylabel('Velocity')
-        P.publish(fig)
-
-        ax = newAx(fig)
-        
-        filtered.plot(facecolor=colors['Updated'],**otherParams)
-
-        actual_noise.plot(facecolor=colors['Noise'],**otherParams)
-        filtered_noise.plot(facecolor = colors['Noise'],**otherParams)
 
         actual=actual_noise.sample()
         ax.plot(actual[:,0],actual[:,1],**actualParams)
@@ -211,6 +201,7 @@ if __name__=='__main__':
         pylab.xlabel('Position')
         pylab.ylabel('Velocity')
         P.publish(fig)
+        
         
         ax = newAx(fig)        
 

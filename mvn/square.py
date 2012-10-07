@@ -127,6 +127,7 @@ def _subSquare(vectors,var,full=False):
         scaled=Matrix(var[:,None]*numpy.array(vectors))
         
         cov=vectors.H*scaled
+        
         (val,vec)=eig(cov)
         vec=vec.H
 

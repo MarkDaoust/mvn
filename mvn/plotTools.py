@@ -71,8 +71,7 @@ matplotlib.projections.projection_registry._all_projection_types[
         'custom'
     ] = my_axis  
 # End Monkey Patch        #
-###########################
-
+###########################    
 
 def triax():
     """

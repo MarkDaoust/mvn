@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+    #! /usr/bin/env python
 
 import unittest
 import operator
@@ -1106,9 +1106,10 @@ class outerTester(myTests):
 
 def getTests(fixture=None):
     testCases= [
-            value for (name,value) in copy.copy(globals()).iteritems() 
-            if isinstance(value,type) and issubclass(value,myTests)
-        ]
+        value for (name,value) in globals().iteritems() 
+        if isinstance(value,type) and issubclass(value,myTests)
+    ]
+    
     if fixture is None:
         return testCases
    
@@ -1121,15 +1122,15 @@ def getTests(fixture=None):
 
     return testCases
 
-if __name__=='__main__':
-    suite=unittest.TestSuite()
-
-    if '-r' in sys.argv:
-        testFixture=testObjects.testObjects
-    else:
-        testFixture=testObjects.makeObjects()
-    
-    suite.addTests(getTests(testFixture))
-
-
-    unittest.TextTestRunner().run(suite)
+if __name__=='__main__':  
+     suite=unittest.TestSuite()
+ 
+     if '-n' not in sys.argv:
+         testFixture=testObjects.testObjects
+     else:
+         testFixture=testObjects.makeObjects()
+     
+     suite.addTests(getTests(testFixture))
+ 
+ 
+     unittest.TextTestRunner().run(suite)

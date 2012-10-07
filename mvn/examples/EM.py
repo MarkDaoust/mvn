@@ -17,8 +17,10 @@ import pylab; pylab.ion()
 #)
 #data = soure.sample(200) 
 
-D1 = Matrix.randn([1000,2])*(Matrix.eye(2)+Matrix.randn([2,2]))
-D2 = Matrix.randn([100,2])*(Matrix.eye(2)+Matrix.randn([2,2]))    
+D1 = Mvn.rand().sample(1000)
+#Matrix.randn([1000,2])*(Matrix.eye(2)+Matrix.randn([2,2]))
+D2 = Mvn.rand().sample(1000)
+#Matrix.randn([100,2])*(Matrix.eye(2)+Matrix.randn([2,2]))    
 
 
 M1 = Mvn.fromData(D1)
@@ -38,7 +40,8 @@ W2,R2 = [1e7],Mvn(mean=[-10.0,-10.0],var=numpy.array([20.0,20.0])**2)
 
 old_p = numpy.inf
 
-for N in range(50):
+for N in range(10):
+    pylab.gcf().clear()
 
     pi1 = sum(W1)
     pi2 = sum(W2)
@@ -62,11 +65,10 @@ for N in range(50):
     #print 'W1=%s' % sum(W1)
     #print 'W2=%s' % sum(W2)
 
-    pylab.plot(data[:,0],data[:,1],'.r')
+    pylab.scatter(data[:,0],data[:,1],c='r',alpha=0.5)
     pylab.gca().add_artist(R1.patch())
     pylab.gca().add_artist(R2.patch())
     pylab.draw()
-    pylab.gcf().clear()
 
     p=sum(pi1*W1*pi2*W2)
     print 'p=%s' % p
@@ -75,3 +77,4 @@ for N in range(50):
     old_p = p
 
 
+pylab.show()

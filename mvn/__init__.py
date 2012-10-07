@@ -117,16 +117,16 @@ class Mvn(Plane):
     The & operator does a baysian inference update (like the kalman filter 
     update step).
     
-    >>> result = prior & evidence                                               #doctest: +SKIP
+    >>> posterior = prior & evidence #doctest: +SKIP
 
     This considerably simplifies some manipulations, kalman filtering, 
     for example becomes: 
             
-    >>> state[t+1] = (state[t]*STM + noise) & measurment                        #doctest: +SKIP
+    >>> state[t+1] = (state[t]*STM + noise) & measurment #doctest: +SKIP
         
     Sensor fusion, for uncorrelated sensors reduces to:    
             
-    >>> result = measurment1 & measurment2 & measurment3                        #doctest: +SKIP
+    >>> result = measurment1 & measurment2 & measurment3 #doctest: +SKIP
         
     
     Attributes:
@@ -286,7 +286,7 @@ class Mvn(Plane):
         """
         :param data:
         :param weights:        
-        """
+        """        
         return (
             numpy.ones(data.shape[0])
             if weights is None 
@@ -347,6 +347,8 @@ class Mvn(Plane):
         (n) set bias = false to use n-1,
         """
         return cls.fromMatrix(Matrix(data),**kwargs)
+        
+    fit = fromData
     
     @classmethod
     @fromData.__func__.register(type,Mvn,type(None))
@@ -469,8 +471,12 @@ class Mvn(Plane):
         >>> assert D.mean == 0
         >>> assert D.var == 2
     
-        """
-        N = cls._getN(data,weights)-(not bias)
+        """        
+        N = cls._getN(data,weights)-(0 if bias else 1)
+        
+        if bias and not N:
+            return cls.infs(data.shape[1])
+            
         weights = cls._getWeights(weights,data,N)
         mean = cls._getMean(data,mean,weights)
     
@@ -1162,9 +1168,7 @@ class Mvn(Plane):
         
         if self.ndim == 1 and locations.ndim == 1 and locations.size != 1:
             locations = locations[:,None]
-            print locations.shape
 
-        
         if mean is None:
              mean = self.mean.squeeze()
         else:
@@ -2713,6 +2717,10 @@ class Mvn(Plane):
     def __repr__(self):
         """
         print self
+        
+        assert A.__str__() == A.__repr__()
+        
+        assert A == eval(str(A))
         """
         return '\n'.join([
             '%s(' % self.__class__.__name__,
@@ -2825,12 +2833,45 @@ class Mvn(Plane):
             
         return insert(artist)
         
-    def plot3D(self,ax = None, **kwargs):
+    def plot3D(self,ax = None, nstd = 2.0, **kwargs):
         """
         :param ax:
         :param ** kwargs:
         """
-        raise NotImplementedError()
+        from mpl_toolkits.mplot3d import Axes3D
+
+        if ax is None:
+            ax = pylab.gca(projection = '3d')
+            
+        assert isinstance(ax,Axes3D)  
+        
+        
+        u = numpy.linspace(0, 2 * numpy.pi, 100)
+        v = numpy.linspace(0, numpy.pi, 100)
+
+        x = numpy.outer(numpy.cos(u), numpy.sin(v))
+        y = numpy.outer(numpy.sin(u), numpy.sin(v))
+        z = numpy.outer(numpy.ones(numpy.size(u)), numpy.cos(v))
+
+        xyz =[x[...,None],y[...,None],z[...,None]]
+    
+        xyz = numpy.concatenate(xyz,-1)*nstd
+        
+        xyz = numpy.dot(
+            xyz,
+            self.scaled.array()
+        )
+
+        xyz = xyz+self.mean.array()[None,:,:]
+        
+        ax.plot_wireframe(
+            xyz[...,0], xyz[...,1], xyz[...,2],  
+            rstride=10, 
+            cstride=10, 
+            color = 'k',
+            **kwargs
+        )
+            
         
     def plotND(self,ax = None, **kwargs):
         """
@@ -2904,12 +2945,31 @@ class Mvn(Plane):
             
 
         if alpha=='auto':
-            kwargs['alpha']=numpy.max([
+
+            alpha = numpy.max([
                 minalpha,
                 numpy.exp(-slope*sqrt(self.det()))
             ])
-        else:
-            kwargs['alpha']=alpha
+
+            colorConverter = matplotlib.colors.ColorConverter()           
+            
+            facecolor = kwargs.get('facecolor')
+            if facecolor is not None:
+                if isinstance(facecolor,str):
+                    facecolor = colorConverter.to_rgb(facecolor)
+                facecolor = list(facecolor)
+                if len(facecolor) < 4:
+                    facecolor.append(alpha)
+                kwargs['facecolor'] = facecolor
+
+            edgecolor = kwargs.get('edgecolor')
+            if edgecolor is not None:
+                if isinstance(edgecolor,str):
+                    edgecolor = colorConverter.to_rgb(edgecolor)
+                edgecolor = list(edgecolor)
+                if len(edgecolor) < 4:
+                    edgecolor.append(alpha)
+                kwargs['edgecolor'] = edgecolor
 
         #unpack the width and height from the scale matrix 
         wh = nstd*sqrt(self.var)
