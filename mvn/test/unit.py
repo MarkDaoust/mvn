@@ -14,9 +14,7 @@ sqrt = mvn.sqrt
 Mvn = mvn.Mvn
 Matrix = mvn.Matrix
 
-import helpers
-
-import testObjects
+import mvn.helpers
 
 
 class myTests(unittest.TestCase):
@@ -1122,15 +1120,3 @@ def getTests(fixture=None):
 
     return testCases
 
-if __name__=='__main__':  
-     suite=unittest.TestSuite()
- 
-     if '-n' not in sys.argv:
-         testFixture=testObjects.testObjects
-     else:
-         testFixture=testObjects.makeObjects()
-     
-     suite.addTests(getTests(testFixture))
- 
- 
-     unittest.TextTestRunner().run(suite)

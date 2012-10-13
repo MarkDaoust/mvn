@@ -1,15 +1,5 @@
 #! /usr/bin/env python
-import sys
-
 import optparse
-import unittest
-
-import mvn
-
-import mvn.testObjects as testObjects
-
-import mvn.docTests as docTests
-import mvn.unitTests as unitTests
 
 def makeParser():
     parser=optparse.OptionParser()
@@ -32,35 +22,10 @@ def makeParser():
     parser.add_option_group(flatness)
 
     return parser
-
-def getSuite(values):
-    suite=unittest.TestSuite()
-
-    testFixture=testObjects.getObjects(values)
     
-    suite.addTests(unitTests.getTests(testFixture))
-    suite.addTests(docTests.getTests(mvn,testFixture))
-
-    return suite
-
-if __name__=='__main__':
+def parse(argv):
     parser = makeParser()
-
-    (values,remainder) = parser.parse_args()
-
+    (settings,remainder) = parser.parse_args(argv)
     assert not remainder
-
-    suite=unittest.TestSuite()
-
-    if values.x:
-        for flatness in [(True,True,True),(False,False,False)]:
-            values.flatness=flatness
-            suite.addTests(getSuite(values))
-    else:
-        suite.addTests(getSuite(values))
-
-    suite.addTests(docTests.getTests(mvn.mvncdf,testObjects.getObjects(values)))
-
-    sys.stderr.write("test values: %s\n%s\n" % (' '.join(sys.argv),values))
-        
-    unittest.TextTestRunner().run(suite)
+    return settings
+    

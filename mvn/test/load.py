@@ -4,19 +4,16 @@ import unittest
 import doctest
 import cPickle
 
-import testObjects
+def getSuite(values):
+    suite=unittest.TestSuite()
 
-
-
-def getTests(module,testFixture):
-    jar = cPickle.dumps(testFixture)
-
-    def setUp(test):
-       test.globs.update(cPickle.loads(jar))
+    testFixture=testObjects.getObjects(values)
     
-    testCases=doctest.DocTestSuite(module, setUp = setUp)
-    return testCases
-    
+    suite.addTests(unitTests.getTests(testFixture))
+    suite.addTests(docTests.getTests(mvn,testFixture))
+
+    return suite
+
 
 if __name__=='__main__':
     import mvn
