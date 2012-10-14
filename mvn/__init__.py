@@ -2699,8 +2699,8 @@ class Mvn(Plane):
             
             >>> assert isinstance(A.X,Matrix)
             >>> assert A.X.shape == (A.rank*2,A.ndim)
-            >>> assert A==Mvn(A.X)
-            >>> assert A*M == Mvn(A.X*M)
+            >>> assert A==Mvn.fromData(A.X)
+            >>> assert A*M == Mvn.fromData(A.X*M)
         """
         def fget(self):
             scaled = (self.rank**0.5)*self.scaled
