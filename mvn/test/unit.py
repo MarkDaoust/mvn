@@ -14,7 +14,7 @@ sqrt = mvn.sqrt
 Mvn = mvn.Mvn
 Matrix = mvn.Matrix
 
-import mvn.helpers
+import mvn.helpers as helpers
 
 
 class myTests(unittest.TestCase):
@@ -115,8 +115,8 @@ class densityTester(myTests):
             #setup
             AB  = self.A &  self.B
             A_B = self.A & ~self.B
-                
-            locations = AB.sample([10,10])
+    
+            locations = AB.X
 
             # A&B == k*A.*B
             Da = self.A.density(locations)
@@ -125,7 +125,8 @@ class densityTester(myTests):
             Dab  = (AB).density(locations)
 
             ratio = Dab /(Da*Db)
-            self.assertTrue(Matrix(0) == ratio.var())
+            
+            self.assertTrue(Matrix(ratio) == ratio[0])
 
             # A&(~B) == k*A./B
             Da_b = (A_B).density(locations)

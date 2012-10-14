@@ -1154,7 +1154,7 @@ class Mvn(Plane):
             >>> Z=3
             >>> deltas = Mvn.fromData(A.mah2(A.sample(N)) - A.ndim)
             >>> deltas.var/=N
-            >>> assert deltas.mah2() < (Z**2)
+            >>> assert deltas.mah2(0) < (Z**2)
 
         negative variances result in negative mah2's.
 
@@ -2538,12 +2538,12 @@ class Mvn(Plane):
             >>> a=A.sample(N)
             >>> deltas = Mvn.fromData(A.entropy(a)-A.entropy())
             >>> deltas.var/=N
-            >>> assert deltas.mah2() < (Z**2)     
+            >>> assert deltas.mah2(0) < (Z**2)     
             >>>
             >>> b=B.sample(N)
             >>> deltas = Mvn.fromData(A.entropy(b)-A.entropy(B))
             >>> deltas.var/=N
-            >>> assert deltas.mah2() < (Z**2)  
+            >>> assert deltas.mah2(0) < (Z**2)  
 
         http://en.wikipedia.org/wiki/Multivariate_normal_distribution
         """
@@ -2607,8 +2607,9 @@ class Mvn(Plane):
         What does this mean? shared information?:
 
             >>> assert Matrix(A.diag().KLdiv(A)) == A.diag().entropy() - A.entropy() 
-
-        #I'm not sure this is worth the backwards API.
+            
+#I'm not sure this is worth the backwards API.
+        
         And calculating it for an Mvn is equivalent to averaging out a bunch of samples
 
             >>> N=1000
@@ -2618,20 +2619,20 @@ class Mvn(Plane):
             >>> a=A.sample(N)
             >>> KL = Mvn.fromData(A.KLdiv(a)) #should be zero
             >>> KL.var/=N
-            >>> assert KL.mah2() < (Z**2)
+            >>> assert KL.mah2(0) < (Z**2)
             >>> 
             >>> #KLdiv 
             >>> b=B.sample(N)   
             >>> KL = Mvn.fromData(A.KLdiv(b) - A.KLdiv(B)) #difference should be zero
             >>> KL.var/=N
-            >>> assert KL.mah2() < (Z**2)
+            >>> assert KL.mah2(0) < (Z**2)
             >>> 
             >>> B2=B.copy(deep=True)
             >>> B2.var/=2
             >>> b2=B2.sample(N)
             >>> KL = Mvn.fromData(B.KLdiv(b2) - B.KLdiv(B2)) #should be zero
             >>> KL.var/=N
-            >>> assert KL.mah2() < (Z**2)
+            >>> assert KL.mah2(0) < (Z**2)
 
         http://en.wikipedia.org/wiki/Multivariate_normal_distribution#Kullback.E2.80.93Leibler_divergence
         """
@@ -2698,8 +2699,8 @@ class Mvn(Plane):
             
             >>> assert isinstance(A.X,Matrix)
             >>> assert A.X.shape == (A.rank*2,A.ndim)
-            >>> assert A==A.X
-            >>> assert A*M == A.X*M
+            >>> assert A==Mvn(A.X)
+            >>> assert A*M == Mvn(A.X*M)
         """
         def fget(self):
             scaled = (self.rank**0.5)*self.scaled
