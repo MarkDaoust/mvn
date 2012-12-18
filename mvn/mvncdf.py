@@ -173,7 +173,7 @@ def mvstdnormcdf(lower, upper, corrcoef,maxpts = None, **kwds):
     >>> assert Matrix(0.166666399198) == mvstdnormcdf(
     ...    [-np.inf,-np.inf,-100.0], 
     ...    [0.0,0.0,0.0], 
-    ...    corr, abseps=1e-6
+    ...    corr, abseps=2e-6
     ... )
     
     >>> 
