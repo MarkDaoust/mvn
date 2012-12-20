@@ -1,5 +1,8 @@
 #! /usr/bin/env python
 
+#todo: nose-tests
+#todo: remove all implicit type casting
+    
 #todo: better interoperability with scipy.stats
 #todo: mixtures and or "|" operator -> pymix? 
 #todo: try open-bayes? 
@@ -138,24 +141,12 @@ class Mvn(Plane):
 
     infoBase = numpy.e
     """
-    default base to use in formation calculations
+    default base to use by information calculations
     
     >>> assert Mvn.infoBase is numpy.e
     """    
 
-    rtol = 1e-5
-    """
-    relative tolerence
-    
-    see :py:meth:`mvn.Mvn.squeeze`
-    """
-    
-    atol = 1e-8
-    """
-    absolute tolerence
-    
-    see :py:meth:`mvn.Mvn.squeeze`
-    """
+
 
 
     ############## Creation
@@ -198,16 +189,15 @@ class Mvn(Plane):
         mean= mean if callable(mean) else numpy.array(mean).flatten()[None,:]
         vectors= vectors if callable(vectors) else Matrix(vectors)
         
-#todo split 'autostack' into 'autoexpand' and 'stack'
-        stack=Matrix(helpers.autostack([
+        stack=helpers.autoshape([
             [var,vectors],
             [1  ,mean   ],
-        ],default = default))
+        ],default = default)
 
         #unpack the stack into the object's parameters
-        self.mean = stack[-1,1:]
-        self.var = numpy.array(stack[:-1,0]).flatten()
-        self.vectors = stack[:-1,1:]
+        self.mean = Matrix(stack[1,1])
+        self.var = numpy.array(stack[0,0]).flatten()
+        self.vectors = Matrix(stack[0,1])
         
         assert  (numpy.isreal(numpy.asarray(self.mean)).all() 
             and numpy.isreal(numpy.asarray(self.var)).all()
@@ -656,7 +646,7 @@ class Mvn(Plane):
         
         result = result.square()
 
-        zeros=helpers.approx(result.var)
+        zeros=self.approx(result.var)
 
         result.var[zeros]=0
 
@@ -670,12 +660,14 @@ class Mvn(Plane):
         >>> assert A.inflate().squeeze().shape == A.shape
         """
         result=self.copy()
-#        small=helpers.approx(self.var,rtol = self.rtol, atol = self.atol)
-        small=helpers.approx(self.var)
-        
-        if small.size:
-            result.var = result.var[~small]
-            result.vectors = result.vectors[~small,:]
+
+        if not self.var.size:
+            return result
+            
+        small=self.approx(self.var)        
+
+        result.var = result.var[~small]
+        result.vectors = result.vectors[~small,:]
         
         return result
 
@@ -3114,15 +3106,18 @@ def binindex(index,size):
 
 
 if __name__ == '__main__':
-    print 'hello'
+    from mvn import *
+    
+    L1=Mvn(mean=[0,0],vectors=[[1,1],[1,-1]], var=[numpy.inf,0.5])
+    L2=Mvn(mean=[1,0],vectors=[0,1],var=numpy.inf) 
 
-    #overwrite everything we just created with the copy that was 
-    #created when we imported mvn; there can only be one.
-    from testObjects import *
+    L1 & L2
 
-   # B & A & B == A
-
-    print A  > Matrix.infs(2)
+    L1.given(dims=0,value=1) == L1&L2 
+    (L1&L2).mean==[1,1] 
+    (L1&L2).cov==[[0,0],[0,2]] 
+    
+   
 
 #    
 #    A < -Matrix.infs(A.ndim)

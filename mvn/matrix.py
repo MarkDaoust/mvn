@@ -73,9 +73,14 @@ class Matrix(numpy.matrix):
         
             >>> assert Matrix([[0,0],[0,0],[0,0]]) == numpy.zeros
             >>> assert Matrix([[1,0],[0,1]]) == Matrix.eye
+            >>> assert Matrix([1,2,3])+Matrix.atol/2 == Matrix([1,2,3])
         """
         other = Matrix(other)
-        return numpy.allclose(self,other,self.rtol,self.atol)
+        try:
+            return numpy.allclose(self,other,self.rtol,self.atol)
+        except:
+            raise ValueError(repr(self),repr(other))
+            
         
     @expandCallable
     def __add__(self,other):
@@ -106,7 +111,7 @@ class Matrix(numpy.matrix):
         return other*self**(-1)
             
     def __repr__(self):
-        return '\nM'+numpy.matrix.__repr__(self)[1:]
+        return 'M'+numpy.matrix.__repr__(self)[1:]
 
     __str__ = __repr__
 
@@ -144,19 +149,12 @@ class Matrix(numpy.matrix):
         see: :py:func:`numpy.array`
         """
         return numpy.array(self)
-
-    @expandCallable        
+      
     def approx(self,other = None):
         """
         same function as :py:func:`numpy.allclose`, but elementwise
         """
-        if other is None :
-            delta = numpy.abs(self)
-            other = self
-        else:
-            delta = numpy.abs(self-other)
-        
-        return (delta < self.atol+self.rtol*numpy.abs(other))
+        return helpers.approx(self,other,atol=self.atol,rtol=self.rtol)
 
     @classmethod
     def eye(cls,*args,**kwargs):
@@ -228,15 +226,15 @@ class Matrix(numpy.matrix):
         
         >>> E3 = numpy.eye(3)
         >>> Matrix.stack([ 
-        ...     [         8*E3,Matrix.zeros],
+        ...     [           E3,Matrix.zeros],
         ...     [  Matrix.ones,           4],
         ... ])
-        Matrix([[ 8.,  0.,  0.,  0.],
-                [ 0.,  8.,  0.,  0.],
-                [ 0.,  0.,  8.,  0.],
+        Matrix([[ 1.,  0.,  0.,  0.],
+                [ 0.,  1.,  0.,  0.],
+                [ 0.,  0.,  1.,  0.],
                 [ 1.,  1.,  1.,  4.]])
         """
-        return cls(helpers.autostack(rows,default))
+        return cls(helpers.stack(rows,default))
 
     def det(self):
         """

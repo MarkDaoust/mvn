@@ -11,23 +11,6 @@ import mvn.decorate as decorate
 from mvn.matrix import Matrix 
 from mvn.square import square
 
-def getNull(vectors):
-    shape=vectors.shape        
-    missing = shape[1]-shape[0]
-
-    if missing>0:
-        vectors = numpy.vstack(
-            [vectors,numpy.zeros((missing,shape[1]))]
-        )
-    else:
-        vectors=vectors
-
-    var,vectors = square(vectors)
-
-    zeros=helpers.approx(var)
-
-    return vectors[zeros]
-
 
 Plane = decorate.underConstruction('Plane')
 
@@ -36,6 +19,21 @@ Plane = decorate.underConstruction('Plane')
 @decorate.automath
 @decorate.MultiMethod.sign(Plane)
 class Plane(object):
+    rtol = 1e-5
+    """
+    relative tolerence
+    
+    see :py:func:`mvn.helpers.approx`
+    """
+    
+    atol = 1e-8
+    """
+    absolute tolerence
+    
+    see :py:func:`mvn.helpers.approx`
+    """    
+    
+    
     """
     plane class, meant to (eventually) factor out some code, and utility from the Mvn class
     """
@@ -47,14 +45,14 @@ class Plane(object):
         mean= mean if callable(mean) else numpy.array(mean).flatten()[None,:]
         vectors= vectors if callable(vectors) else Matrix(vectors)
 
-        stack=Matrix(helpers.autostack([
+        stack=helpers.autoshape([
             [vectors],
             [mean   ],
-        ],default=1))
+        ],default=1)
         
         #unpack the stack into the object's parameters
-        self.mean = numpy.real_if_close(stack[-1])
-        self.vectors = numpy.real_if_close(stack[:-1])
+        self.vectors = Matrix(numpy.real_if_close(stack[0,0]))
+        self.mean    = Matrix(numpy.real_if_close(stack[1,0]))
 
     def __repr__(self):
         """
@@ -106,8 +104,28 @@ class Plane(object):
             vectors=numpy.vstack([self.vectors,other.vectors])
         )
 
-    def getNull(self):
-        return getNull(self.vectors)
+    def getNull(self,vectors = None):
+        if vectors is None:
+            vectors = self.vectors
+        
+        shape=vectors.shape        
+        missing = shape[1]-shape[0]
+    
+        if missing>0:
+            vectors = numpy.vstack(
+                [vectors,numpy.zeros((missing,shape[1]))]
+            )
+        else:
+            vectors=vectors
+    
+        var,vectors = square(vectors)
+    
+        zeros=self.approx(var)
+    
+        return vectors[zeros]
+        
+    def approx(self,*args):
+        return helpers.approx(*args,atol = self.atol,rtol = self.rtol)
 
 
     def __and__(self,other):
@@ -128,6 +146,6 @@ class Plane(object):
         
         mean = (numpy.linalg.pinv(null,1e-6)*r).H
 
-        return Plane(vectors=getNull(null),mean=mean)
+        return type(self)(vectors=self.getNull(null),mean=mean)
 
 
