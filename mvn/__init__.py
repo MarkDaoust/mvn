@@ -4,10 +4,10 @@
 #todo: remove all implicit type casting
     
 #todo: better interoperability with scipy.stats
-#todo: mixtures and or "|" operator -> pymix? 
-#todo: try open-bayes? 
+#todo: mixtures, "|" operator 
+#todo: find libraries that already do this stuf
 #todo: try sympy's version of this (sympy.stats)?
-#todo: transform's in the "&" operator
+#todo: transform's in the "&" operator    A&T&B
 #todo: find a way to auto update the multimethod call dictionaries when sub-classes are created.
 #todo: find the standard approach to making things plottable in matplotlib
 #todo: try mayavi
@@ -84,8 +84,9 @@ import matplotlib.patches
 
 ## local
 import helpers
+import square
 from helpers import sqrt
-from square import square
+
 
 from matrix import Matrix
 from mixture import Mixture
@@ -120,16 +121,16 @@ class Mvn(Plane):
     The & operator does a baysian inference update (like the kalman filter 
     update step).
     
-    >>> posterior = prior & evidence #doctest: +SKIP
+    >>> posterior = prior & evidence                                         #doctest: +SKIP
 
     This considerably simplifies some manipulations, kalman filtering, 
     for example becomes: 
             
-    >>> state[t+1] = (state[t]*STM + noise) & measurment #doctest: +SKIP
+    >>> state[t+1] = (state[t]*STM + noise) & measurment                     #doctest: +SKIP
         
     Sensor fusion, for uncorrelated sensors reduces to:    
             
-    >>> result = measurment1 & measurment2 & measurment3 #doctest: +SKIP
+    >>> result = measurment1 & measurment2 & measurment3                     #doctest: +SKIP
         
     
     Attributes:
@@ -145,9 +146,6 @@ class Mvn(Plane):
     
     >>> assert Mvn.infoBase is numpy.e
     """    
-
-
-
 
     ############## Creation
     def __init__(
@@ -679,7 +677,7 @@ class Mvn(Plane):
         >>> assert A.vectors*A.vectors.H==Matrix.eye
         """ 
         result = self.copy()
-        (result.var,result.vectors)=square(
+        (result.var,result.vectors)=square.square(
             vectors=result.vectors,
             var=result.var,
         )
@@ -1345,7 +1343,7 @@ class Mvn(Plane):
 
         """
         #convert the inputs
-        fixed=binindex(dims,self.ndim)
+        fixed=helpers.binindex(dims,self.ndim)
         N = fixed.sum()
         free = ~fixed
 
@@ -1391,7 +1389,7 @@ class Mvn(Plane):
         This is an opertor interface to self.given 
         """
         PCA,dims = index
-        PCA = binindex(PCA,self.ndim)
+        PCA = helpers.binindex(PCA,self.ndim)
 
         keep = self[ PCA,:]
         drop = self[~PCA,:]
@@ -1413,7 +1411,7 @@ class Mvn(Plane):
         >>> M = [A.marginal(n) for n in range(A.ndim)]
         >>> assert reduce(operator.and_,M) == A.diag()
         """
-        index = ~binindex(index,self.ndim)
+        index = ~helpers.binindex(index,self.ndim)
         N = index.sum()
         vectors = Matrix.zeros([N,self.ndim])
         vectors[range(N),index]=1
@@ -2985,8 +2983,6 @@ class Mvn(Plane):
         
 
         
-
-
 ## extras    
 
 def wiki(P,M):
@@ -3025,7 +3021,7 @@ def givenVector(self,dims,value):
 
     >>> assert givenVector(A,dims=0,value=1)==A.given(dims=0,value=1)
     """
-    fixed=binindex(dims,self.ndim)
+    fixed=helpers.binindex(dims,self.ndim)
     if fixed.all():
         return Mvn.fromData(value)
 
@@ -3088,80 +3084,5 @@ def mooreChain(self,sensor,transform=None):
             ])
         )
 
-def binindex(index,size):
-    """
-    :param index:
-    :param size:
-        
-    convert an index to binary so it can be easily inverted
-    """
-    if hasattr(index,'dtype') and index.dtype==bool:
-        return index
-    
-    binindex=numpy.zeros(size,dtype=bool)
-    binindex[index]=True
 
-    return binindex
-
-
-
-if __name__ == '__main__':
-    from mvn import *
-    
-    L1=Mvn(mean=[0,0],vectors=[[1,1],[1,-1]], var=[numpy.inf,0.5])
-    L2=Mvn(mean=[1,0],vectors=[0,1],var=numpy.inf) 
-
-    L1 & L2
-
-    L1.given(dims=0,value=1) == L1&L2 
-    (L1&L2).mean==[1,1] 
-    (L1&L2).cov==[[0,0],[0,2]] 
-    
    
-
-#    
-#    A < -Matrix.infs(A.ndim)
-#
-#    import operator
-#    M = [A.marginal(n) for n in range(A.ndim)]
-#    assert reduce(operator.and_,M) == A.diag()
-#    
-#    assert Matrix([A[:,n].var[0] for n in range(A.ndim)]) == A.width()**2
-
-#    AB  = A &  B
-#    A_B = A & ~B
-        
-#    locations = AB.sample([10,10])
-
-    # A&B == k*A.*B
-#    Da = A.density(locations)
-#    Db = B.density(locations)
-
-#    Dab  = (AB).density(locations)
-
-#    ratio = Dab /(Da*Db)
-#    assert(Matrix(0) == ratio.var())   
-
-    # A&(~B) == k*A./B
-#    Da_b = (A_B).density(locations)
-#    ratio = Da_b/(Da/Db)
-#    assert(Matrix(0) == ratio.var())
-
-    
-#    A/B == A*(B**(-1))
-
-#    b=B**0
-
-#    assert b+b == 2*b
-
-#    N1=1000
-#    N2=10
-#    data1 = numpy.random.randn(N1,2)+5*numpy.random.randn(1,2)
-#    data2 = numpy.random.randn(N2,2)+5*numpy.random.randn(1,2)
-    
-#    A = Mvn.fromData(data1)
-#    B = Mvn.fromData(data2)
-
-#    print Mvn.fromData([A,B],Matrix.zeros) 
-#    print Mvn.fromData(A,Matrix.zeros)+Mvn.fromData(B,Matrix.zeros)
-
