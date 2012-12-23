@@ -1,5 +1,3 @@
-#! /usr/bin/env python
-
 from copyable import copyable
 
 def inplace(cls):

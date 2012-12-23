@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-
-
 import copy as cp
 
 def copy(self,other=None,deep=False):
