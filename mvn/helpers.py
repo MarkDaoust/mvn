@@ -24,6 +24,17 @@ def sqrt(data):
     return data**(0.5+0j)
 
 def mag2(vectors,axis=-1):
+    """
+    sum or squares along an axis
+    
+    >>> assert (mag2([[1,2,3],[4,5,6]]) == [14,77]);
+    
+    >>> assert (mag2(numpy.ones([5,10]),0) == 5*numpy.ones(10))
+    >>> assert (mag2(numpy.ones([5,10]),1) == 10*numpy.ones(5))
+    
+    >>> assert mag2(1+1j) == 2
+    """
+    
     vectors = numpy.asarray(vectors)
     return numpy.real_if_close(
         (vectors*vectors.conjugate()).sum(axis)
@@ -33,15 +44,56 @@ def sign(self):
     """
     improved sign function:
         returns a similar array of unit length (possibly complex) numbers pointing in the same 
-        direction as the input 
+        direction as the input
+ 
+    >>> assert sign(0) == 0       
+    >>> assert sign(0+0j) == 0       
+
+    >>> assert sign(2) == 1
+    >>> assert sign(-2) == 1
+ 
+    >>> assert sign(2j) == 1j
+    >>> assert sign(-2j) == -1j
+    
+    >>> assert sign(1+2j) == 1/sqrt(5) + 1j*2/sqrt(5)
+    >>> assert sign(1-2j) == 1/sqrt(5) - 1j*2/sqrt(5)
+
+    >>> # there's a strong connection btween `unit` and `sign`
+    >>> R = numpy.random.randn([10,10])
+    >>> assert (sign(R) == numpy.sign(R)).all()
+    >>>
+    >>> R1 = numpy.random.randn([10,10])
+    >>> R2 = numpy.random.randn([10,10])
+    >>>
+    >>> Rj = R1+1j*R2
+    >>> Rj = sign(Rj)
+    >>> Rj = numpy.concatenate(Rj.real,Rj.imag,2)
+    >>>
+    >>> Ru = numpy.concatenate([R1,R2],2)
+    >>> Ru = unit(Ru)
+    >>> 
+    >>> assert numpy.allclose(Rj,Ru)
+    
     """
-    return numpy.divide(
-        self,
-        abs(self),
-    )
+    zeros = (self == 0)
+    
+    self = numpy.divide(self,numpy.abs(self))
+    
+    self[zeros] = 0;
+    
+    return self
  
 def unit(self,axis=-1):
     """
+    along a given axis, make vectors unit length
+    
+    >>> assert unit([1,2,3])
+    
+    >>> R = numpy.random.randn([3,4,5])
+    >>> axis = numpy.random.randint(0,3)
+    >>> M = mag2(unit(R,axis),axis)
+    >>> assert numpy.allclose(M,numpy.ones_like(M))
+    
     """
     self = numpy.asarray(self)
 
@@ -49,10 +101,8 @@ def unit(self,axis=-1):
         axis = self.ndim-1
     
     mag = mag2(self,axis)**(0.5)
-    print mag.shape
-    print mag.shape[:axis]+(1,)+mag.shape[axis:]
 
-    mag.shape = mag.shape[:axis]+(1,)+mag.shape[axis:]
+    mag = mag.reshape(mag.shape[:axis]+(1,)+mag.shape[axis:])
 
     return self/mag
 
@@ -60,7 +110,10 @@ def ascomplex(self):
     """
     return an array pointing to the same data, but interpreting it as a 
     different type
+    
+    >>> assert ascomplex([1,1]) == 1+1j
     """
+    self = numpy.asarray(self)
     shape=self.shape
     duplicate=copy.copy(self)
     duplicate.dtype=complex
@@ -90,6 +143,9 @@ def diagstack(arrays):
     
     return stack(result)
 
+
+_vectorizedShape = numpy.vectorize(lambda x:x.shape)
+
 def autoshape(rows,default=0):
     """
     >>> A = autoshape([
@@ -114,14 +170,11 @@ def autoshape(rows,default=0):
     rows = data[...,0]
     calls = numpy.asarray(data[...,1],dtype = bool)
 
-    #store the shape of the data
-    shape=data.shape
-
     #if anything is callable
     if calls.any():
         #make an array of shapes
 
-        [heights,widths] = numpy.vectorize(lambda item:item.shape)(rows)
+        [heights,widths] = _vectorizedShape(rows)
 
         heights[calls]= -1
         widths[calls]= -1
@@ -194,18 +247,26 @@ def stack(rows,deafult = 0):
         for row in rows
     ])
 
-def paralell(*items):
+def parallel(*items):
     """
-    resistors in paralell, and thanks to 
+    resistors in parallel, and thanks to 
     duck typing and operator overloading, this happens 
     to be exactly what we need for kalman sensor fusion. 
+    
+    >>> assert parallel(1.0,2.0) == 1/(1/1.0+1/2.0)
     """
     inverted=[item**(-1) for item in items]
     return sum(inverted[1:],inverted[0])**(-1)
 
-def approx(self,other = None,atol=1e-5,rtol=1e-8):
+def approx(self,other = None,rtol=1e-5,atol=1e-8):
     """
     element-wise version of :py:func:`numpy.allclose`
+    
+    >>> assert approx(1e-12*numpy.random.randn(10,10),numpy.zeros(10,10)).all()
+    
+    >>> ones = numpy.ones([3,3])
+    >>> eye = numpy.eye(3)+1e-6*numpy.random.randn([3,3]))
+    >>> assert approx(ones,eye) == numpy.eye(3)
     """
     
     if other is None:
@@ -247,3 +308,17 @@ def rotation2d(angle):
     ])
 
 
+def binindex(index,size):
+    """
+    :param index:
+    :param size:
+        
+    convert an index to binary so it can be easily inverted
+    """
+    if hasattr(index,'dtype') and index.dtype==bool:
+        return index
+    
+    binindex=numpy.zeros(size,dtype=bool)
+    binindex[index]=True
+
+    return binindex
