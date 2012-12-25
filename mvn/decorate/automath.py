@@ -74,83 +74,9 @@ class Right(object):
         >>> assert A | B == B | A
         """
         return other | self
-#  
-#    def __rxor__(self,other):
-#        """
-#        >>> assert A ^ B == B ^ A
-#        """
-#        return other ^ self
-
 
     
-class Automath(Copyable,Right):
-    """
-    don't repeat yourself
-    
-    this class fills in a few obvious operators,
-    """
-
-#    """
-#    if you define (A+B) you get an inefficient positive integer multiply (A*N)
-#    if you define (A*B) you get an inefficient positive integer power (A**N)
-#    if you define multiply for negative integers (A*-N) you get neg (-A) 
-#    if you define add and neg you get sub (A-B)
-#    if you define power for negative integers (A**-N) you get div (A/B)
-#    if you define div and floordiv (A//B) you get divmod (A%B)
-#    if you define and (A & B) and invert (~A) you get or (A|B)
-#    if you define or (A|B) and sub (A-B) you get xor (A^B) 
-#    if you define eq (A=B) and gt (A>B)  you'll get lt (A<B), le (A<=B) ,ne (A!=b) and bool (A!=0)
-#    if you define rshift you get lshift    
-#    """
-    
-#    def __mul__(self,N):
-#        """
-#        Use __add__ and __sub__ to create __mul__
-#        
-#        >>> assert 3*A == A+A+A
-#        >>> assert 0*A == A-A
-#        >>> assert (-N)*A == A-(N+1)*A
-#        """
-#        assert int(N) == N
-#        N = int(N)        
-#
-#        if N>0:
-#            return reduce(operator.add,itertools.repeat(self,N))
-#
-#        # block infinite recursion
-#        assert self.__sub__.im_func is not Automath.__sub__.im_func
-#        
-#        if N==0:
-#            return self-self
-#
-#        assert N<0            
-#        return self-(N+1)*self
-#            
-#        
-#    def __pow__(self,N):
-#        """
-#        use __mul__ and __div__ to produce __pow__
-#        
-#        >>> assert M**2==M*M
-#        >>> assert M**0 == M/M
-#        >>> assert M**(-N) == M/(M**(N+1))
-#        """
-#        assert int(N) == N
-#        N = int(N)
-#
-#        if N>0:
-#            return reduce(operator.mul,itertools.repeat(self,N))
-#
-#        # block infinite recursion
-#        assert self.__div__.im_func is not Automath.__div__.im_func
-#
-#        if N == 0:
-#            return self/self
-#            
-#        assert N<0
-#        return self/(self**(abs(N)+1))
-
-        
+class Automath(Copyable,Right):        
     def __pos__(self):
         """
         >>> assert A == +A == ++A
@@ -176,56 +102,11 @@ class Automath(Copyable,Right):
          """
         return self*other**(-1)
 
-#    def __mod__(self,other):
-#        """        
-#        >>> from 
-#        >>> assert A%B == A/B - A//B
-#        """
-#        return (self.__truediv__(other)-self.__flordiv__(other))*other
-#    
-#    def __or__(self,other):
-#        """
-#        >>> assert (A|B) == ~(~A&~B)
-#        """
-#        return ~(~self & ~other)
-#
-#    def __xor__(self,other):
-#        """
-#        >>> assert A^B == (A|B) & ~(A&B)
-#        """
-#        return (self|other) & ~(self & other)
-
     def __ne__(self,other):
         """
         >>> assert (not (A == B)) == (A != B)  
         """
         return not (self == other)
-
-#    def __ge__(self,other):
-#        """
-#        >>> assert (A>=B) == (A==B or A>B)
-#        """
-#        return self==other or self>other
-#
-#    def __lt__(self,other):
-#         """
-#         >>> assert (A<B) == 1-(A>=B)
-#         """
-#         return 1 - self>=other
-#
-#   def __le__(self,other):
-#        """
-#        >>> assert A>=B) == (A==B + A>B)
-#        """
-#        return 1 - self>other
-#
-#    def __lshift__(self,other):
-#        """
-#        >>> assert (A << B) == (A >> -B)
-#        """
-#        return A >> -B
-
-
 
 
 if __debug__:
@@ -242,7 +123,7 @@ if __debug__:
             return float(self.num)
             
         def __str__(self):
-            return '%s(%s)' % (type(self).__name__,self.num)
+            return '%r(%r)' % (type(self).__name__,self.num)
         
         __repr__ = __str__
         
