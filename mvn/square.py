@@ -63,7 +63,7 @@ def square(vectors,var=None,full=False):
         SIvectors = Ivectors[~small,:]
 
         if vectors.any():
-            #revove the component paralell to each infinite vector
+            #revove the component parallel to each infinite vector
             vectors= vectors-vectors*SIvectors.H*SIvectors            
         elif var.size :
             num= helpers.approx(var).sum()
