@@ -356,7 +356,7 @@ class Mvn(Plane):
         :param self:  
         :param mean:
             
-        think paralell axis theorem
+        think parallel axis theorem
         
         >>> a=A[:,0]
         >>> assert Mvn.fromData(a,mean=0).mean == Matrix.zeros
@@ -1494,6 +1494,9 @@ class Mvn(Plane):
             >>> assert Mvn.eye(n) == Mvn.eye
             >>> assert Mvn.infs(n) == Mvn.infs
         """
+        if self is other:
+            return True
+
         if callable(other):
             other = other(self.ndim)
 
@@ -1599,7 +1602,7 @@ class Mvn(Plane):
         see :py:meth:`mvn.Mvn.lt`
         see :py:meth:`mvn.Mvn.inbox`
         """
-        return self>lower
+        return self<lower
 
     def inBox(self,lower,upper,**kwargs):
         """
@@ -1825,7 +1828,7 @@ class Mvn(Plane):
         'and' operator because the elipses look like ven-diagrams
         
         Just choosing an apropriate inversion operator (1/A) allows us to 
-        define kalman blending as a standard 'paralell' operation, like with 
+        define kalman blending as a standard 'parallel' operation, like with 
         resistors. operator overloading takes care of the rest.
         
         The inversion automatically leads to power, multiply, and divide  
@@ -1838,7 +1841,7 @@ class Mvn(Plane):
         >>> if not (A.flat or B.flat or C.flat):
         ...     import operator
         ...     abc=numpy.random.permutation([A,B,C])
-        ...     assert A & B & C == helpers.paralell(*abc)
+        ...     assert A & B & C == helpers.parallel(*abc)
         ...     assert A & B & C == reduce(operator.and_ ,abc)
         ...     assert (A & B) & C == A & (B & C)
 
@@ -1879,7 +1882,7 @@ class Mvn(Plane):
     """
         #check if they both fill the space
         if not (self.flat or other.flat):
-            #then this is a standard paralell operation
+            #then this is a standard parallel operation
             result=(self**(-1)+other**(-1))**(-1) 
         else:
             Dmean = Plane.__and__(self,other).mean
@@ -1901,7 +1904,7 @@ class Mvn(Plane):
         ...     assert A**k == A*A.transform(k-1) + Mvn(mean=A.mean-A.mean*A.transform(0)) 
 
         This definition was developed to turn kalman blending into a standard 
-        resistor-style 'paralell' operation
+        resistor-style 'parallel' operation
         
         The main idea is that only the variances get powered.
         (which is normal for diagonalizable matrixes), stretching the sheet at 
@@ -3085,4 +3088,12 @@ def mooreChain(self,sensor,transform=None):
         )
 
 
-   
+if __debug__:
+    import test.fixture 
+    globals().update(test.fixture.lookup['last'])
+    
+    
+    
+    
+    
+    
