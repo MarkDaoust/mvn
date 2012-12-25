@@ -16,8 +16,11 @@ Matrix = mvn.Matrix
 
 import mvn.helpers as helpers
 
+import fixture
 
 class myTests(unittest.TestCase):
+    jar = cPickle.dumps(fixture.lookup['last'])
+    
     def setUp(self):
        self.__dict__.update(cPickle.loads(self.jar))
 
@@ -682,7 +685,7 @@ class blendTester(myTests):
 
         if not (self.A.flat or self.B.flat or self.C.flat):
             abc=numpy.random.permutation([self.A,self.B,self.C])
-            self.assertTrue( self.A & self.B & self.C == helpers.paralell(*abc))
+            self.assertTrue( self.A & self.B & self.C == helpers.parallel(*abc))
             self.assertTrue( self.A & self.B & self.C == reduce(operator.and_ ,abc))
     
             self.assertTrue( (self.A & self.B) & self.C == self.A & (self.B & self.C))
@@ -1119,5 +1122,6 @@ def getTests(fixture=None):
         ) for tc in testCases
     ]
 
+    
     return testCases
 
