@@ -16,10 +16,10 @@ from mvn.matrix import Matrix
 
 pickleName=os.path.join(dir,'testObjects.pkl')
 
-testDict={}
+lookup={}
 try:
-    testDict=pickle.load(open(pickleName,"r"))
-    locals().update(testDict['last'])
+    lookup=pickle.load(open(pickleName,"r"))
+    locals().update(lookup['last'])
 except EOFError:
     pass
 except IOError: 
@@ -42,19 +42,19 @@ def getObjects(values):
     objects=None
     if not values.new:
         try:
-            objects=testDict[frozenValues]
+            objects=lookup[frozenValues]
         except KeyError:
             pass
 
     if objects is None:
         objects = makeObjects(values.flat,values.ndim,values.seed)
         
-    testDict[frozenValues] = objects
+    lookup[frozenValues] = objects
 
-    testDict['last']=objects
+    lookup['last']=objects
     globals().update(objects)
 
-    pickle.dump(testDict,open(pickleName,'w'))
+    pickle.dump(lookup,open(pickleName,'w'))
 
     return objects
 
@@ -109,7 +109,7 @@ def makeObjects(flat=None,ndim=None,seed=None):
 
     N=randint(-5,5)
 
-    testDict={
+    fixture={
         'ndim':ndim,
         'A':A,'B':B,'C':C,
         'M':M,'M2':M2,'E':E,
@@ -118,6 +118,6 @@ def makeObjects(flat=None,ndim=None,seed=None):
         'seed':seed,
     }
     
-    return testDict
+    return fixture
 
 

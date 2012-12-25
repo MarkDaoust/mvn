@@ -17,21 +17,8 @@ import parse
 import fixture
 import unit
 
-def getSuite(values):
-    suite=unittest.TestSuite()
-
-    testFixture=fixture.getObjects(values)
-    
-    suite.addTests(unit.getTests(testFixture))
-    suite.addTests(getDocTests(mvn,testFixture))
-
-    return suite
-
-
 def getDocTests(module,testFixture):
-    jar = cPickle.dumps(testFixture)
-
-    def setUp(test):
+    def setUp(test,jar = cPickle.dumps(testFixture)):
        test.globs.update(cPickle.loads(jar))
     
     testCases=doctest.DocTestSuite(module, setUp = setUp)
@@ -45,16 +32,13 @@ def main(argv):
 
     assert not remainder
 
+    testFixture=fixture.getObjects(values)
+    
     suite=unittest.TestSuite()
-
-    if values.x:
-        for flatness in [(True,True,True),(False,False,False)]:
-            values.flatness=flatness
-            suite.addTests(getSuite(values))
-    else:
-        suite.addTests(getSuite(values))
-
-    suite.addTests(getDocTests(mvn.mvncdf,fixture.getObjects(values)))
+    
+    suite.addTests(unit.getTests(testFixture))
+    suite.addTests(getDocTests(mvn,testFixture))
+    suite.addTests(getDocTests(mvn.mvncdf,testFixture))
 
     sys.stderr.write("test values: %s\n%s\n" % (' '.join(sys.argv),values))
         
