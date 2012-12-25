@@ -15,7 +15,7 @@ from mvn.square import square
 Plane = decorate.underConstruction('Plane')
 
 @decorate.right
-@decorate.inplace
+@decorate.copyable
 @decorate.automath
 @decorate.MultiMethod.sign(Plane)
 class Plane(object):
