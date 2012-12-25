@@ -293,34 +293,3 @@ def mvnormcdf(lower, upper, mu, cov, **kwds):
 
     return mvstdnormcdf(lower, upper, corr, **kwds)
 
-
-
-
-#lower,upper,corrcoef = [0.0,0.0],[1.0,1.0],[0.99]        
-#print mvstdnormcdf(lower,upper,corrcoef)
-#lower,upper,corrcoef = [-np.inf,0.0],[0.0,1.0],[0.0]        
-#print mvstdnormcdf(lower,upper,corrcoef) 
-#lower,upper,corrcoef = [-np.inf,0.0],[np.inf,1.0],[0.0]        
-#print mvstdnormcdf(lower,upper,corrcoef) 
-#print mvstdnormcdf([-np.inf,-np.inf],[np.inf,0.0],[0.0] )
-#print mvstdnormcdf([-np.inf,-np.inf],[0.0,0.0],[0.0] )
-#print mvstdnormcdf([-10.0,-10.0],[0.0,10.0],[0.0] ) 
-#print mvstdnormcdf([-np.inf,-np.inf],[np.inf,np.inf],[0.0] )
-#print mvstdnormcdf([-np.inf,-np.inf],[0.0,0.0],[0.5] )
-#print mvstdnormcdf([-np.inf,-np.inf],[0.0,0.0],[0.9999] )
-#corr = [[1.0, 0, 0.5],[0,1,0],[0.5,0,1]]           
-#print mvstdnormcdf([-np.inf,-np.inf,-np.inf],[0.0,0.0,0.0],corr )
-#print mvstdnormcdf([-np.inf,-np.inf,-1.0],[0.0,0.0,0.0],corr )
-# using optional keywords for integration
-#print mvstdnormcdf([-np.inf,-np.inf,-100.0],[0.0,0.0,0.0],corr, releps=1e-4)
-#print mvstdnormcdf([-np.inf,-np.inf,-100.0],[0.0,0.0,0.0],corr, abseps=1e-8)
-#print mvstdnormcdf([-np.inf,-np.inf,-100.0],[0.0,0.0,0.0],corr, maxpts=100000, abseps=1e-8)
-#corr = [[1.0, 0, 0.9],[0,1,0.5],[0.9,0.5,1]]
-#print mvstdnormcdf([-np.inf,-np.inf,-100.0],[0.0,0.0,0.0],corr ) 
-#corr = np.diag(np.ones(3))
-#print mvstdnormcdf([-np.inf,-np.inf,-100.0],[0.0,0.0,0.0],corr )
-
-#lower, upper, mu, cov = [-np.inf,-np.inf,-100.0],[0.0,0.0,0.0],[0.0,0.0,0.0],corr
-#print mvnormcdf(lower, upper, mu, cov, maxpts=3000)
-#conditional distribution doesn't work directly:
-#print mvstdnormcdf([-np.inf,-np.inf,0.0],[0.0,0.0,0.0],corr )
