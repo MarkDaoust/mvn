@@ -20,17 +20,16 @@ from inplace import inplace
 def curry(fun,*args):
     """
     >>> @curry
-    >>> def F1(a,b,c):
-    >>>     return a+b+c
-
-    is a much nicer way of saying:
-
-    >>> def F1(a):
-    >>>     def F2(b):
-    >>>         def F3(c):
-    >>>             return a+b+c
-    >>>         return F3
-    >>>     return F2
+    ... def F(a,b,c):
+    ...     return a+b+c
+    >>> F(1)(2)(3)
+    6
+    >>> F(4,5)(6)
+    15
+    >>> F(7)(8,9)
+    24
+    >>> F(10,11,12)
+    33
     """
     def curried(*moreArgs):
         A=args+moreArgs
@@ -45,10 +44,11 @@ def prepare(before):
     create a decorator that runs the positional arguments through the provided 
     function, before running the decorated function
 
-    >>> @prepare(lambda *args:[cleanup(arg) for arg in args])
-    >>> def doSomething(x,y,z):
-    >>>     pass
-
+    >>> @prepare(lambda *args:[float(arg) for arg in args])
+    ... def div(x,y):
+    ...     return x/y
+    >>> div('1',2)
+    0.5
     """
     @decorator
     def F(decorated,*args,**kwargs):
@@ -62,21 +62,29 @@ def cleanup(after):
     the provided function
 
     >>> def isImplemented(result):
-    >>>     if result is NotImplemented:
-    >>>         raise TypeError('NotImplemented')
+    ...     if result is NotImplemented:
+    ...         raise TypeError('NotImplemented')
+    ...     return result
     >>>
     >>> @cleanup(isImplemented)
-    >>> @MultiMethod
-    >>> def doSomething(x,y,z):
-    >>>     return NotImplemented
+    ... @MultiMethod
+    ... def sum(x,y,z):
+    ...     return NotImplemented
     >>>
-    >>> @doSomething.register([int,float],[int,float],[int,float])
-    >>> def doSomething(x,y,z):
-    >>>     return x+y+z
+    >>> @sum.register([int,float],[int,float],[int,float])
+    ... def _numsum(x,y,z):
+    ...     return x+y+z
+    >>>
+    >>> sum(1,2,3.0)
+    6.0
+    >>> sum([],1,{})
+    Traceback (most recent call last):
+    ...
+    TypeError: NotImplemented
     """
     @decorator
     def F(decorated,*args,**kwargs):
-        return after(decorated(*args,**kwargs),*args,**kwargs)
+        return after(decorated(*args,**kwargs))
 
     return F
 
@@ -103,28 +111,40 @@ class MultiMethod(object):
 
     sample usage:
 
-    >>> @MultiMethod.sign(underConstruction('Test'))
-    ... class Test(object):
+    >>> Ex = underConstruction('Ex')
+    >>> @MultiMethod.sign(Ex)
+    ... class Ex(object):
     ...     @MultiMethod
     ...     def __add__(self,other):
-    ...         raise TypeError('notImplemented')
-    ...     
-    ...     @__add__.register(Test):
+    ...         print 'default'
+    ...
+    ...     @__add__.register(Ex)
     ...     def addDefault(self,anything):
-    ...         raise TypeError('notImplemented')
-    ...     
-    ...     @__add__.register(Test,Test)
-    ...     def addTest(self,other):
-    ...         raise TypeError('notImplemented')
-    ... 
-    ...     @__add__.register(Test,dict)
+    ...         print 'Ex,anything' 
+    ...
+    ...     @__add__.register(Ex,Ex)
+    ...     def addEx(self,other):
+    ...         print 'Ex,Ex'
+    ...
+    ...     @__add__.register(Ex,dict)
     ...     def addMapping(self,mapping):
-    ...         raise TypeError('notImplemented')
-    ... 
-    ...     @__add__.register(Test,[int,float])
+    ...         print 'Ex,dict'
+    ...
+    ...     @__add__.register(Ex,[int,float])
     ...     def addNumber(self,number):
-    ...         raise TypeError('notImplemented')
-
+    ...         print  'Ex,num'
+    ...
+    >>> e = Ex();
+    >>> e+e
+    Ex,Ex
+    >>> e+{}
+    Ex,dict
+    >>> e+1
+    Ex,num
+    >>> e+1.0
+    Ex,num
+    >>> e+[]
+    Ex,anything
     """
     def __new__(baseClass,defaultFun):
         # this caller is the object that will be returned
