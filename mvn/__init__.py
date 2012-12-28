@@ -1386,7 +1386,8 @@ class Mvn(Plane):
         
         self[:,index]
         
-        return the marginal distribution, over the indexed dimensions.
+        Project the Mvn into the selected dimensions, 
+        Returning the marginal distribution, over the indexed dimensions.
         
         self[:N,:]
         
