@@ -63,11 +63,23 @@ class Plane(object):
             '    mean=',
            ('        %r,' % self.mean).replace('\n','\n'+8*' '),
             '    vectors=',
-            '        %s' % self.vectors.__repr__().replace('\n','\n'+8*' '),
+           ('        %r' % self.vectors).replace('\n','\n'+8*' '),
             ')',
         ])
 
     __str__ = __repr__
+    
+    def __getitem__(self,index):
+        """
+        project the plane into the selected dimensions
+        """
+        assert not isinstance(index,tuple),'1-dimensional index only'
+        
+        return type(self)(
+            mean=self.mean[:,index],
+            vectors=self.vectors[:,index],
+        )
+
 
     @decorate.prop
     class shape():
@@ -188,3 +200,11 @@ class Plane(object):
         return type(self)(vectors=self.getNull(null),mean=mean)
 
 
+if __debug__:
+    ndim = numpy.random.randint(1,10)
+    ndim2 = numpy.random.randint(1,ndim)    
+    
+    A = Plane(
+        mean = numpy.random.randn(1,ndim),
+        vectors = numpy.random.randn(ndim2,ndim)
+    )
