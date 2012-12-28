@@ -61,7 +61,7 @@ class Plane(object):
         return '\n'.join([
             '%s(' % self.__class__.__name__,
             '    mean=',
-            '        %s,' % self.mean.__repr__().replace('\n','\n'+8*' '),
+           ('        %r,' % self.mean).replace('\n','\n'+8*' '),
             '    vectors=',
             '        %s' % self.vectors.__repr__().replace('\n','\n'+8*' '),
             ')',
