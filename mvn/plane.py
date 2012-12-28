@@ -77,12 +77,51 @@ class Plane(object):
         the space they are embedded in
             
         >>> assert A.vectors.shape == A.shape
-        >>> assert (A.var.size,A.mean.size)==A.shape
+        >>> assert (A.vectors.shape[0],A.mean.size)==A.shape
         >>> assert A.shape[0]==A.rank
         >>> assert A.shape[1]==A.ndim
         """
         def fget(self):
             return self.vectors.shape
+            
+    @decorate.prop
+    class rank():
+        """
+        get the number of dimensions of the space covered by the mvn
+        
+        >>> assert A.rank == A.vectors.shape[0]
+        """
+        def fget(self):
+            return self.vectors.shape[0]
+
+    @decorate.prop
+    class ndim(object):
+        """
+        get the number of dimensions of the space the mvn exists in
+        
+        >>> assert A.ndim==A.mean.size==A.mean.shape[1]
+        >>> assert A.ndim==A.vectors.shape[1]
+        """
+        def fget(self):
+            return self.mean.size
+            
+    @decorate.prop
+    class flat(object):
+        """
+        >>> assert bool(A.flat) == bool(A.vectors.shape[1] > A.vectors.shape[0]) 
+        """
+        def fget(self):
+            return max(self.vectors.shape[1] - self.vectors.shape[0],0)
+            
+    def __nonzero__(self):
+        """
+        True if not empty
+        
+        >>> assert A
+        >>> assert bool(A) == bool(A.ndim)
+        >>> assert not A[:0]
+        """
+        return bool(self.ndim)
 
     @decorate.MultiMethod
     def __add__(self,other):

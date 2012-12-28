@@ -771,47 +771,6 @@ class Mvn(Plane):
         def fget(self):
             return Matrix(numpy.multiply(sqrt(self.var[:,None]),self.vectors))
         
-    
-    @decorate.prop
-    class flat(object):
-        """
-        >>> assert bool(A.flat) == bool(A.vectors.shape[1] > A.vectors.shape[0]) 
-        """
-        def fget(self):
-            return max(self.vectors.shape[1] - self.vectors.shape[0],0)
-
-    @decorate.prop
-    class ndim(object):
-        """
-        get the number of dimensions of the space the mvn exists in
-        
-        >>> assert A.ndim==A.mean.size==A.mean.shape[1]
-        >>> assert A.ndim==A.vectors.shape[1]
-        """
-        def fget(self):
-            return self.mean.size
-            
-    def __nonzero__(self):
-        """
-        True if not empty
-        
-        >>> assert A
-        >>> assert bool(A.ndim) == bool(A.ndim)
-        >>> assert A[:0]
-        >>> assert not A[:,:0]
-        """
-        return bool(self.ndim)
-
-    @decorate.prop
-    class rank():
-        """
-        get the number of dimensions of the space covered by the mvn
-        
-        >>> assert A.rank == A.var.size
-        >>> assert A.rank == A.vectors.shape[0]
-        """
-        def fget(self):
-            return self.vectors.shape[0]
 
     def _transformParts(self,power=1):
         """
