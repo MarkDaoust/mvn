@@ -73,7 +73,7 @@ class Right(object):
         """
         >>> assert A | B == B | A
         """
-        return other | self
+        return self | other
 
     
 class Automath(Copyable,Right):        
@@ -146,9 +146,9 @@ if __debug__:
             return type(self)(self.num+getattr(other,'num',other))
 
             
-    A = Test(random.randint(-10,10))    
-    B = Test(random.randint(-10,10))
+    A = Test(random.randint(1,20))
     
+    B = Test(random.randint(1,20))
     
 if __name__ == "__main__":
     pass 
