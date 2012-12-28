@@ -25,12 +25,12 @@ def sqrt(data):
 
 def mag2(vectors,axis=-1):
     """
-    sum or squares along an axis
+    sum of squares along an axis
     
-    >>> assert (mag2([[1,2,3],[4,5,6]]) == [14,77]);
+    >>> assert (mag2([[1,2,3],[4,5,6]]) == [14,77]).all()
     
-    >>> assert (mag2(numpy.ones([5,10]),0) == 5*numpy.ones(10))
-    >>> assert (mag2(numpy.ones([5,10]),1) == 10*numpy.ones(5))
+    >>> assert (mag2(numpy.ones([5,10]),0) == 5*numpy.ones(10)).all()
+    >>> assert (mag2(numpy.ones([5,10]),1) == 10*numpy.ones(5)).all()
     
     >>> assert mag2(1+1j) == 2
     """
@@ -50,7 +50,7 @@ def sign(self):
     >>> assert sign(0+0j) == 0       
 
     >>> assert sign(2) == 1
-    >>> assert sign(-2) == 1
+    >>> assert sign(-2) == -1
  
     >>> assert sign(2j) == 1j
     >>> assert sign(-2j) == -1j
@@ -58,18 +58,18 @@ def sign(self):
     >>> assert sign(1+2j) == 1/sqrt(5) + 1j*2/sqrt(5)
     >>> assert sign(1-2j) == 1/sqrt(5) - 1j*2/sqrt(5)
 
-    >>> # there's a strong connection btween `unit` and `sign`
-    >>> R = numpy.random.randn([10,10])
+    >>> # there's a strong connection between `unit` and `sign`
+    >>> R = numpy.random.randn(10,10)
     >>> assert (sign(R) == numpy.sign(R)).all()
     >>>
-    >>> R1 = numpy.random.randn([10,10])
-    >>> R2 = numpy.random.randn([10,10])
+    >>> R1 = numpy.random.randn(10,10)
+    >>> R2 = numpy.random.randn(10,10)
     >>>
     >>> Rj = R1+1j*R2
     >>> Rj = sign(Rj)
-    >>> Rj = numpy.concatenate(Rj.real,Rj.imag,2)
+    >>> Rj = numpy.dstack([Rj.real,Rj.imag])
     >>>
-    >>> Ru = numpy.concatenate([R1,R2],2)
+    >>> Ru = numpy.dstack([R1,R2])
     >>> Ru = unit(Ru)
     >>> 
     >>> assert numpy.allclose(Rj,Ru)
@@ -78,18 +78,25 @@ def sign(self):
     zeros = (self == 0)
     
     self = numpy.divide(self,numpy.abs(self))
+
+    self = numpy.asarray(self)
     
-    self[zeros] = 0;
-    
+    if self.ndim:
+        self[zeros] = 0;
+    elif zeros:
+        return 0
+        
     return self
  
 def unit(self,axis=-1):
     """
     along a given axis, make vectors unit length
     
-    >>> assert unit([1,2,3])
+    >>> assert(unit([1,2 ,2,4 ]) == [1.0/5,2.0 /5, 2.0/5, 4.0 /5]).all()
+    >>> assert(unit([1+2j,2+4j]) == [1.0/5+2.0j/5, 2.0/5+ 4.0j/5]).all()
     
-    >>> R = numpy.random.randn([3,4,5])
+    
+    >>> R = numpy.random.randn(3,4,5)
     >>> axis = numpy.random.randint(0,3)
     >>> M = mag2(unit(R,axis),axis)
     >>> assert numpy.allclose(M,numpy.ones_like(M))
@@ -106,18 +113,46 @@ def unit(self,axis=-1):
 
     return self/mag
 
-def ascomplex(self):
+def ascomplex(self,axis=-1):
     """
-    return an array pointing to the same data, but interpreting it as a 
-    different type
+    return an array pointing to the same data (if possible), 
+    but interpreting it as a different type
     
     >>> assert ascomplex([1,1]) == 1+1j
+    
+    >>> A = numpy.eye(5)
+    >>> B = numpy.random.randn(5,5)
+    >>> C = ascomplex(numpy.dstack([A,B]))
+    >>> assert (C.real == A ).all()
+    >>> assert (C.imag == B ).all()
+    >>>    
+    >>> C = ascomplex([A,B],axis=0)
+    >>> assert (C.real == A ).all()
+    >>> assert (C.imag == B ).all()
+    
+    >>> A = numpy.random.randn(3,1,5)
+    >>> B = numpy.random.randn(3,1,5)
+    >>> C = ascomplex(numpy.concatenate([A,B],axis=1),axis=1)
+    >>> assert (C.real == A.squeeze() ).all()
+    >>> assert (C.imag == B.squeeze() ).all()    
     """
-    self = numpy.asarray(self)
-    shape=self.shape
+    self = numpy.asarray(self,float)
+    
+    if axis<0:
+        axis = self.ndim+axis
+        
+    assert self.shape[axis] == 2,"can only convert to complex if the target axis has a length of 2"
+    
+    axes = numpy.arange(self.ndim)
+    newAxes = numpy.concatenate([axes[:axis],axes[axis+1:],[axis]])
+    
+    self = self.transpose(newAxes)
+    
     duplicate=copy.copy(self)
     duplicate.dtype=complex
-    duplicate.shape=shape[:-1]
+    
+    duplicate.shape=self.shape[:-1]
+        
     return duplicate
 
 def diagstack(arrays):
@@ -152,7 +187,7 @@ def autoshape(rows,default=0):
     ...     [    [1,2,3],   numpy.ones],
     ...     [numpy.zeros,[[1],[2],[3]]],
     ... ]) 
-    >>> assert numpy.vectorize(lambda x:x.size)(A) == array([[3, 1],[9, 3]])
+    >>> assert (numpy.vectorize(lambda x:x.size)(A) == numpy.array([[3, 1],[9, 3]])).all()
     """
     #first make sure everything is a 2 dimensional array
     data = [
@@ -196,7 +231,7 @@ def autoshape(rows,default=0):
     return rows
 
 
-def stack(rows,deafult = 0):
+def stack(rows,default = 0):
     """
     simplify matrix stacking
     vertically stack the results of horizontally stacking each row in rows, 
@@ -241,7 +276,7 @@ def stack(rows,deafult = 0):
             [ 0.,  1.,  0.,  1.]])
     """
     #do the stacking    
-    rows = autoshape(rows,default = 0)
+    rows = autoshape(rows,default = default)
     return numpy.vstack([
         numpy.hstack(row) 
         for row in rows
@@ -262,11 +297,11 @@ def approx(self,other = None,rtol=1e-5,atol=1e-8):
     """
     element-wise version of :py:func:`numpy.allclose`
     
-    >>> assert approx(1e-12*numpy.random.randn(10,10),numpy.zeros(10,10)).all()
+    >>> assert approx(1e-12*numpy.random.randn(10,10),numpy.zeros([10,10])).all()
     
     >>> ones = numpy.ones([3,3])
-    >>> eye = numpy.eye(3)+1e-6*numpy.random.randn([3,3]))
-    >>> assert approx(ones,eye) == numpy.eye(3)
+    >>> eye = numpy.eye(3)+1e-6*numpy.random.randn(3,3)
+    >>> assert (approx(ones,eye) == numpy.eye(3)).all()
     """
     
     if other is None:
