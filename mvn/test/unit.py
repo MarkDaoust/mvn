@@ -10,6 +10,7 @@ import numpy
 import itertools
 
 import mvn
+
 sqrt = mvn.sqrt 
 Mvn = mvn.Mvn
 Matrix = mvn.Matrix
@@ -18,12 +19,11 @@ import mvn.helpers as helpers
 
 import fixture
 
-class myTests(unittest.TestCase):
-    jar = cPickle.dumps(fixture.lookup['last'])
-    
-    def setUp(self):
-       self.__dict__.update(cPickle.loads(self.jar))
+fix = fixture.lookup['last']
 
+class myTests(unittest.TestCase):
+    def setUp(self):
+        self.__dict__.update(copy.deepcopy(fix))
 
 class commuteTester(myTests):
    def testRight(self):

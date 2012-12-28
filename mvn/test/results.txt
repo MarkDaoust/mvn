@@ -1,0 +1,48 @@
+..........................................................................F.......................................................................................
+======================================================================
+FAIL: Doctest: mvn.Mvn.inBox
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.7/doctest.py", line 2201, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for mvn.Mvn.inBox
+  File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 1567, in inBox
+
+----------------------------------------------------------------------
+File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 1582, in mvn.Mvn.inBox
+Failed example:
+    print Mvn.mean(((data<upper) & (data>lower)).all(1))
+Expected nothing
+Got:
+    Mvn(
+        mean=
+            Matrix([[ 0.]]),
+        var=
+            array([], dtype=float64),
+        vectors=
+            Matrix([], shape=(0, 1), dtype=float64)
+    )
+----------------------------------------------------------------------
+File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 1583, in mvn.Mvn.inBox
+Failed example:
+    print A.inBox(lower,upper)
+Expected nothing
+Got:
+    5.58746214726e-06
+----------------------------------------------------------------------
+File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 1584, in mvn.Mvn.inBox
+Failed example:
+    assert A.inBox(lower,upper) == Mvn.mean(((data<upper) & (data>lower)).all(1))
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.7/doctest.py", line 1289, in __run
+        compileflags, 1) in test.globs
+      File "<doctest mvn.Mvn.inBox[7]>", line 1, in <module>
+        assert A.inBox(lower,upper) == Mvn.mean(((data<upper) & (data>lower)).all(1))
+    AssertionError
+
+
+----------------------------------------------------------------------
+Ran 162 tests in 1.629s
+
+FAILED (failures=1)
