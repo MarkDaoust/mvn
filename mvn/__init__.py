@@ -477,31 +477,51 @@ class Mvn(Plane):
         )
     
     @classmethod
-    def fromCov(cls,cov,**kwargs):
+    def fromCov(cls, cov, **kwargs):
         """
         :param cov:
         :param ** kwargs:
             
         everything in kwargs is passed directly to the constructor
+        
+        >>> mean = Matrix.randn([1,3])
+        >>> assert (
+        ...     Mvn.eye(N,mean = mean) == 
+        ...     Mvn.fromCov(Matrix.eye(N),mean=mean)
+        ... )
         """
-        cov=Matrix(cov)
+        cov = Matrix(cov)
 
-        diag = Matrix(numpy.diag(cov))
-        eig = numpy.linalg.eigh if abs(diag) == diag else numpy.linalg.eig
-        #get the variances and vectors.
-        (var,vectors) = eig(cov) if cov.size else (Matrix.zeros([0,1]),Matrix.zeros([0,0]))
-        vectors=Matrix(vectors.H)     
+        if (numpy.diag(cov)>=0).all():
+            eig = numpy.linalg.eigh 
+        else: 
+            eig = numpy.linalg.eig
+            
+        try:
+            #get the variances and vectors.
+            (var, vectors) = eig(cov) 
+        except ValueError,error:
+            if "DSYEVD" not in error.message:
+                raise error
+                
+            if cov.size:
+                raise error
+                
+            var     = Matrix.zeros([0, 1])
+            vectors = Matrix.zeros([0, 0])
+                    
+        vectors = Matrix(vectors.H)     
 
         return cls(
-            vectors=vectors,
-            var=var,
-            square=False,
+            vectors = vectors,
+            var = var,
+            square = False,
             **kwargs
         )
 
 
     @classmethod
-    def zeros(cls,n=1,mean=Matrix.zeros):
+    def zeros(cls, n=1, mean=Matrix.zeros):
         """
         :param n:
         :param mean:
