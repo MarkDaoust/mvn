@@ -13,9 +13,8 @@ import itertools
 import collections
 
 from decorator import decorator
-from automath import automath,right
-from copyable import copyable
-from inplace import inplace
+from automath import Automath,Right
+from copyable import Copyable
 
 def curry(fun,*args):
     """
