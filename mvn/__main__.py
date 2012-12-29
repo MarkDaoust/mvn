@@ -1,15 +1,36 @@
+# builtin
 import os
 import sys
 import subprocess
 
-import test
+# external
+from pylint import lint
+from pylint.reporters.html import HTMLReporter
 
-#import pychecker.checker? as check
-#import pyflakes?
-#import pylint?
 #import sphinx
 
-test.main(sys.argv[1:])
+# local
+import mvn.test
+
+
+def main():
+    ## run pylint
+    [dirname,filename] = os.path.split(__file__) 
+    
+    lintFileName = os.path.join(dirname,'lint.html')
+    lintFile = open(lintFileName,'w')
+    
+    lint.Run(
+        ['--include-ids=y','--disable=I0011','mvn'],
+        reporter = HTMLReporter(lintFile)
+    )
+
+    ## run nosetests
+    test.main([])
+
+    ## run sphinx
+    
 
 
 
+main()
