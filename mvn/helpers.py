@@ -10,6 +10,19 @@ import operator
 
 import numpy
 
+def randint(low,high):
+    assert int(low) == low
+    assert int(high) == high
+    
+    low = int(low)
+    high = int(high)
+    
+    delta = high-low
+    
+    rand = low+numpy.random.rand()*(delta+1)
+    return int(numpy.floor(rand))
+
+
 #from scipy import sqrt()
 def sqrt(data):
     """

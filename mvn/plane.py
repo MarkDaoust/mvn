@@ -14,11 +14,8 @@ from mvn.square import square
 
 Plane = decorate.underConstruction('Plane')
 
-@decorate.right
-@decorate.copyable
-@decorate.automath
 @decorate.MultiMethod.sign(Plane)
-class Plane(object):
+class Plane(decorate.Automath):
     rtol = 1e-5
     """
     relative tolerence
@@ -201,8 +198,8 @@ class Plane(object):
 
 
 if __debug__:
-    ndim = numpy.random.randint(1,10)
-    ndim2 = numpy.random.randint(1,ndim)    
+    ndim = helpers.randint(1,10)
+    ndim2 = helpers.randint(1,ndim)    
     
     A = Plane(
         mean = numpy.random.randn(1,ndim),

@@ -11,14 +11,15 @@ import os
 
 from mvn import Mvn
 from mvn.matrix import Matrix
+from helpers import randint
 
-(dir,_) = os.path.split(os.path.abspath(__file__))
+(fileDir, _) = os.path.split(os.path.abspath(__file__))
 
-pickleName=os.path.join(dir,'testObjects.pkl')
+pickleName =os.path.join(fileDir,'testObjects.pkl')
 
-lookup={}
+lookup ={}
 try:
-    lookup=pickle.load(open(pickleName,"r"))
+    lookup =pickle.load(open(pickleName,"r"))
     locals().update(lookup['last'])
 except EOFError:
     pass
@@ -32,11 +33,11 @@ except KeyError:
 
 
 def getObjects(values):
-    filter = ['new','x','seed']
+    drop = ['new','x','seed']
     frozenValues=frozenset(
         (key,value) 
         for (key,value) in values.__dict__.iteritems() 
-        if key not in filter
+        if key not in drop
     )
 
     objects=None
@@ -60,8 +61,7 @@ def getObjects(values):
 
 def makeObjects(flat=None,ndim=None,seed=None):
     randn=numpy.random.randn
-    randint=lambda x,y: int(numpy.round((x-0.5)+numpy.random.rand()*(y-x+0.5)))
-
+    
     if seed is None:
         seed=randint(1,1e6)
     assert isinstance(seed,int)
