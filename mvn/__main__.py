@@ -17,11 +17,13 @@ def main():
     ## run pylint
     [dirname,filename] = os.path.split(__file__) 
     
-    lintFileName = os.path.join(dirname,'lint.html')
-    lintFile = open(lintFileName,'w')
+    lintRcPath = os.path.join(dirname,'.lintrc')
+
+    lintFilePath = os.path.join(dirname,'lint.html')
+    lintFile = open(lintFilePath,'w')
     
     lint.Run(
-        ['--include-ids=y','--disable=I0011','mvn'],
+        ['--rcfile=%s' % lintRcPath,'mvn'],
         reporter = HTMLReporter(lintFile)
     )
 
