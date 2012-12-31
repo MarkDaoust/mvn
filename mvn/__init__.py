@@ -1,48 +1,47 @@
 #! /usr/bin/env python
 
-#todo: nose-tests
-#todo: remove all implicit type casting
+#TODO: remove all implicit type casting
     
-#todo: better interoperability with scipy.stats
-#todo: mixtures, "|" operator 
-#todo: find libraries that already do this stuf
-#todo: try sympy's version of this (sympy.stats)?
-#todo: transform's in the "&" operator    A&T&B
-#todo: find a way to auto update the multimethod call dictionaries 
+#TODO: better interoperability with scipy.stats
+#TODO: mixtures -> "|" operator 
+#TODO: find libraries that already do this stuf
+#TODO: try sympy's version of this (sympy.stats)?
+#TODO: transform's in the "&" operator    A&T&B
+#TODO: find a way to auto update the multimethod call dictionaries 
 #          when sub-classes are created.
-#todo: find the standard approach to making things plottable in matplotlib
-#todo: try mayavi
-#todo: finish the "transposed" and and "Complex" subclasses   
-#todo: cleanup the multimethods so there are no complicated call diagrams
-#todo: revert-Mvn mul --> Matrix*Mvn == Mvn.fromData(Matrix)*Mvn
-#todo: add a dimension preserving "marginal" function,  
-#todo: formData should be the main constructor
-#todo: merge chain and  sensor.measure?
-#todo: type handling- be more uniform, arrays work element wize, matrixes 
+#TODO: find the standard approach to making things plottable in matplotlib
+#TODO: try mayavi
+#TODO: finish the "transposed" and and "Complex" subclasses   
+#TODO: cleanup the multimethods so there are no complicated call diagrams
+#TODO: revert-Mvn mul --> Matrix*Mvn == Mvn.fromData(Matrix)*Mvn
+#TODO: add a dimension preserving "marginal" function,  
+#TODO: formData should be the main constructor
+#TODO: merge chain and  sensor.measure?
+#TODO: type handling- be more uniform, arrays work element wize, matrixes 
 #          get converted to Mvns ?
-#todo: better type handling, multimethods? 
+#TODO: better type handling, multimethods? 
 #        many things that accept an mvn should 
 #        accept Mvn.eye, Mvn.zeros, Mvn.infs 
-#todo: relay the canonization step, I think the default can (should?) be none
-#todo: add cholsky decomposition
-#todo: wikipedia/kalmanfiltering#information filter    !!   the mvn and it's 
+#TODO: relay the canonization step, I think the default can (should?) be none
+#TODO: add cholsky decomposition
+#TODO: wikipedia/kalmanfiltering#information filter    !!   the mvn and it's 
 #       inverse are different things, maybe the linear algebra should go in a 
 #       super class, and all the covariance/information filter stuff 
 #       in two sub classes 
-#todo: Exceptions,error handling
-#todo: do something about mvns with zero dimensions ?
-#todo: understand transforms composed of Mvns as the component vectors, and 
+#TODO: Exceptions,error handling
+#TODO: do something about mvns with zero dimensions ?
+#TODO: understand transforms composed of Mvns as the component vectors, and 
 #          whether it is meaningful to consider mvns in both 
 #          the rows and columns
-#todo: implement transpose and dot product, in relation to quadratic and 
+#TODO: implement transpose and dot product, in relation to quadratic and 
 #          bilinear forms ? 
-#todo: chi2 distribution/non-central chi2 for the lengths 
+#TODO: chi2 distribution/non-central chi2 for the lengths 
 #          (other distributions?)
-#todo: cleanup the 'square' function 
+#TODO: cleanup the 'square' function 
 #          (now that it is clear that it's half of an SVD)
-#todo: understand the relationship between these and a hessian matrix.
-#todo: figure out the relationship between these and spherical harmonics
-#todo: investigate higher order moments(cumulants?), 
+#TODO: understand the relationship between these and a hessian matrix.
+#TODO: figure out the relationship between these and spherical harmonics
+#TODO: investigate higher order moments(cumulants?), 
 #  or not http://www.johndcook.com/blog/2010/09/20/skewness-andkurtosis/
 
 
@@ -159,7 +158,7 @@ class Mvn(Plane):
     default base to use by information calculations
     
     >>> assert Mvn.infoBase is numpy.e
-    """    
+    """    #pylint: disable-msg=w0105
 
     ############## Creation
     def __init__(
@@ -719,103 +718,113 @@ class Mvn(Plane):
 
     
     ############ setters/getters -> properties
+    def _getCov(self):
+        'get the covariance matrix'
+        return numpy.multiply(self.vectors.H, self.var)*self.vectors
 
-    @decorate.prop
-    class cov(object):
-        """
-        get or set the covariance matrix
-        
-        >>> assert A.cov == numpy.multiply(A.vectors.H,A.var)*A.vectors
-        >>> assert abs(A).cov == A.scaled.H*A.scaled
-        
-        >>> a = A.copy()
-        >>> a.cov = B.cov
-        >>> assert a.cov == B.cov
-        
-        >>> a = A.copy()
-        >>> #implicit covariance extraction
-        >>> a.cov = B
-        >>> assert a.cov == B.cov        
-        """
-        def fget(self):
-            'get the covariance matrix'
-            return numpy.multiply(self.vectors.H, self.var)*self.vectors
-
-        def fset(self, cov):
-            'set the covariance matrix'
-            if isinstance(cov, Mvn):
-                new = type(self)(
-                    mean = self.mean,
-                    var = cov.var,
-                    vectors = cov.vectors,
-                )
-            else:
-                new = type(self).fromCov(
-                    mean = self.mean,
-                    cov = cov,
-                )
-                
-            self.copy(new)
-
-    @decorate.prop
-    class corr(object):
-        """
-        get or set the correlation matrix used by the object
-        
-        >>> assert A.corr==(A/A.width()).cov
-        
-        >>> a = A.copy()
-        >>> a.corr = B.corr
-        >>> assert Matrix(a.width()) == A.width()
-        >>> assert Matrix(a.mean) == A.mean
-        >>> assert Matrix(a.corr) == B.corr
-        
-        >>> a = A.copy()
-        >>> # implicit extracton of correlation matrix
-        >>> a.corr = B
-        >>> assert Matrix(a.width()) == A.width()
-        >>> assert Matrix(a.mean) == A.mean
-        >>> assert Matrix(a.corr) == B.corr
-
-        
-        >>> a = A.copy()
-        >>> a.corr = A.corr
-        >>> assert a == A
-        """
-        def fget(self):
-            'get the corelation matrix'
-            return (self/self.width()).cov
-          
-        def fset(self, corr):
-            'set the correlation matrix'
-            if isinstance(corr, Mvn):
-                corr = corr/corr.width()
-                mean = self.mean
-                self.copy(corr*self.width())
-                self.mean = mean
-            else:
-                new = Mvn.fromCov(corr)*self.width()
-                new.mean = self.mean
-                self.copy(new)
+    
+    def _setCov(self, cov):
+        'set the covariance matrix'
+        if isinstance(cov, Mvn):
+            new = type(self)(
+                mean = self.mean,
+                var = cov.var,
+                vectors = cov.vectors,
+            )
+        else:
+            new = type(self).fromCov(
+                mean = self.mean,
+                cov = cov,
+            )
             
+        self.copy(new)
 
-    @decorate.prop
-    class scaled(object):
+    cov = property(
+        fget = _getCov,
+        fset = _setCov,
+        doc = """
+            get or set the covariance matrix
+            
+            >>> assert A.cov == numpy.multiply(A.vectors.H,A.var)*A.vectors
+            >>> assert abs(A).cov == A.scaled.H*A.scaled
+            
+            >>> a = A.copy()
+            >>> a.cov = B.cov
+            >>> assert a.cov == B.cov
+            >>> assert a.mean == A.mean
+            
+            >>> a = A.copy()
+            >>> #implicit covariance extraction
+            >>> a.cov = B
+            >>> assert a.cov == B.cov  
+            >>> assert a.mean == A.mean
+        """       
+        )
+
+    def _getCorr(self):
+        'get the corelation matrix'
+        return (self/self.width()).cov
+      
+
+    def _setCorr(self, corr):
+        'set the correlation matrix'
+        if isinstance(corr, Mvn):
+            corr = corr/corr.width()
+            mean = self.mean
+            self.copy(corr*self.width())
+            self.mean = mean
+        else:
+            new = Mvn.fromCov(corr)*self.width()
+            new.mean = self.mean
+            self.copy(new)
+    
+    corr = property(
+        fget = _getCorr,
+        fset = _setCorr,
+        doc = """
+            get or set the correlation matrix used by the object
+            
+            >>> assert A.corr==(A/A.width()).cov
+            
+            >>> a = A.copy()
+            >>> a.corr = B.corr
+            >>> assert Matrix(a.width()) == A.width()
+            >>> assert Matrix(a.mean) == A.mean
+            >>> assert Matrix(a.corr) == B.corr
+            
+            >>> a = A.copy()
+            >>> # implicit extracton of correlation matrix
+            >>> a.corr = B
+            >>> assert Matrix(a.width()) == A.width()
+            >>> assert Matrix(a.mean) == A.mean
+            >>> assert Matrix(a.corr) == B.corr
+    
+            
+            >>> a = A.copy()
+            >>> a.corr = A.corr
+            >>> assert a == A
         """
-        get the eigen-vectors, scaled by the square-roots of the eigenvalues. 
-        
-        Useful for transforming from a space aligned with the 
-        unit-eigen vectors, to data-space
+    )
 
-        this is a square root of the covariance matrix
-
-        >>> assert A.scaled.H*A.scaled == A.cov
-        >>> assert A.vectors.H*A.scaled==A.transform()
-
+    def _getScaled(self):
+        'get the square-root of the covariance matrix'
+        return Matrix(numpy.multiply(sqrt(self.var[:, None]), self.vectors))
+            
+    scaled = property(
+        fget = _getScaled,
+        doc ="""
+            get the eigen-vectors, scaled by the square-roots of the eigenvalues. 
+            
+            Useful for transforming from a space aligned with the 
+            unit-eigen vectors, to data-space
+    
+            this is a square root of the covariance matrix
+    
+            >>> assert A.scaled.H*A.scaled == A.cov
+            >>> assert A.vectors.H*A.scaled==A.transform()
+    
         """
-        def fget(self):
-            'get the square-root of the covariance matrix'
-            return Matrix(numpy.multiply(sqrt(self.var[:, None]), self.vectors))
+    )
         
 
     def _transformParts(self, power=1):
@@ -937,8 +946,8 @@ class Mvn(Plane):
             
         shape.append(self.rank)
 
-        #todo:that number should accept a size-tuple - returning size+ndim
-        #todo look at that complex-normal distributions
+        #TODO:that number should accept a size-tuple - returning size+ndim
+        #TODO look at that complex-normal distributions
         units = numpy.random.randn(*shape)#pylint: disable-msg=W0142
 
         return (
@@ -1265,7 +1274,7 @@ class Mvn(Plane):
         :param mean:
             
         """
-#todo: find an implementation of generalized/noncentral chi2 distribution
+#TODO: find an implementation of generalized/noncentral chi2 distribution
         return (self + [-1]*locations).quad()
     
     def dist(self, locations=None, mean=None):
@@ -1625,7 +1634,7 @@ class Mvn(Plane):
         returns the probability that all components of a sample are between the 
         lower and upper limits 
 
-#todo: fix
+#TODO: fix
 
         >>> N = 100
         >>> data = A.sample(N)
@@ -1636,14 +1645,14 @@ class Mvn(Plane):
         >>> print A.inBox(lower,upper)
         >>> assert A.inBox(lower,upper) == Mvn.mean(((data<upper) & (data>lower)).all(1))
 
-#todo: this could be expanded to return a gaussian mixture, 
+#TODO: this could be expanded to return a gaussian mixture, 
               with one (Mvn) component instead of just a  weight...
         """
-#todo: vectorize?
+#TODO: vectorize?
         lower = lower-self.mean
         upper = upper-self.mean
 
-#todo: multimethod?
+#TODO: multimethod?
         if isinstance(lower, Mvn):
             l = lower.mean
             lower.mean = Matrix.zeros
@@ -1740,7 +1749,7 @@ class Mvn(Plane):
         """
         ~self
 
-        todo: signed inf's
+        TODO: signed inf's
         
         implementation:     
    
@@ -1784,7 +1793,7 @@ class Mvn(Plane):
             >>> if not (A.flat or B.flat):
             ...    assert (A&B) & ~B == A & (B&~B)
 
-            todo: investigate why this doesn't match, 
+            TODO: investigate why this doesn't match, 
                 I don't have a sense-physique for negative variances,
                 so I don't have a good explaination right now, it's probably related 
                 to the fact that (B&~B) removes all information about he variance of B  
@@ -2314,7 +2323,7 @@ class Mvn(Plane):
             
 
     def quad(self, matrix=None):
-        #todo: noncentral Chi & Chi2 distribution gives the *real* distribution 
+        #TODO: noncentral Chi & Chi2 distribution gives the *real* distribution 
         #       of the length & length^2 this just has the right mean and
         #       variance
         """
@@ -2331,7 +2340,7 @@ class Mvn(Plane):
         If you're creative with the marix transform you can make lots of 
             interesting things happen
 
-        todo: Chi & Chi2 distribution gives the *real* distribution of the length & length^2
+        TODO: Chi & Chi2 distribution gives the *real* distribution of the length & length^2
                 this has the right mean and variance so it's like a maximul entropy model
                 (ref: http://en.wikipedia.org/wiki/Principle_of_maximum_entropy )
         """
@@ -2350,8 +2359,8 @@ class Mvn(Plane):
             var=4.0*flattened.var+2.0*numpy.trace(transformed.cov*self.cov),
         )
 
-    #todo: add a test case to show why quad and dot are different
-    #todo: add a 'transposed' class so inner is just part of multiply
+    #TODO: add a test case to show why quad and dot are different
+    #TODO: add a 'transposed' class so inner is just part of multiply
 
     @__mul__.register(Mvn,Mvn.T)
     def inner(self, other):
@@ -2374,7 +2383,7 @@ class Mvn(Plane):
         )
     
 
-    #todo: add a 'transposed' class so outer is just part of multiply
+    #TODO: add a 'transposed' class so outer is just part of multiply
     @__mul__.register(Mvn.T,Mvn)
     def outer(self, other):
         """
@@ -2435,7 +2444,7 @@ class Mvn(Plane):
             >>> assert A+(B-B)==A
             
         """
-        #todo: fix the crash generated, 
+        #TODO: fix the crash generated, 
         #    for flat objects by: 1/A-1/A (inf-inf == nan)
         raise TypeError('Not implemented for these types')
 
@@ -2567,7 +2576,7 @@ class Mvn(Plane):
 
         if data is None:
             data = self
-#todo: multimethod
+#TODO: multimethod
         if isinstance(data, Mvn):
             baseE = (
                 numpy.log(abs(data.pdet()))+
@@ -2653,7 +2662,7 @@ class Mvn(Plane):
         """
         if base is None:
             base = self.infoBase
-#todo: multimethod?
+#TODO: multimethod?
         if isinstance(other, Mvn):
             det = abs(self.det())
             if det:
@@ -2673,9 +2682,10 @@ class Mvn(Plane):
             )
             return (baseE/numpy.log(base))
 
-    @decorate.prop
-    class corners(object):
+    def iterCorners(self):
         """
+        warning: there are 2**rank corners
+        
         Get an iterator over the corners of the eigen-ellipse
         The points are placed at 1 standard deviations so that the matrix 
         has the same variance as the source
@@ -2684,33 +2694,30 @@ class Mvn(Plane):
         properties as the mvn they were pulled from:
             
             >>> if A.rank < 10:
-            ...     C = Matrix([row for row in A.corners])
+            ...     C = Matrix([row for row in A.iterCorners()])
             ...     assert C.shape[0] == 2**A.rank
-            ...     assert A == C 
-            ...     assert A*M == C*M
+            ...     assert A == Mvn.fromData(C) 
+            ...     assert A*M == Mvn.fromData(C*M)
 
         see also: X
         """
-        def fget(self):
-            """iterate over the 'corners' of the Mvn"""
-            scaled = self.scaled
-            mean = self.mean
-            rank = self.rank
+        scaled = self.scaled
+        mean = self.mean
+        rank = self.rank
 
-            for n in range(2**self.rank):
-                B = bin(n).split('b')[1]
-                
-                B = '0'*(rank-len(B))+B
-                
-                positive = numpy.array([b=='1' for b in B])
-                
-                yield numpy.squeeze(
-                    (scaled[positive,:].sum(0)-scaled[~positive,:].sum(0))
-                    +mean
-                )
+        for n in range(2**self.rank):
+            B = bin(n).split('b')[1]
+            
+            B = '0'*(rank-len(B))+B
+            
+            positive = numpy.array([b=='1' for b in B])
+            
+            yield numpy.squeeze(
+                (scaled[positive,:].sum(0)-scaled[~positive,:].sum(0))
+                +mean
+            )
 
-    @decorate.prop
-    class X(object):
+    def getX(self):
         """
         Get the 'X' of points on the tips of the eigenvectors
         The points are placed at self.rank**(0.5) standard deviations so that the matrix 
@@ -2719,15 +2726,13 @@ class Mvn(Plane):
         The result is a (2*rank x ndim) matrix that has the same properties as 
         the mvn it was pulled from:
             
-            >>> assert isinstance(A.X,Matrix)
-            >>> assert A.X.shape == (A.rank*2,A.ndim)
-            >>> assert A==Mvn.fromData(A.X)
-            >>> assert A*M == Mvn.fromData(A.X*M)
+            >>> assert isinstance(A.getX(),Matrix)
+            >>> assert A.getX().shape == (A.rank*2,A.ndim)
+            >>> assert A==Mvn.fromData(A.getX())
+            >>> assert A*M == Mvn.fromData(A.getX()*M)
         """
-        def fget(self):
-            """get the coordinates of the X"""
-            scaled = (self.rank**0.5)*self.scaled
-            return numpy.vstack([scaled, -scaled])+self.mean
+        scaled = (self.rank**0.5)*self.scaled
+        return numpy.vstack([scaled, -scaled])+self.mean
 
 
     ################# Non-Math python internals
@@ -2736,7 +2741,7 @@ class Mvn(Plane):
         iterate over the vectors in X so:
             >>> assert A == numpy.array([row for row in A])
         """
-        return iter(numpy.squeeze(self.X))
+        return iter(numpy.squeeze(self.getX()))
     
     def __repr__(self):
         """
@@ -3073,7 +3078,7 @@ def givenVector(self, dims, value):
 
     Mu = self[:, free]
     Mv = self[:, fixed]
-    #todo: cleanup
+    #TODO: cleanup
     u = self.vectors[:, free]
     v = self.vectors[:, fixed]
 
