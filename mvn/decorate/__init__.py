@@ -5,16 +5,15 @@ Useful Decorators
 *****************
 """
 
-import sys
+# builtin
 import types
-import inspect
-import functools
 import itertools
 import collections
 
 from decorator import decorator
-from automath import Automath,Right
-from copyable import Copyable
+
+#local
+import mvn.decorate.automath
 
 def curry(fun,*args):
     """
