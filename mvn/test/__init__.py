@@ -1,16 +1,35 @@
 import os
+import sys
+import subprocess
 
-import nose
+#import nose
 
-import doc
-import fixture
-import parse
-import unit
+def main(argv = None):
 
-def main(argv):
-    [dirname,filename] = os.path.split(__file__) 
-    [dirname,_] = os.path.split(dirname)
+    if argv is None:
+        argv = []
+
+    [testPath,filename] = os.path.split(__file__) 
+    [mvnPath,_] = os.path.split(testPath)
+
+    resultPath = os.path.join(testPath,'results.txt')    
     
-    targets = [dirname,dirname+'/test/unit.py']
-    nose.run(argv = ['-v6','--with-doctest']+targets)
+    targets = [mvnPath,os.path.join(testPath+'/unit.py')]
+    args = ['--with-coverage','--cover-package=mvn','--with-doctest']
 
+    
+    #    nose.run(argv = args+targets)
+
+    tee = subprocess.Popen(
+        ['tee',resultPath],
+         stdin = subprocess.PIPE,
+         stdout = sys.stdout
+    )
+    
+    tests = subprocess.Popen(
+        ['nosetests']+args+targets,
+        stdout = tee.stdin,
+        stderr = tee.stdin
+    )
+
+    tests.communicate()
