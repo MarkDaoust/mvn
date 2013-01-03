@@ -1659,6 +1659,9 @@ class Mvn(Plane):
         """
         return self < lower
 
+    def cdf(self,corner):
+        return self.inBox(Matrix.infs(1,self.ndim),corner)
+
     def inBox(self, lower, upper, **kwargs):
         """
         :param lower:
