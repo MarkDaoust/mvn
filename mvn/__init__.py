@@ -1,6 +1,11 @@
 #! /usr/bin/env python
 
 #TODO: remove all implicit type casting
+#TODO: fix the gt/lt operators
+#          isinstance((A > [1,2,3]) == [True,False,True],float)
+#          isinstance((A > [1,2,3]).any(),float)
+#          isinstance((A > [1,2,3]).all(),float)
+#
     
 #TODO: better interoperability with scipy.stats
 #TODO: mixtures -> "|" operator 
@@ -88,11 +93,12 @@ import functools
 import numpy
 numpy.seterr(all = 'ignore')
 
-import scipy
+import scipy.stats.distributions
+
 import pylab
 import matplotlib
 import matplotlib.lines
-import matplotlib.patches
+import matplotlib.patches 
 
 ## local
 import mvn.helpers as helpers
@@ -298,7 +304,10 @@ class Mvn(Plane):
     def _getMean(cls, data, mean, weights):
         """
         :param data:
-        :param weights:        
+        :param weights:     
+            
+        >>> X = Mvn.fromData([1,2,3],mean = numpy.zeros)
+        >>> assert X.mean == [0,0,0]
         """
         if mean is None:
             mean = numpy.multiply(weights[:, None], data).sum(0)
@@ -334,9 +343,9 @@ class Mvn(Plane):
         >>> data = [[1,2,3]]
         >>> new=Mvn.fromData(data)
         >>> assert new.mean == data
-        >>> assert Matrix(new.var) == Matrix.zeros
-        >>> assert new.vectors == Matrix.zeros
+        >>> assert new.rank == 0 
         >>> assert new.cov == Matrix.zeros
+        
         
         bias is passed to numpy's cov function.
         
@@ -480,11 +489,18 @@ class Mvn(Plane):
         >>> assert D.mean == 0
         >>> assert D.var == 2
     
+        >>> D = Mvn.fromData(Matrix.zeros([0,3]))
+        >>> assert D.ndim == 3
+        >>> assert D.rank == 3
+        >>> assert Matrix(D.var) == Matrix.infs
         """        
-        N = cls._getN(data, weights)-(0 if bias else 1)
+        N = cls._getN(data, weights)
+        
+        if not bias:
+            N -= 1
         
         if bias and not N:
-            return cls.infs(data.shape[1])
+            return cls.infs(data.shape[1],mean = mean)
             
         weights = cls._getWeights(weights, data, N)
         mean = cls._getMean(data, mean, weights)
@@ -604,23 +620,29 @@ class Mvn(Plane):
             
         generate a random multivariate-normal distribution
         (just for testing purposes, no theoretical basis)
+
+        >>> assert Mvn.rand().shape == (2,2)       
         
-        >> M = Mvn.rand(A.shape)
-        >> assert M.shape = A.shape
+        >>> assert Mvn.rand(5).shape == (5,5)
+        >>> assert Mvn.rand([3,5]).shape == (3,5)
+        
+        >>> assert Mvn.rand(A.shape).shape == A.shape
             
         .. plot:: ../examples/rand.py main
 
         """
         if hasattr(shape, '__iter__'):
-            height, ndims = shape
+            rank, ndims = shape
         else:
-            height, ndims = shape, shape   
+            rank, ndims = shape, shape   
+
+        assert rank <= ndims
         
         randn = Matrix.randn
         eye = Matrix.eye
         
         return cls.fromData(
-            randn([height+1,ndims])*
+            randn([rank+1,ndims])*
             (eye(ndims)+randn([ndims,ndims])/3)+
             3*randn()*randn([1,ndims])
         )
@@ -882,7 +904,18 @@ class Mvn(Plane):
         return parts[0]*parts[1]
 
     def sign(self):
-        "return the signs of the variances"
+        """
+        return the signs of the variances
+        
+        They can only end up negative by:
+#TODO: verify
+            including negative weights in "Mvn.fromData"
+#TODO: verify
+            or doing an anti-convolution with somehting that has a larger variance
+            
+#        >>> assert (A.sign() == 1).all()
+        
+        """
         return helpers.sign(self.var)
 
     ########## Utilities
@@ -1653,6 +1686,7 @@ class Mvn(Plane):
         upper = upper-self.mean
 
 #TODO: multimethod?
+#TODO: verify--> this looks wrong
         if isinstance(lower, Mvn):
             l = lower.mean
             lower.mean = Matrix.zeros
@@ -3134,7 +3168,19 @@ def mooreChain(self, sensor, transform=None):
     )
 
 
+#def setup(module):
+#    import mvn.test.fixture
+#    
+#    module.__dict__.update(mvn.test.fixture.lookup['last'])
+#    return module
+
 if __debug__:
     import mvn.test.fixture 
-    globals().update(test.fixture.lookup['last'])
+    globals().update(mvn.test.fixture.lookup['last'])
     
+    
+    
+if __name__ == '__main__':
+    A = Mvn(var = 1)
+    
+    A > 0.1
