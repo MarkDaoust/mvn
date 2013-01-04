@@ -1,4 +1,146 @@
-..........................................................................F.......................................................................................
+............................................................................F...........................E...E../usr/lib/python2.7/dist-packages/numpy/linalg/linalg.py:1182: RuntimeWarning: tp_compare didn't return -1 or -2 for exception
+  lwork = int(work[0])
+............E......FF.......E.F..E.....................
+======================================================================
+ERROR: __and__ is a shortcut across mvn.chain and mvn.given
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.7/dist-packages/mvn/test/unit.py", line 602, in testAnd
+    measured[:,fix.ndim:]=measurment
+  File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 1446, in __setitem__
+    keep = self[ pca, :]
+  File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 1509, in __getitem__
+    vectors=self.vectors[pca, dims],
+  File "/usr/lib/python2.7/dist-packages/numpy/matrixlib/defmatrix.py", line 305, in __getitem__
+    out = N.ndarray.__getitem__(self, index)
+IndexError: index (6) out of range (0<=index<5) in dimension 0
+
+======================================================================
+ERROR: testRight (mvn.test.unit.commuteTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.7/dist-packages/mvn/test/unit.py", line 33, in testRight
+    self.assertTrue( fix.A/fix.B == (fix.B**-1)*fix.A )
+  File "/usr/lib/python2.7/dist-packages/mvn/decorate/automath.py", line 118, in __div__
+    return self*other**(-1)
+  File "<string>", line 2, in __mul__
+  File "/usr/lib/python2.7/dist-packages/mvn/decorate/__init__.py", line 53, in F
+    return decorated(*before(*args),**kwargs)
+  File "<string>", line 2, in __mul__
+  File "/usr/lib/python2.7/dist-packages/mvn/decorate/__init__.py", line 161, in caller
+    return found(*args,**kwargs)
+  File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 2330, in _mvnMul
+    result = (self*mvn0*mvn1+mvn*self0*self1)
+  File "<string>", line 2, in __mul__
+  File "/usr/lib/python2.7/dist-packages/mvn/decorate/__init__.py", line 53, in F
+    return decorated(*before(*args),**kwargs)
+  File "<string>", line 2, in __mul__
+  File "/usr/lib/python2.7/dist-packages/mvn/decorate/__init__.py", line 161, in caller
+    return found(*args,**kwargs)
+  File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 2298, in _matrixMul
+    vectors=self.vectors*matrix,
+  File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 224, in __init__
+    self.cannonize(**kwargs)
+  File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 232, in cannonize
+    self.copy(self.square())
+  File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 736, in square
+    var=result.var,
+  File "/usr/lib/python2.7/dist-packages/mvn/square.py", line 52, in square
+    full=True
+  File "/usr/lib/python2.7/dist-packages/mvn/square.py", line 131, in _subSquare
+    (val,vec)=eig(cov)
+  File "/usr/lib/python2.7/dist-packages/numpy/linalg/linalg.py", line 1187, in eigh
+    raise LinAlgError, 'Eigenvalues did not converge'
+LinAlgError: Eigenvalues did not converge
+
+======================================================================
+ERROR: testGivenScalar (mvn.test.unit.givenTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.7/dist-packages/mvn/test/unit.py", line 523, in testGivenScalar
+    a[:,0]=1
+  File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 1446, in __setitem__
+    keep = self[ pca, :]
+  File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 1509, in __getitem__
+    vectors=self.vectors[pca, dims],
+  File "/usr/lib/python2.7/dist-packages/numpy/matrixlib/defmatrix.py", line 305, in __getitem__
+    out = N.ndarray.__getitem__(self, index)
+IndexError: index (4) out of range (0<=index<3) in dimension 0
+
+======================================================================
+ERROR: testMorePowers (mvn.test.unit.powerTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.7/dist-packages/mvn/test/unit.py", line 407, in testMorePowers
+    self.assertTrue( fix.A**fix.K1*fix.A**fix.K2 == fix.A**(fix.K1+fix.K2))
+  File "<string>", line 2, in __mul__
+  File "/usr/lib/python2.7/dist-packages/mvn/decorate/__init__.py", line 53, in F
+    return decorated(*before(*args),**kwargs)
+  File "<string>", line 2, in __mul__
+  File "/usr/lib/python2.7/dist-packages/mvn/decorate/__init__.py", line 161, in caller
+    return found(*args,**kwargs)
+  File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 2330, in _mvnMul
+    result = (self*mvn0*mvn1+mvn*self0*self1)
+  File "<string>", line 2, in __mul__
+  File "/usr/lib/python2.7/dist-packages/mvn/decorate/__init__.py", line 53, in F
+    return decorated(*before(*args),**kwargs)
+  File "<string>", line 2, in __mul__
+  File "/usr/lib/python2.7/dist-packages/mvn/decorate/__init__.py", line 161, in caller
+    return found(*args,**kwargs)
+  File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 2298, in _matrixMul
+    vectors=self.vectors*matrix,
+  File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 224, in __init__
+    self.cannonize(**kwargs)
+  File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 232, in cannonize
+    self.copy(self.square())
+  File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 736, in square
+    var=result.var,
+  File "/usr/lib/python2.7/dist-packages/mvn/square.py", line 52, in square
+    full=True
+  File "/usr/lib/python2.7/dist-packages/mvn/square.py", line 131, in _subSquare
+    (val,vec)=eig(cov)
+  File "/usr/lib/python2.7/dist-packages/numpy/linalg/linalg.py", line 1187, in eigh
+    raise LinAlgError, 'Eigenvalues did not converge'
+LinAlgError: Eigenvalues did not converge
+
+======================================================================
+ERROR: testDiv (mvn.test.unit.productTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.7/dist-packages/mvn/test/unit.py", line 325, in testDiv
+    self.assertTrue( fix.A/fix.B == fix.A*fix.B**(-1) )
+  File "/usr/lib/python2.7/dist-packages/mvn/decorate/automath.py", line 118, in __div__
+    return self*other**(-1)
+  File "<string>", line 2, in __mul__
+  File "/usr/lib/python2.7/dist-packages/mvn/decorate/__init__.py", line 53, in F
+    return decorated(*before(*args),**kwargs)
+  File "<string>", line 2, in __mul__
+  File "/usr/lib/python2.7/dist-packages/mvn/decorate/__init__.py", line 161, in caller
+    return found(*args,**kwargs)
+  File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 2330, in _mvnMul
+    result = (self*mvn0*mvn1+mvn*self0*self1)
+  File "<string>", line 2, in __mul__
+  File "/usr/lib/python2.7/dist-packages/mvn/decorate/__init__.py", line 53, in F
+    return decorated(*before(*args),**kwargs)
+  File "<string>", line 2, in __mul__
+  File "/usr/lib/python2.7/dist-packages/mvn/decorate/__init__.py", line 161, in caller
+    return found(*args,**kwargs)
+  File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 2298, in _matrixMul
+    vectors=self.vectors*matrix,
+  File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 224, in __init__
+    self.cannonize(**kwargs)
+  File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 232, in cannonize
+    self.copy(self.square())
+  File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 736, in square
+    var=result.var,
+  File "/usr/lib/python2.7/dist-packages/mvn/square.py", line 52, in square
+    full=True
+  File "/usr/lib/python2.7/dist-packages/mvn/square.py", line 131, in _subSquare
+    (val,vec)=eig(cov)
+  File "/usr/lib/python2.7/dist-packages/numpy/linalg/linalg.py", line 1187, in eigh
+    raise LinAlgError, 'Eigenvalues did not converge'
+LinAlgError: Eigenvalues did not converge
+
 ======================================================================
 FAIL: Doctest: mvn.Mvn.inBox
 ----------------------------------------------------------------------
@@ -6,31 +148,31 @@ Traceback (most recent call last):
   File "/usr/lib/python2.7/doctest.py", line 2201, in runTest
     raise self.failureException(self.format_failure(new.getvalue()))
 AssertionError: Failed doctest test for mvn.Mvn.inBox
-  File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 1567, in inBox
+  File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 1665, in inBox
 
 ----------------------------------------------------------------------
-File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 1582, in mvn.Mvn.inBox
+File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 1680, in mvn.Mvn.inBox
 Failed example:
     print Mvn.mean(((data<upper) & (data>lower)).all(1))
 Expected nothing
 Got:
     Mvn(
         mean=
-            Matrix([[ 0.]]),
+            Matrix([[ 0.04]]),
         var=
-            array([], dtype=float64),
+            array([ 0.000384]),
         vectors=
-            Matrix([], shape=(0, 1), dtype=float64)
+            Matrix([[ 1.]])
     )
 ----------------------------------------------------------------------
-File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 1583, in mvn.Mvn.inBox
+File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 1681, in mvn.Mvn.inBox
 Failed example:
     print A.inBox(lower,upper)
 Expected nothing
 Got:
-    5.58746214726e-06
+    0.03113262122
 ----------------------------------------------------------------------
-File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 1584, in mvn.Mvn.inBox
+File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 1682, in mvn.Mvn.inBox
 Failed example:
     assert A.inBox(lower,upper) == Mvn.mean(((data<upper) & (data>lower)).all(1))
 Exception raised:
@@ -42,7 +184,48 @@ Exception raised:
     AssertionError
 
 
+======================================================================
+FAIL: testParadoxes (mvn.test.unit.inversionTester)
 ----------------------------------------------------------------------
-Ran 162 tests in 1.629s
+Traceback (most recent call last):
+  File "/usr/lib/python2.7/dist-packages/mvn/test/unit.py", line 650, in testParadoxes
+    self.assertTrue( (fix.A&fix.B) & ~fix.B == fix.A & (fix.B&~fix.B) )
+AssertionError: False is not true
 
-FAILED (failures=1)
+======================================================================
+FAIL: testPow (mvn.test.unit.inversionTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.7/dist-packages/mvn/test/unit.py", line 662, in testPow
+    Mvn.zeros
+AssertionError: False is not true
+
+======================================================================
+FAIL: testRealPow (mvn.test.unit.powerTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.7/dist-packages/mvn/test/unit.py", line 440, in testRealPow
+    self.assertTrue( fix.A/fix.A**-1 == fix.A**2 )
+AssertionError: False is not true
+
+Name                    Stmts   Miss  Cover   Missing
+-----------------------------------------------------
+mvn                       676     81    88%   594, 1283, 1300-1301, 1311, 1322, 1634, 1660, 2167, 2221, 2826, 2847-2860, 2867, 2871, 2881-2888, 2891-2898, 2905-2907, 2914, 2917, 2922, 2980-3034, 3038-3042, 3044, 3048-3051, 3187-3189
+mvn.decorate               78      3    96%   91-93
+mvn.decorate.automath      70      8    89%   47, 59, 71, 77, 138, 141, 144, 175
+mvn.examples                1      0   100%   
+mvn.helpers               106      6    94%   338, 346-347, 350, 353, 367
+mvn.lint                   13      7    46%   11-20, 28
+mvn.matrix                 71      8    89%   81-82, 111, 130, 151, 157, 204, 212
+mvn.mixture                68     53    22%   13-16, 20-32, 35-49, 52-65, 69-93, 96, 102-103, 108-123, 133-134
+mvn.mvncdf                 48     13    73%   207, 209, 215, 219, 282-294
+mvn.plane                  69      3    96%   142, 147-148
+mvn.plotTools              50     35    30%   26-56, 60-64, 83-108
+mvn.sphinx                 14      9    36%   6-23, 32
+mvn.square                 62      0   100%   
+-----------------------------------------------------
+TOTAL                    1326    226    83%   
+----------------------------------------------------------------------
+Ran 166 tests in 4.932s
+
+FAILED (errors=5, failures=4)
