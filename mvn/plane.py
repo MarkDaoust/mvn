@@ -15,25 +15,30 @@ from mvn.square import square
 Plane = decorate.underConstruction('Plane')
 
 @decorate.MultiMethod.sign(Plane)
-class Plane(decorate.Automath):
+
+@decorate.automath.automath
+@decorate.automath.right
+class Plane(object):
+    """
+    plane class, meant to (eventually) factor out some code, 
+    and utility from the Mvn class
+    """
+    
     rtol = 1e-5
     """
     relative tolerence
     
     see :py:func:`mvn.helpers.approx`
-    """
+    """#pylint: disable-msg=w0105
     
     atol = 1e-8
     """
     absolute tolerence
     
     see :py:func:`mvn.helpers.approx`
-    """    
+    """#pylint: disable-msg=w0105    
     
     
-    """
-    plane class, meant to (eventually) factor out some code, and utility from the Mvn class
-    """
     def __init__(
         self,
         vectors=Matrix.eye,
@@ -77,9 +82,10 @@ class Plane(decorate.Automath):
             vectors=self.vectors[:,index],
         )
 
+    copy = decorate.automath.Automath.__dict__['copy']
 
-    @decorate.prop
-    class shape():
+    @property
+    def shape(self):
         """
         get the shape of the vectors,the first element is the number of 
         vectors, the second is their lengths: the number of dimensions of 
@@ -90,37 +96,33 @@ class Plane(decorate.Automath):
         >>> assert A.shape[0]==A.rank
         >>> assert A.shape[1]==A.ndim
         """
-        def fget(self):
-            return self.vectors.shape
+        return self.vectors.shape
             
-    @decorate.prop
-    class rank():
+    @property
+    def rank(self):
         """
         get the number of dimensions of the space covered by the mvn
         
         >>> assert A.rank == A.vectors.shape[0]
         """
-        def fget(self):
-            return self.vectors.shape[0]
+        return self.vectors.shape[0]
 
-    @decorate.prop
-    class ndim(object):
+    @property
+    def ndim(self):
         """
         get the number of dimensions of the space the mvn exists in
         
         >>> assert A.ndim==A.mean.size==A.mean.shape[1]
         >>> assert A.ndim==A.vectors.shape[1]
         """
-        def fget(self):
-            return self.mean.size
+        return self.mean.size
             
-    @decorate.prop
-    class flat(object):
+    @property
+    def flat(self):
         """
         >>> assert bool(A.flat) == bool(A.vectors.shape[1] > A.vectors.shape[0]) 
         """
-        def fget(self):
-            return max(self.vectors.shape[1] - self.vectors.shape[0],0)
+        return max(self.vectors.shape[1] - self.vectors.shape[0],0)
             
     def __nonzero__(self):
         """
