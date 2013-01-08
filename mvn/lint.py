@@ -7,9 +7,7 @@ from pylint import lint
 from pylint.reporters.html import HTMLReporter
 
 
-def main(*args):
-    args = list(args)
-    
+def main():    
     [dirname,filename] = os.path.split(__file__) 
     
     lintRcPath = os.path.join(dirname,'.lintrc')
@@ -18,11 +16,11 @@ def main(*args):
     lintFile = open(lintFilePath,'w')
     
     lint.Run(
-        args+[('--rcfile=%s' % lintRcPath),'mvn'],
+        [('--rcfile=%s' % lintRcPath),'mvn'],
         reporter = HTMLReporter(lintFile),
         exit = False,
     )
 
 
 if __name__ == '__main__':
-    main(*sys.argv[1:])
+    main()
