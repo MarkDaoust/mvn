@@ -48,6 +48,7 @@ class Matrix(numpy.matrix):
     """    
     
     sign = helpers.sign
+    unit = helpers.unit
 
     def __new__(cls,data,dtype=None,copy=True):
         """
@@ -150,7 +151,7 @@ class Matrix(numpy.matrix):
         """
         return numpy.array(self)
       
-    def approx(self,other = None):
+    def approx(self,other = 0.0):
         """
         same function as :py:func:`numpy.allclose`, but elementwise
         """
@@ -174,7 +175,7 @@ class Matrix(numpy.matrix):
         return cls(numpy.eye(*args,**kwargs))
 
     @classmethod
-    def ones(cls,shape=[],**kwargs):
+    def ones(cls,shape=(),**kwargs):
         """
         return a matrix filled with ones
         see: :py:func:`numpy.ones`
@@ -182,7 +183,7 @@ class Matrix(numpy.matrix):
         return cls(numpy.ones(shape,**kwargs))
 
     @classmethod
-    def zeros(cls,shape=[],**kwargs):
+    def zeros(cls,shape=(),**kwargs):
         """
         return a matrix filled with zeros
         see: :py:func:`numpy.zeros`
@@ -190,21 +191,21 @@ class Matrix(numpy.matrix):
         return cls(numpy.zeros(shape,**kwargs))
 
     @classmethod
-    def infs(cls,shape=[],**kwargs):
+    def infs(cls,shape=(),**kwargs):
         """
         return a matrix filled with infs
         """
         return numpy.inf*Matrix.ones(shape,**kwargs)
 
     @classmethod
-    def nans(cls,shape=[],**kwargs):
+    def nans(cls,shape=(),**kwargs):
         """
         return a matrix on filled with nans
         """
         return numpy.nan*Matrix.ones(shape,**kwargs)
 
     @classmethod
-    def rand(cls,shape=[]):
+    def rand(cls,shape=()):
         """
         return a matrix of uniformly distributed random numbers on [0,1]
         see: :py:func:`numpy.random.rand`        
@@ -212,7 +213,7 @@ class Matrix(numpy.matrix):
         return cls(numpy.random.rand(*shape))
 
     @classmethod
-    def randn(cls,shape=[]):
+    def randn(cls,shape=()):
         """
         return a matrix of normally distributed random numbers with unit variance
         see: :py:func:`numpy.random.randn`        
