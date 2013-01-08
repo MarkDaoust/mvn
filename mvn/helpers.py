@@ -306,7 +306,7 @@ def parallel(*items):
     inverted=[item**(-1) for item in items]
     return sum(inverted[1:],inverted[0])**(-1)
 
-def approx(self,other = None,rtol=1e-5,atol=1e-8):
+def approx(self,other = 0.0,rtol=1e-5,atol=1e-8):
     """
     element-wise version of :py:func:`numpy.allclose`
     
@@ -316,10 +316,6 @@ def approx(self,other = None,rtol=1e-5,atol=1e-8):
     >>> eye = numpy.eye(3)+1e-6*numpy.random.randn(3,3)
     >>> assert (approx(ones,eye) == numpy.eye(3)).all()
     """
-    
-    if other is None:
-        other = numpy.zeros
-
     if callable(other):
         other=other(self.shape)
             
