@@ -132,9 +132,9 @@ class MvnFixture(object):
         assert isinstance(ndim,int),'ndim must be an int'
     
         shapes={
-            None:lambda :randint(-ndim,ndim),
+            None:lambda :max(randint(-ndim,ndim),0),
             True:lambda :randint(1,ndim),
-            False:lambda :-randint(1,ndim),
+            False:lambda :0,
         }
     
         triple=lambda x:[x,x,x]
@@ -145,8 +145,7 @@ class MvnFixture(object):
             flat=triple(flat)
         
         assert all(f<=ndim for f in flat), "flatness can't be larger than ndim"
-            
-    
+        
         rvec= lambda n=1,ndim=ndim:Matrix(randn(n,ndim))
                 
         A,B,C=[
