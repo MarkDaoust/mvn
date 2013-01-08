@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
 #TODO: remove all implicit type casting
+#
 #TODO: fix the gt/lt operators
 #          isinstance((A > [1,2,3]) == [True,False,True],float)
 #          isinstance((A > [1,2,3]).any(),float)
@@ -11,7 +12,7 @@
 #TODO: mixtures -> "|" operator 
 #TODO: find libraries that already do this stuf
 #TODO: try sympy's version of this (sympy.stats)?
-#TODO: transform's in the "&" operator    A&T&B
+#TODO: transform's in the "&" operator    A&T&B? 
 #TODO: find a way to auto update the multimethod call dictionaries 
 #          when sub-classes are created.
 #TODO: find the standard approach to making things plottable in matplotlib
@@ -237,6 +238,7 @@ class Mvn(Plane):
     ############## alternate creation methods
     @classmethod
     def format(cls, something):
+# TODO : fix this, it's dmb dispatching on the number of dimensions
         '''
         take an arraylike object and return a :py:class:`mvn.matrix.Matrix` (for 
         2d data), a :py:func:`numpy.array` (for Nd data), or the unmodified object 
@@ -247,13 +249,13 @@ class Mvn(Plane):
         >>> assert isinstance(Mvn.format([[1,2,3]]),Matrix)
         >>> assert isinstance(Mvn.format([[[2]]]),numpy.ndarray)
         '''
-        A = numpy.array(something)
+        array = numpy.array(something)
                      
-        if A.ndim == 2:
-            something = numpy.asmatrix(A)
+        if array.ndim == 2:
+            something = numpy.asmatrix(array)
             something.__class__ = Matrix
-        elif A.ndim != 0:
-            something = A
+        elif array.ndim != 0:
+            something = array
         
         return something
     
