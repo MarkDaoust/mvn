@@ -115,21 +115,21 @@ def unit(self,axis=-1):
     >>> assert numpy.allclose(M,numpy.ones_like(M))
     
     """
-    self = numpy.asarray(self)
+    self = numpy.asanyarray(self)
 
-    if axis == -1:
-        axis = self.ndim-1
+    if axis < 0:
+        axis = self.ndim+axis
     
     mag = mag2(self,axis)**(0.5)
 
     mag = mag.reshape(mag.shape[:axis]+(1,)+mag.shape[axis:])
 
-    return self/mag
+    return numpy.divide(self,mag)
 
 def ascomplex(self,axis=-1):
     """
     return an array pointing to the same data (if possible), 
-    but interpreting it as a different type
+    but interpreting it as a complex type
     
     >>> assert ascomplex([1,1]) == 1+1j
     
