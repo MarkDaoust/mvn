@@ -238,7 +238,7 @@ class Mvn(Plane):
     ############## alternate creation methods
     @classmethod
     def format(cls, something):
-# TODO : fix this, it's dmb dispatching on the number of dimensions
+# TODO : fix this, it's dumb dispatching on the number of dimensions
         '''
         take an arraylike object and return a :py:class:`mvn.matrix.Matrix` (for 
         2d data), a :py:func:`numpy.array` (for Nd data), or the unmodified object 
@@ -265,9 +265,9 @@ class Mvn(Plane):
         :param data:
         :param weights:
         """
-        N = cls._getN(data, weights)
+        n = cls._getN(data, weights)
         self = cls.fromData(data, weights)
-        return self*N
+        return self*n
 
     @classmethod
     def mean(cls, data, weights=None):
@@ -275,8 +275,8 @@ class Mvn(Plane):
         :param data:
         :param weights:
         """
-        N = cls._getN(data, weights)
-        return cls.sum(data, weights)*[1.0/N]
+        n = cls._getN(data, weights)
+        return cls.sum(data, weights)*[1.0/n]
     
     @classmethod
     def _getN(cls, data, weights):
@@ -291,7 +291,7 @@ class Mvn(Plane):
         )
     
     @classmethod
-    def _getWeights(cls, weights, data, N):
+    def _getWeights(cls, weights, data, n):
         """
         :param data:
         :param weights:        
@@ -300,7 +300,7 @@ class Mvn(Plane):
             numpy.ones(data.shape[0])
             if weights is None 
             else numpy.array(weights)
-        )/float(N)
+        )/float(n)
     
     @classmethod
     def _getMean(cls, data, mean, weights):
@@ -1707,6 +1707,7 @@ class Mvn(Plane):
         lower = numpy.array(lower)
         upper = numpy.array(upper)
         
+#TODO: add tolerence on this comparison (the cdf calculation fails if upper-lower < ~1e-8)
         if (lower == upper).any():
             return 0.0
             
@@ -2756,7 +2757,7 @@ class Mvn(Plane):
                 +mean
             )
 
-    def getX(self):
+    def getX(self,nstd = 1):
         """
         Get the 'X' of points on the tips of the eigenvectors
         The points are placed at self.rank**(0.5) standard deviations so that the matrix 
@@ -2770,9 +2771,11 @@ class Mvn(Plane):
             >>> assert A==Mvn.fromData(A.getX())
             >>> assert A*M == Mvn.fromData(A.getX()*M)
         """
-        scaled = (self.rank**0.5)*self.scaled
-        return numpy.vstack([scaled, -scaled])+self.mean
+        if not self.rank:
+            return self.mean 
 
+        scaled = nstd*(self.rank**0.5)*self.scaled
+        return numpy.vstack([scaled, -scaled])+self.mean
 
     ################# Non-Math python internals
     def __iter__(self):
@@ -2813,22 +2816,22 @@ class Mvn(Plane):
     default plot parameters
     this could probably be broken up by number of dimensions in the plot,
     and by the number of dimensions of the object being     
-    """
+    """  #pylint: disable-msg=w0105
     
     
-    def plot(self, ax=None, **kwargs):
+    def plot(self, axis=None, **kwargs):
         """
-        :param ax:
+        :param axis:
         :param ** kwargs:
         """
         
         defaults = self.plotParams.copy()
         defaults.update(kwargs)
         
-        return self._plotters.get(self.ndim, self.plotND)(self, ax, **defaults)
+        return self._plotter(axis, **defaults)
         
     def plot1D(self, 
-        ax = None, 
+        axis = None, 
         count = 1.0,
         fill = True, 
         nstd = 5,
@@ -2837,7 +2840,7 @@ class Mvn(Plane):
         **kwargs
     ):
         """
-        :param ax:
+        :param axis:
         :param count:
         :param fill:
         :param nstd:
@@ -2852,15 +2855,15 @@ class Mvn(Plane):
         horizontal = ['horizontal', 'h', 'H']
         vertical   = ['vertical'  , 'v', 'V']
         
-        if ax is None:
-            ax = pylab.gca()        
+        if axis is None:
+            axis = pylab.gca()        
 
         
         if fill:
             if orientation in horizontal:
-                filler = ax.fill_betweenx
+                filler = axis.fill_betweenx
             elif orientation in vertical:
-                filler = ax.fill_between
+                filler = axis.fill_between
             else:
                 raise ValueError(
                     'orientation should be in either (%s) or (%s), not (%s)' % 
@@ -2868,48 +2871,48 @@ class Mvn(Plane):
                 )
             plotter = functools.partial(filler, x, y, 0)
         else:
-            plotter = functools.partial(ax.plot, x, y)
+            plotter = functools.partial(axis.plot, x, y)
         
         return plotter(**kwargs)
                 
-    def plot2D(self, ax = None, nstd = 2, **kwargs):
+    def plot2D(self, axis = None, nstd = 2, **kwargs):
         """
-        :param ax:
+        :param axis:
         :param nstd:
         :param ** kwargs:
             
         plot a :py:meth:`mvn.Mvn.patch`, with axis autoscaling
         """
-        if ax is None:
-            ax = pylab.gca()
+        if axis is None:
+            axis = pylab.gca()
  
         bBox = self.bBox(nstd).array()
         widths = numpy.diff(bBox, axis=0)
         pads = 0.05*widths*[[-1], [1]]
         corners = bBox+pads
-        ax.update_datalim(corners)
-        ax.autoscale_view()
+        axis.update_datalim(corners)
+        axis.autoscale_view()
                         
         artist = self.patch(**kwargs)
         
         if isinstance(artist, matplotlib.lines.Line2D):
-            insert = ax.add_line
+            insert = axis.add_line
         else:
-            insert = ax.add_patch
+            insert = axis.add_patch
             
         return insert(artist)
         
-    def plot3D(self, ax = None, nstd = 2.0, **kwargs):
+    def plot3D(self, axis = None, nstd = 2.0, **kwargs):
         """
-        :param ax:
+        :param axis:
         :param ** kwargs:
         """
         from mpl_toolkits.mplot3d import Axes3D
 
-        if ax is None:
-            ax = pylab.gca(projection = '3d')
+        if axis is None:
+            axis = pylab.gca(projection = '3d')
             
-        assert isinstance(ax, Axes3D)  
+        assert isinstance(axis, Axes3D)  
         
         
         u = numpy.linspace(0, 2 * numpy.pi, 100)
@@ -2930,7 +2933,7 @@ class Mvn(Plane):
 
         xyz = xyz+self.mean.array()[None, :, :]
         
-        ax.plot_wireframe(
+        axis.plot_wireframe(
             xyz[..., 0], xyz[..., 1], xyz[..., 2],  
             rstride=10, 
             cstride=10, 
@@ -2939,21 +2942,68 @@ class Mvn(Plane):
         )
             
         
-    def plotND(self, ax = None, **kwargs):
+    def plotND(self, axis = None, **kwargs):
         """
-        :param ax:
+        :param axis:
         :param ** kwargs:
         """
         raise NotImplementedError()
         
-    _plotters = {1:plot1D, 2:plot2D, 3:plot3D}
-    """
-    >>> assert mvn._plotters[1] is mvn.plot1D
-    >>> assert mvn._plotters[2] is mvn.plot2D
-    >>> assert mvn._plotters[3] is mvn.plot3D    
-    """    
-    
-#multimethod distributor
+    @property
+    def _plotter(self):
+        """
+        >>> if ndim >= 3:
+        ...     assert A[:,:0]._plotter.im_func is Mvn.plotND
+        ...     assert A[:,:1]._plotter.im_func is Mvn.plot1D
+        ...     assert A[:,:2]._plotter.im_func is Mvn.plot2D
+        ...     assert A[:,:3]._plotter.im_func is Mvn.plot3D
+        ...     assert A[:,:4]._plotter.im_func is Mvn.plotND    
+        """
+        ndim = self.ndim
+        if ndim == 1:
+            return self.plot1D
+        
+        if ndim == 2:
+            return self.plot2D
+        
+        if ndim == 3:
+            return self.plot3D
+
+        return self.plotND
+        
+        
+
+    @classmethod
+    def _kwargs2Marker(cls,**kwargs):
+        facecolor = kwargs.pop('facecolor', None)
+        if facecolor is not None:
+            kwargs['markerfacecolor'] = facecolor
+            
+        edgecolor = kwargs.pop('edgecolor', None)
+        if edgecolor is not None:
+            kwargs['markeredgecolor'] = edgecolor
+            kwargs['color'] = edgecolor
+            
+        if 'marker' not in kwargs:
+            kwargs['marker'] = 'o'
+
+        return kwargs
+
+    @classmethod
+    def _convertAlpha(cls,color,alpha):
+
+        if isinstance(color,str):
+            colorConverter = matplotlib.colors.ColorConverter()
+            color = colorConverter.to_rgb(color)
+
+        color = list(color)
+
+        if len(color) < 4:
+            color.append(alpha)
+        
+        return color
+
+
     def patch(self, nstd=2, alpha='auto', slope=0.5, minalpha=0.3, **kwargs):
         """
         :param nstd:
@@ -2981,69 +3031,38 @@ class Mvn(Plane):
         """
         shape = self.shape
 
-        if shape[1] != 2:
-            raise ValueError(
-                'this method can only produce patches for 2d data'
-            )
+        assert shape[1] == 2,'this method can only produce patches for 2d data'
         
         if shape[0] < 2:
-            facecolor = kwargs.pop('facecolor', None)
-            if facecolor is not None:
-                kwargs['markerfacecolor'] = facecolor
-                
-            edgecolor = kwargs.pop('edgecolor', None)
-            if edgecolor is not None:
-                kwargs['markeredgecolor'] = edgecolor
-                kwargs['color'] = edgecolor
-                
-            if 'marker' not in kwargs:
-                kwargs['marker'] = 'o'            
+            kwargs = self._kwargs2Marker(**kwargs)   
             
-            if shape[0] == 0:
-                return matplotlib.lines.Line2D(
-                    self.mean[:, 0],
-                    self.mean[:, 1],
-                    **kwargs
-                )
-            elif shape[0] == 1:
-                delta = nstd*self.scaled
-                front = self.mean+delta
-                back = self.mean-delta
-                data = numpy.vstack([front, back])
+            coords = self.getX(nstd = nstd)
                     
-                return matplotlib.lines.Line2D(
-                    data[:, 0], 
-                    data[:, 1], 
-                    **kwargs
-                )
+            return matplotlib.lines.Line2D(
+                coords[:, 0], 
+                coords[:, 1], 
+                **kwargs
+            )
             
 
         if alpha == 'auto':
-
             alpha = numpy.max([
                 minalpha,
                 numpy.exp(-slope*sqrt(self.det()))
             ])
 
-            colorConverter = matplotlib.colors.ColorConverter()           
-            
-            facecolor = kwargs.get('facecolor')
-            if facecolor is not None:
-                if isinstance(facecolor,str):
-                    facecolor = colorConverter.to_rgb(facecolor)
-                facecolor = list(facecolor)
-                if len(facecolor) < 4:
-                    facecolor.append(alpha)
-                kwargs['facecolor'] = facecolor
+            facecolor = kwargs.get('facecolor', None)
+            if facecolor is None:
+                kwargs['facealpha'] = alpha
+            else:
+                kwargs['facecolor'] = self._convertAlpha(facecolor,alpha)
 
-            edgecolor = kwargs.get('edgecolor')
+            edgecolor = kwargs.get('edgecolor', None)
             if edgecolor is not None:
-                if isinstance(edgecolor,str):
-                    edgecolor = colorConverter.to_rgb(edgecolor)
-                edgecolor = list(edgecolor)
-                if len(edgecolor) < 4:
-                    edgecolor.append(alpha)
-                kwargs['edgecolor'] = edgecolor
+                kwargs['edgecolor'] = self._convertAlpha(edgecolor,alpha)
+
+        else:
+            kwargs['alpha'] = alpha
 
         #unpack the width and height from the scale matrix 
         wh = nstd*sqrt(self.var)
@@ -3054,7 +3073,7 @@ class Mvn(Plane):
 
         #calculate angle
         angle = 180/numpy.pi*(
-            numpy.angle(helpers.ascomplex(self.vectors)[0, 0])
+            numpy.angle(helpers.ascomplex(self.vectors)[0])
         )        
         
         #return an Ellipse patch
