@@ -94,6 +94,7 @@ import functools
 import numpy
 numpy.seterr(all = 'ignore')
 
+
 import scipy.stats.distributions
 
 ## local
@@ -1656,7 +1657,48 @@ class Mvn(Plane):
         return self < lower
 
     def cdf(self,corner):
-        return self.inBox(Matrix.infs(1,self.ndim),corner)
+        return self.inBox(-Matrix.infs([1,self.ndim]),corner)
+
+
+    def _minMax(self,isMax):
+        ndim = self.ndim        
+
+        eye = Matrix.eye(ndim)
+        indexes = numpy.arange(ndim)
+
+        result = Matrix.nans([1,ndim])
+        
+        for dim in xrange(ndim):
+            current = Matrix.zeros([1,ndim])
+            current[0,dim] =  1
+
+            transform = (current - eye)
+            
+            if isMax:
+                transform *= -1
+
+            transform = numpy.vstack([
+                transform[0:dim],
+                transform[dim+1:]                
+            ]).T
+
+            result[0,dim] = (self*transform).cdf(0)
+
+        assert Matrix(result.sum()) == 1.0
+
+        return result
+
+    def max(self):
+        if not isinstance(self,Mvn):
+            self = Mvn.hstack(self)
+
+        return self._minMax(isMax = 1)
+
+    def min(self):
+        if not isinstance(self,Mvn):
+            self = Mvn.hstack(self)
+
+        return self._minMax(isMax = 0)
 
     def inBox(self, lower, upper, **kwargs):
         """
@@ -1745,7 +1787,11 @@ class Mvn(Plane):
         lower = lower*Iwidth
         upper = upper*Iwidth
 
-        return infFlips*mvncdf.mvstdnormcdf(lower, upper, self.corr, **kwargs)
+        return infFlips*mvncdf.mvstdnormcdf(
+            lower, upper, self.corr, 
+            abseps = self.atol,
+            releps = self.rtol            
+        )
         
     def bBox(self, nstd=2):
         """
@@ -2817,6 +2863,4 @@ if __debug__:
     
     
 if __name__ == '__main__':
-    A = Mvn(var = 1)
-    
-    A > 0.1
+    A.max()
