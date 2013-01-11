@@ -37,7 +37,8 @@ load-plugins=
 # 
 # I0011 : Locally disabled message
 # W0511 : fixme
-disable=I0011,W0511
+# W0142 : star-args
+disable=I0011,W0511,W0142
 
 
 [REPORTS]
@@ -149,7 +150,7 @@ variable-rgx=[a-z_][a-zA-Z0-9_]{2,30}$
 inlinevar-rgx=[A-Za-z_][a-zA-Z0-9_]*$
 
 # Good variable names which should always be accepted, separated by a comma
-good-names=i,j,k,ex,Run,_
+good-names=i,j,k,n,ex,Run,_
 
 # Bad variable names which should always be refused, separated by a comma
 bad-names=foo,bar,baz,toto,tutu,tata
