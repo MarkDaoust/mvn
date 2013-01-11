@@ -538,7 +538,7 @@ class givenTester(myTests):
         self.assertTrue( Y.given(dims=0,value=x) == X&Y )
 
     def testGivenVector(self):
-        self.assertTrue( mvn.givenVector(fix.A,dims=0,value=1)==fix.A.given(dims=0,value=1) )
+        self.assertTrue( givenVector(fix.A,dims=0,value=1)==fix.A.given(dims=0,value=1) )
 
 class chainTester(myTests):
     def testBasic(self):
@@ -549,10 +549,10 @@ class chainTester(myTests):
         )
 
     def testMoore(self):
-        self.assertTrue( fix.A.chain(fix.B) == mvn.mooreChain(fix.A,fix.B) )
+        self.assertTrue( fix.A.chain(fix.B) == mooreChain(fix.A,fix.B) )
 
         b=fix.B*fix.M
-        self.assertTrue( fix.A.chain(b,fix.M) == mvn.mooreChain(fix.A,b,fix.M) )
+        self.assertTrue( fix.A.chain(b,fix.M) == mooreChain(fix.A,b,fix.M) )
 
     def testStacks(self):
         dataA=fix.A.sample(100)
@@ -681,14 +681,14 @@ class blendTester(myTests):
             self.assertTrue( fix.A & fix.B == 1/(1/fix.A+1/fix.B))
             self.assertTrue( fix.A & -fix.A == Mvn(mean=numpy.zeros(fix.ndim))**-1)
             self.assertTrue( fix.A & ~fix.A == Mvn(mean=numpy.zeros(fix.ndim))**-1)
-            self.assertTrue( fix.A & fix.B == mvn.wiki(fix.A,fix.B))
+            self.assertTrue( fix.A & fix.B == wiki(fix.A,fix.B))
                
             self.assertTrue( fix.A**-1 == fix.A*fix.A**-2)
             self.assertTrue( fix.A & fix.B == (fix.A*fix.A**-2+fix.B*fix.B**-2)**-1)
 
             D = fix.A*(fix.A.cov)**(-1) + fix.B*(fix.B.cov)**(-1)
-            self.assertTrue( mvn.wiki(fix.A,fix.B) == D*(D.cov)**(-1))
-            self.assertTrue( fix.A & fix.B == mvn.wiki(fix.A,fix.B))
+            self.assertTrue( wiki(fix.A,fix.B) == D*(D.cov)**(-1))
+            self.assertTrue( fix.A & fix.B == wiki(fix.A,fix.B))
 
         if not (fix.A.flat or fix.B.flat or fix.C.flat):
             abc=numpy.random.permutation([fix.A,fix.B,fix.C])
@@ -1112,6 +1112,125 @@ class outerTester(myTests):
         self.assertTrue( numpy.outer(A.mean,B.mean) == Matrix(result))
         self.assertTrue( A.outer(B) == Matrix(result))
         self.assertTrue( B.outer(A) == Matrix(result).H)
+
+def wiki(P, M):
+    """
+    :param P:
+    :param M:
+        
+    Direct implementation of the wikipedia blending algorithm
+    """
+    yk = M.mean-P.mean
+    Sk = P.cov+M.cov
+    Kk = P.cov*Sk.I
+    
+    return Mvn.fromCov(
+        mean=(P.mean + yk*Kk.H),
+        cov=(Matrix.eye(P.ndim)-Kk)*P.cov
+    )
+
+def givenVector(self, dims, value):
+    """
+    :param dims:
+    :param value:
+    
+    direct implementation of the "given" algorithm in
+    Andrew moore's data-mining/gussian slides
+
+    >>> assert givenVector(A,dims=0,value=1)==A.given(dims=0,value=1)
+    """
+    fixed=helpers.binindex(dims, self.ndim)
+    if fixed.all():
+        return Mvn.fromData(value)
+
+    free =~ fixed
+
+    Mu = self[:, free]
+    Mv = self[:, fixed]
+    #TODO: cleanup
+    u = self.vectors[:, free]
+    v = self.vectors[:, fixed]
+
+    uv = numpy.multiply(u.H, self.var)*v
+
+    result = Mu-(Mv-value)**-1*uv.H
+
+    #create the mean, for the new object,and set the values of interest
+    mean = numpy.zeros([1, self.ndim],dtype=result.mean.dtype)
+    mean[:, fixed] = value
+    mean[:, free] = result.mean
+
+    #create empty vectors for the new object
+    vectors=numpy.zeros([
+        result.shape[0],
+        self.ndim
+    ],result.vectors.dtype)
+    vectors[:,fixed] = 0
+    vectors[:,free] = result.vectors
+    
+    return type(self)(
+        mean=mean,
+        vectors=vectors,
+        var=result.var
+    )
+
+
+def mooreChain(self, sensor, transform=None):
+    """
+    :param sensor:
+    :param transform:
+        
+    given a distribution of actual values and an Mvn to act as a sensor 
+    this method returns the joint distribution of real and measured values
+
+    the, optional, transform parameter describes how to transform from actual
+    space to sensor space
+    """
+
+    if transform is None:
+        transform = Matrix.eye(self.ndim)
+
+    T = (self*transform+sensor)
+    vv = self.cov        
+
+    return type(self).fromCov(
+        mean = numpy.hstack([self.mean,T.mean]),
+        cov = numpy.vstack([
+            numpy.hstack([vv,vv*transform]),
+            numpy.hstack([(vv*transform).H,T.cov]),
+        ])
+    )
+
+
+
+class refereceTester(myTests):
+    
+    def testMooreChain(self):
+        #when including a sensor, noise is added to those new dimensions
+
+        self.assertTrue(
+            fix.A.chain(fix.B) == 
+            mooreChain(fix.A,fix.B)
+        )
+        self.assertTrue(
+            fix.A.chain(fix.B*M,M) == 
+            mooreChain(fix.A,fix.B*fix.M,fix.M)
+        )
+
+
+    def testWiki(self):
+        if not (fix.A.flat or fix.B.flat):
+            self.assertTrue( fix.A & fix.B == wiki(fix.A,fix.B) )
+
+        #The quickest way to prove it's equivalent is by examining these:
+
+            self.assertTrue( fix.A**-1 == fix.A*fix.A**-2 )
+            self.assertTrue( fix.A & fix.B == (fix.A*fix.A**-2+fix.B*fix.B**-2)**-1 )
+        
+            D = fix.A*(fix.A.cov)**(-1) + fix.B*(fix.B.cov)**(-1)
+            self.assertTrue( wiki(fix.A,fix.B) == D*(D.cov)**(-1) )
+            assert fix.A & fix.B == wiki(fix.A,fix.B)
+
 
 def getTests(fixture=None):
     testCases= [

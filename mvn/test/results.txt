@@ -1,6 +1,14 @@
-............................................................................F................................../usr/lib/python2.7/dist-packages/numpy/linalg/linalg.py:1182: RuntimeWarning: tp_compare didn't return -1 or -2 for exception
+.............................................................................F..........F...................../usr/lib/python2.7/dist-packages/numpy/linalg/linalg.py:1182: RuntimeWarning: tp_compare didn't return -1 or -2 for exception
   lwork = int(work[0])
-.......................................................
+................................................E........
+======================================================================
+ERROR: testMooreChain (mvn.test.unit.refereceTester)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.7/dist-packages/mvn/test/unit.py", line 1216, in testMooreChain
+    fix.A.chain(fix.B*M,M) ==
+NameError: global name 'M' is not defined
+
 ======================================================================
 FAIL: Doctest: mvn.Mvn.inBox
 ----------------------------------------------------------------------
@@ -8,31 +16,31 @@ Traceback (most recent call last):
   File "/usr/lib/python2.7/doctest.py", line 2201, in runTest
     raise self.failureException(self.format_failure(new.getvalue()))
 AssertionError: Failed doctest test for mvn.Mvn.inBox
-  File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 1667, in inBox
+  File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 1662, in inBox
 
 ----------------------------------------------------------------------
-File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 1682, in mvn.Mvn.inBox
+File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 1677, in mvn.Mvn.inBox
 Failed example:
     print Mvn.mean(((data<upper) & (data>lower)).all(1))
 Expected nothing
 Got:
     Mvn(
         mean=
-            Matrix([[ 0.1]]),
+            Matrix([[ 0.]]),
         var=
-            array([ 0.0009]),
+            array([], dtype=float64),
         vectors=
-            Matrix([[ 1.]])
+            Matrix([], shape=(0, 1), dtype=float64)
     )
 ----------------------------------------------------------------------
-File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 1683, in mvn.Mvn.inBox
+File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 1678, in mvn.Mvn.inBox
 Failed example:
     print A.inBox(lower,upper)
 Expected nothing
 Got:
-    0.0912094350186
+    0.0155560111456
 ----------------------------------------------------------------------
-File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 1684, in mvn.Mvn.inBox
+File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 1679, in mvn.Mvn.inBox
 Failed example:
     assert A.inBox(lower,upper) == Mvn.mean(((data<upper) & (data>lower)).all(1))
 Exception raised:
@@ -44,24 +52,46 @@ Exception raised:
     AssertionError
 
 
+======================================================================
+FAIL: Doctest: mvn.Mvn.sample
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/usr/lib/python2.7/doctest.py", line 2201, in runTest
+    raise self.failureException(self.format_failure(new.getvalue()))
+AssertionError: Failed doctest test for mvn.Mvn.sample
+  File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 954, in sample
+
+----------------------------------------------------------------------
+File "/usr/lib/python2.7/dist-packages/mvn/__init__.py", line 974, in mvn.Mvn.sample
+Failed example:
+    assert Matrix(divergence) == sorted(divergence)
+Exception raised:
+    Traceback (most recent call last):
+      File "/usr/lib/python2.7/doctest.py", line 1289, in __run
+        compileflags, 1) in test.globs
+      File "<doctest mvn.Mvn.sample[7]>", line 1, in <module>
+        assert Matrix(divergence) == sorted(divergence)
+    AssertionError
+
+
 Name                    Stmts   Miss  Cover   Missing
 -----------------------------------------------------
-mvn                       677     73    89%   1260, 1302, 1324, 2223, 2825-2828, 2848-2850, 2853-2860, 2865, 2871, 2883-2888, 2891-2898, 2907, 2912-2915, 2922, 2931, 2982-3034, 3036, 3039-3042, 3044-3050, 3189-3191
-mvn.decorate               78      3    96%   91-93
+mvn                       653    125    81%   502, 537, 544, 547, 596, 693, 921, 1048, 1203, 1208, 1213, 1235, 1255-1258, 1268, 1273-1274, 1280, 1297-1298, 1308, 1319, 1498-1499, 1578, 1631, 1657, 1660, 1692-1694, 1697-1700, 1740, 2157, 2211, 2375, 2476, 2762, 2815-2818, 2840-2863, 2873-2877, 2879-2890, 2899-2902, 2906-2923, 2949-2953, 2956-2959, 2965, 2967, 2970-2971, 2974-2977, 2982-2983, 2986-2991, 3019-3067, 3099
+mvn.decorate               78      6    92%   90-93, 191, 204
 mvn.decorate.automath      70      8    89%   47, 59, 71, 77, 138, 141, 144, 175
 mvn.examples                1      0   100%   
-mvn.helpers               104      5    95%   325, 334, 343, 346, 363
+mvn.helpers               104      8    92%   320, 325, 334, 342-343, 346, 349, 363
 mvn.lint                   12      6    50%   11-18, 26
 mvn.matrix                 72      8    89%   82-83, 112, 131, 152, 158, 205, 213
 mvn.mixture                68     53    22%   13-16, 20-32, 35-49, 52-65, 69-93, 96, 102-103, 108-123, 133-134
 mvn.mvncdf                 48     13    73%   207, 209, 215, 219, 282-294
-mvn.plane                  69      3    96%   142, 147-148
+mvn.plane                  69      6    91%   63, 142, 146-148, 152
 mvn.plotTools              50     35    30%   26-56, 60-64, 83-108
 mvn.sphinx                 14      9    36%   6-23, 32
 mvn.square                 62      0   100%   
 -----------------------------------------------------
-TOTAL                    1325    216    84%   
+TOTAL                    1301    277    79%   
 ----------------------------------------------------------------------
-Ran 166 tests in 7.390s
+Ran 167 tests in 5.301s
 
-FAILED (failures=1)
+FAILED (errors=1, failures=2)

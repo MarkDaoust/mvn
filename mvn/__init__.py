@@ -1119,11 +1119,6 @@ class Mvn(Plane):
         ...     A.chain(transform=M)
         ... )
 
-        when including a sensor, noise is added to those new dimensions
-
-        >>> assert A.chain(B) == mooreChain(A,B)
-        >>> assert A.chain(B*M,M) == mooreChain(A,B*M,M)
-
         some of te connections are more obvious when you look at it in terms of a block of data
 
         >>> dataA=A.sample(100)
@@ -1911,16 +1906,8 @@ class Mvn(Plane):
         ...     assert A &-A == Mvn(mean=numpy.zeros(ndim))**-1
         ...     assert A &~A == Mvn(mean=numpy.zeros(ndim))**-1
 
-
         >>> assert (A & A).cov == A.cov/2
         >>> assert (A & A).mean == A.mean
-                
-        The proof that this is identical to the wikipedia definition of blend 
-        is a little too involved to write here. Just try it (and see the "wiki"
-        function)
-        
-        >>> if not (A.flat or B.flat):
-        ...     assert A & B == wiki(A,B)
 
         this algorithm is also, at the same time, solving linear equations
         where the zero variances correspond to a plane's null vectors 
@@ -2952,7 +2939,7 @@ class Mvn(Plane):
     @property
     def _plotter(self):
         """
-        >>> if ndim >= 3:
+        >>> if ndim >= 4:
         ...     assert A[:,:0]._plotter.im_func is Mvn.plotND
         ...     assert A[:,:1]._plotter.im_func is Mvn.plot1D
         ...     assert A[:,:2]._plotter.im_func is Mvn.plot2D
@@ -3092,104 +3079,6 @@ class Mvn(Plane):
         
 ## extras    
 
-def wiki(P, M):
-    """
-    :param P:
-    :param M:
-        
-    Direct implementation of the wikipedia blending algorithm
-    
-    The quickest way to prove it's equivalent is by examining these:
-
-    >>> if not (A.flat or B.flat):    
-    ...     assert A**-1 == A*A**-2
-    ...     assert A & B == (A*A**-2+B*B**-2)**-1
-    ...
-    ...     D = A*(A.cov)**(-1) + B*(B.cov)**(-1)
-    ...     assert wiki(A,B) == D*(D.cov)**(-1)
-    ...     assert A & B == wiki(A,B)
-    """
-    yk = M.mean-P.mean
-    Sk = P.cov+M.cov
-    Kk = P.cov*Sk.I
-    
-    return Mvn.fromCov(
-        mean=(P.mean + yk*Kk.H),
-        cov=(Matrix.eye(P.ndim)-Kk)*P.cov
-    )
-
-def givenVector(self, dims, value):
-    """
-    :param dims:
-    :param value:
-    
-    direct implementation of the "given" algorithm in
-    Andrew moore's data-mining/gussian slides
-
-    >>> assert givenVector(A,dims=0,value=1)==A.given(dims=0,value=1)
-    """
-    fixed=helpers.binindex(dims, self.ndim)
-    if fixed.all():
-        return Mvn.fromData(value)
-
-    free =~ fixed
-
-    Mu = self[:, free]
-    Mv = self[:, fixed]
-    #TODO: cleanup
-    u = self.vectors[:, free]
-    v = self.vectors[:, fixed]
-
-    uv = numpy.multiply(u.H, self.var)*v
-
-    result = Mu-(Mv-value)**-1*uv.H
-
-    #create the mean, for the new object,and set the values of interest
-    mean = numpy.zeros([1, self.ndim],dtype=result.mean.dtype)
-    mean[:, fixed] = value
-    mean[:, free] = result.mean
-
-    #create empty vectors for the new object
-    vectors=numpy.zeros([
-        result.shape[0],
-        self.ndim
-    ],result.vectors.dtype)
-    vectors[:,fixed] = 0
-    vectors[:,free] = result.vectors
-    
-    return type(self)(
-        mean=mean,
-        vectors=vectors,
-        var=result.var
-    )
-
-
-
-def mooreChain(self, sensor, transform=None):
-    """
-    :param sensor:
-    :param transform:
-        
-    given a distribution of actual values and an Mvn to act as a sensor 
-    this method returns the joint distribution of real and measured values
-
-    the, optional, transform parameter describes how to transform from actual
-    space to sensor space
-    """
-
-    if transform is None:
-        transform = Matrix.eye(self.ndim)
-
-    T = (self*transform+sensor)
-    vv = self.cov        
-
-    return type(self).fromCov(
-        mean = numpy.hstack([self.mean,T.mean]),
-        cov = numpy.vstack([
-            numpy.hstack([vv,vv*transform]),
-            numpy.hstack([(vv*transform).H,T.cov]),
-        ])
-    )
 
 
 #def setup(module):
