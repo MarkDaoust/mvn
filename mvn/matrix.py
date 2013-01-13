@@ -244,4 +244,23 @@ class Matrix(numpy.matrix):
         """
         return numpy.linalg.det(self)
         
+
+    def null(self):   
+        (_,v,d) = numpy.linalg.svd(self, full_matrices = 1)
+
+        v = numpy.concatenate([v,numpy.zeros(len(d)-len(v))])        
         
+        zeros=type(self)(v).approx().squeeze()
+    
+        return d[zeros]
+        
+
+
+
+if __name__ == '__main__':
+
+    import mvn
+    
+    A = mvn.A[1]
+    print A.vectors.null()
+    

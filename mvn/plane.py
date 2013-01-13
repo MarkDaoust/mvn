@@ -154,25 +154,6 @@ class Plane(object):
             vectors=numpy.vstack([self.vectors,other.vectors])
         )
 
-    def getNull(self,vectors = None):
-        if vectors is None:
-            vectors = self.vectors
-        
-        shape=vectors.shape        
-        missing = shape[1]-shape[0]
-    
-        if missing>0:
-            vectors = numpy.vstack(
-                [vectors,numpy.zeros((missing,shape[1]))]
-            )
-        else:
-            vectors=vectors
-    
-        var,vectors = square(vectors)
-    
-        zeros=self.approx(var)
-    
-        return vectors[zeros]
         
     def approx(self,*args):
         return helpers.approx(*args,atol = self.atol,rtol = self.rtol)
@@ -182,8 +163,8 @@ class Plane(object):
         """
         plane intersection
         """
-        Nself=self.getNull()
-        Nother=other.getNull()
+        Nself=self.vectors.null()
+        Nother=other.vectors.null()
 
         #and stack them
         null=numpy.vstack([
@@ -191,12 +172,15 @@ class Plane(object):
             Nother,
         ])
 
+        mean = numpy.hstack([self.mean,other.mean])
+
         #get length of the component of the means along each null vector
         r=numpy.vstack([Nself*self.mean.H,Nother*other.mean.H])
+
         
         mean = (numpy.linalg.pinv(null,1e-6)*r).H
 
-        return type(self)(vectors=self.getNull(null),mean=mean)
+        return type(self)(vectors=null.null(),mean=mean)
 
 
 if __debug__:
