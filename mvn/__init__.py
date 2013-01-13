@@ -63,7 +63,7 @@ packaged to act like a `vector
 
 The goal is to make these objects work as intuitively as possible, 
 to make algorithms like `Kalman Filtering 
-    <http://en.wikipedia.org/wiki/Kalman_filter>`_, 
+    <http://en.wikipedia.org/wiki/Kalman_filter>`_,
 `Principal Component Analysis 
     <http://en.wikipedia.org/wiki/Principal_component_analysis>`_, 
 and `Expectation Maximization 
@@ -86,9 +86,6 @@ But remember that circular logic works because circluar logic works.
 Many of the examples only proove that I'm being consistant.
 """
 ############  imports
-
-## builtin
-import functools
 
 ## 3rd party
 import numpy
@@ -1656,9 +1653,8 @@ class Mvn(Plane):
         """
         return self < lower
 
-    def cdf(self,corner):
+    def cdf(self,corner):        
         return self.inBox(-Matrix.infs([1,self.ndim]),corner)
-
 
     def _minMax(self,isMax):
         ndim = self.ndim        
@@ -1787,11 +1783,14 @@ class Mvn(Plane):
         lower = lower*Iwidth
         upper = upper*Iwidth
 
-        return infFlips*mvncdf.mvstdnormcdf(
+        result = infFlips*mvncdf.mvstdnormcdf(
             lower, upper, self.corr, 
             abseps = self.atol,
             releps = self.rtol            
         )
+        
+        assert 0 <= abs(result) <= 1
+        return result
         
     def bBox(self, nstd=2):
         """
@@ -1899,22 +1898,26 @@ class Mvn(Plane):
         result.var = -(self.var)
         return result
     
-    def __or__(self, other):
-        """
-        :param other:
-            
-        self | other
-        >>> assert  (A | B) == (A+B) - (A&B)
-        """
-        return (self+other)-(self&other)
+#    def __or__(self, other):
+#        """
+#        :param other:
+#            
+#        self | other
+#        >>> assert  (A | B) == (A+B) - (A&B)
+#        """
+#        return (self+other)-(self&other)
+#
+#    def __xor__(self, other):
+#        """
+#        :param other:
+#            
+#        I don't  know what this means yet
+#        """
+#        return self+other-2*(self&other)
 
-    def __xor__(self, other):
-        """
-        :param other:
-            
-        I don't  know what this means yet
-        """
-        return self+other-2*(self&other)
+
+    def __or__(self,other):
+        return Mixture([self,other])
 
     def __and__(self, other):
         """
@@ -2863,4 +2866,7 @@ if __debug__:
     
     
 if __name__ == '__main__':
-    A.max()
+    A = A[0:2]
+    B = B[2]
+    
+    A & B
