@@ -15,7 +15,7 @@ def main():
     data2 = M2.sample(100)
     
     M1 = Mvn.fromData(data1)
-    M2 = Mvn.fromdata(data2)
+    M2 = Mvn.fromData(data2)
     M3 = Mvn.fromData([M1,M2])
     
     data3 = Matrix.stack([[data1],[data2]])

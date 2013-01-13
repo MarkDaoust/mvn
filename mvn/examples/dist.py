@@ -50,7 +50,7 @@ def hist(red,blue,ax=None,orientation='vertical'):
     
     #plot the normal distribution
     red.plot(
-        ax=ax, 
+        axis=ax, 
         orientation=orientation,
         zorder = 1,
         **plotParams
@@ -68,7 +68,7 @@ def main():
     data = A.sample(10000)
     
     #squish the data to spherical variance    
-    deltas = ((data-A.mean)/(A)).array()
+    deltas = ((data-A.mean)/A).array()
     
     #calculate the errors in the squished space
     errors = (deltas**2).sum(1)

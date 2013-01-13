@@ -8,6 +8,8 @@ aka "covariance intersection"
 
 import pylab
 
+
+
 from mvn import Mvn
 
 def main():
@@ -22,9 +24,9 @@ def main():
     
     magenta = red & blue
     
-    red.plot(    facecolor = 'r',edgecolor = 'k',slope=1)
-    blue.plot(   facecolor = 'b',edgecolor = 'k',slope=1)
-    magenta.plot(facecolor = 'm',edgecolor = 'k',slope=1)   
+    red.plot(    facecolor = 'r')
+    blue.plot(   facecolor = 'b')
+    magenta.plot(facecolor = 'm')   
     
     pylab.xlabel('Magenta = Red & Blue')    
     pylab.show()

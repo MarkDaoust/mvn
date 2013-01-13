@@ -27,6 +27,7 @@ plotParams = {
 """
 plot params used in this example
 """
+
 def hist(red,blue,ax=None,orientation='vertical'):
     """
     compare theoretical density to histogram
@@ -56,8 +57,8 @@ def hist(red,blue,ax=None,orientation='vertical'):
     
     #plot the normal distribution
     red.plot(
-        ax=ax, 
-        orientation=orientation,
+        axis = ax, 
+        orientation = orientation,
         zorder = 1,
         **plotParams
     )
@@ -86,7 +87,7 @@ def main():
         
     #do the main plot
     mainax.scatter(blue[:,0],blue[:,1],zorder = 0,alpha = alpha);
-    red.plot(ax = mainax, nstd=2, zorder = 1,label=r'$\pm 2 \sigma$',**plotParams)    
+    red.plot(axis = mainax, nstd=2, zorder = 1,label=r'$\pm 2 \sigma$',**plotParams)    
     mainax.legend()    
     
     #freeze the main axes
