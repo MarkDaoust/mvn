@@ -1,3 +1,4 @@
+import functools
 
 import pylab
 import matplotlib
@@ -253,12 +254,12 @@ class Plotter(object):
         if alpha == 'auto':
             alpha = numpy.max([
                 minalpha,
-                numpy.exp(-slope*sqrt(self.det()))
+                numpy.exp(-slope*mvn.sqrt(self.dist.det()))
             ])
 
             facecolor = kwargs.get('facecolor', None)
             if facecolor is None:
-                kwargs['facealpha'] = alpha
+                kwargs['alpha'] = alpha
             else:
                 kwargs['facecolor'] = self._convertAlpha(facecolor,alpha)
 
