@@ -1,4 +1,4 @@
-    #! /usr/bin/env python
+#! /usr/bin/env python
 
 import unittest
 import operator
@@ -1213,7 +1213,7 @@ class refereceTester(myTests):
             mooreChain(fix.A,fix.B)
         )
         self.assertTrue(
-            fix.A.chain(fix.B*M,M) == 
+            fix.A.chain(fix.B*fix.M,fix.M) == 
             mooreChain(fix.A,fix.B*fix.M,fix.M)
         )
 
