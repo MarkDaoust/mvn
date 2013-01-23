@@ -163,7 +163,7 @@ class Mvn(Plane):
     default base to use by information calculations
     
     >>> assert Mvn.infoBase is numpy.e
-    """    #pylint: disable-msg=w0105
+    """   
 
     ############## Creation
     def __init__(
@@ -268,7 +268,7 @@ class Mvn(Plane):
         return self*n
 
     @classmethod
-    def mean(cls, data, weights=None):
+    def mean(cls, data, weights=None): #pylint: disable-msg=E0202
         """
         :param data:
         :param weights:
@@ -918,12 +918,13 @@ class Mvn(Plane):
         return helpers.sign(self.var)
 
     ########## Utilities
-    def stack(*mvns, **kwargs):
+    def stack(self,mvns, **kwargs):
         """
         :param * mvns:
         :param ** kwargs:
         
         >>> AB=A.stack(B)
+        >>> assert AB == Mvn.stack(A,B)
         >>> assert AB[:,:A.ndim]==A
         >>> assert AB[:,A.ndim:]==B
         
@@ -937,14 +938,16 @@ class Mvn(Plane):
         
         see also Mvn.chain
         """
+        mvns = [self]+mvns
+
         #no 'square' is necessary here because the rotation matrixes are in 
         #entierly different dimensions
         return type(mvns[0])(
             #stack the means
-            mean=numpy.hstack([mvn.mean for mvn in mvns]),
+            mean= numpy.hstack([m.mean for m in mvns]),
             #stack the vector diagonally
-            vectors=helpers.diagstack([mvn.vectors for mvn in mvns]),
-            var=numpy.concatenate([mvn.var for mvn in mvns]),
+            vectors= helpers.diagstack([m.vectors for m in mvns]),
+            var= numpy.concatenate([m.var for m in mvns]),
             **kwargs
         )
     
@@ -1390,7 +1393,7 @@ class Mvn(Plane):
         """
         #convert the inputs
         fixed = helpers.binindex(dims, self.ndim)
-        N = fixed.sum()
+        nfixed = fixed.sum()
         free = ~fixed
 
         #create the mean, for the new object,and set the values of interest
@@ -1410,7 +1413,7 @@ class Mvn(Plane):
             self.ndim,
         ])
         vectors[0:value.shape[0], fixed] = value.vectors
-        vectors[value.shape[0]:, free] = numpy.eye(self.ndim-N)
+        vectors[value.shape[0]:, free] = numpy.eye(self.ndim-nfixed)
         
         #create the variance for the new object
         var = numpy.zeros(vectors.shape[0])
@@ -1615,7 +1618,7 @@ class Mvn(Plane):
         """
         return self.inBox(
             lower,
-            Matrix.infs(self.mean.size)
+            Matrix.infs(self.ndim)
         )
         
     def __ge__(self, lower):
@@ -1640,7 +1643,7 @@ class Mvn(Plane):
         see :py:meth:`mvn.Mvn.inbox`
         """
         return self.inBox(
-            -Matrix.infs(self.mean.size),
+            -Matrix.infs(self.ndim),
             upper,
         )
 
@@ -1653,24 +1656,29 @@ class Mvn(Plane):
         """
         return self < lower
 
-    def cdf(self,corner):        
+    def cdf(self, corner):
+        """
+        return the probability that each component is less than the 'corner'
+        """        
         return self.inBox(-Matrix.infs([1,self.ndim]),corner)
 
-    def _minMax(self,isMax):
+    def _minMax(self, calcMax):
+        """
+        internal, does the work of the min and max methods
+        """
         ndim = self.ndim        
 
         eye = Matrix.eye(ndim)
-        indexes = numpy.arange(ndim)
 
-        result = Matrix.nans([1,ndim])
+        result = Matrix.nans([1, ndim])
         
         for dim in xrange(ndim):
-            current = Matrix.zeros([1,ndim])
-            current[0,dim] =  1
+            current = Matrix.zeros([1, ndim])
+            current[0, dim] =  1
 
             transform = (current - eye)
             
-            if isMax:
+            if calcMax:
                 transform *= -1
 
             transform = numpy.vstack([
@@ -1678,23 +1686,35 @@ class Mvn(Plane):
                 transform[dim+1:]                
             ]).T
 
-            result[0,dim] = (self*transform).cdf(0)
+            result[0, dim] = (self*transform).cdf(0)
 
         assert Matrix(result.sum()) == 1.0
 
         return result
 
     def max(self):
-        if not isinstance(self,Mvn):
-            self = Mvn.hstack(self)
+        """
+        return the probability that each component is the maximum
 
-        return self._minMax(isMax = 1)
+        >>> assert Matrix(A.max().sum()) == 1
+        >>> Mvn.eye(ndim).max() == 2**-ndim
+        """
+        if not isinstance(self, Mvn):
+            self = Mvn.fromData(self)
+
+        return self._minMax(calcMax = 1)
 
     def min(self):
-        if not isinstance(self,Mvn):
-            self = Mvn.hstack(self)
+        """
+        return the probability that each component is the maximum
 
-        return self._minMax(isMax = 0)
+        >>> assert Matrix(A.max().sum()) == 1
+        >>> Mvn.eye(ndim).max() == 2**-ndim
+        """
+        if not isinstance(self, Mvn):
+            self = Mvn.fromData(self)
+
+        return self._minMax(calcMax = 0)
 
     def inBox(self, lower, upper, **kwargs):
         """
@@ -1713,7 +1733,9 @@ class Mvn(Plane):
         >>> lower = limits.min(0)
         >>> print Mvn.mean(((data<upper) & (data>lower)).all(1))
         >>> print A.inBox(lower,upper)
-        >>> assert A.inBox(lower,upper) == Mvn.mean(((data<upper) & (data>lower)).all(1))
+        >>> assert A.inBox(lower,upper) == Mvn.mean(
+        ...     ((data<upper) & (data>lower)).all(1)
+        ... )
 
 #TODO: this could be expanded to return a gaussian mixture, 
               with one (Mvn) component instead of just a  weight...
@@ -1739,8 +1761,9 @@ class Mvn(Plane):
         lower = numpy.array(lower)
         upper = numpy.array(upper)
         
-#TODO: add tolerence on this comparison (the cdf calculation fails if upper-lower < ~1e-8)
-        if (lower == upper).any():
+#TODO: add tolerence on this comparison 
+#        (the cdf calculation fails if upper-lower < ~1e-8)
+        if (Matrix(lower) == Matrix(upper)).any():
             return 0.0
             
         upper = upper.squeeze()
@@ -2866,7 +2889,4 @@ if __debug__:
     
     
 if __name__ == '__main__':
-    A = A[0:2]
-    B = B[2]
-    
-    A & B
+    pass
