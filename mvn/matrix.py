@@ -15,15 +15,15 @@ import helpers
 from decorator import decorator
 
 @decorator
-def expandCallable(fun,self,other):
+def expandCallable(fun, self, other):
     """
     If the 'other' argument is a callable object call it with self.shape as the 
     only argument.
     """
     return (
-        fun(self,other(self.shape))
+        fun(self, other(self.shape))
         if callable(other) else
-        fun(self,other)
+        fun(self, other)
     )
 
 class Matrix(numpy.matrix):
@@ -50,16 +50,16 @@ class Matrix(numpy.matrix):
     sign = helpers.sign
     unit = helpers.unit
 
-    def __new__(cls,data,dtype=None,copy=True):
+    def __new__(cls, data, dtype=None, copy=True):
         """
         !!
         """
-        self=numpy.matrix(data,dtype,copy)
+        self=numpy.matrix(data, dtype, copy)
         self.__class__=cls
         return self
 
     @expandCallable
-    def __eq__(self,other):
+    def __eq__(self, other):
         """
         Treats the matrix as a single object, and returns True or False.
         
@@ -78,20 +78,20 @@ class Matrix(numpy.matrix):
         """
         other = Matrix(other)
         try:
-            return numpy.allclose(self,other,self.rtol,self.atol)
+            return numpy.allclose(self, other, self.rtol, self.atol)
         except:
-            raise ValueError(repr(self),repr(other))
+            raise ValueError(repr(self), repr(other))
             
         
     @expandCallable
-    def __add__(self,other):
+    def __add__(self, other):
         """
         :py:func:`numpy.matrix.__add__` with the 
         :py:func:`mvn.matrix.expandCallable` decorator applied
         """
-        return numpy.matrix.__add__(self,other)
+        return numpy.matrix.__add__(self, other)
         
-    def __ne__(self,other):
+    def __ne__(self, other):
         """
         inverse of __eq__
         
@@ -99,13 +99,13 @@ class Matrix(numpy.matrix):
         """
         return not (self ==  other)
     
-    def __div__(self,other):
+    def __div__(self, other):
         """
         self/other == self*other**-1
         """
         return self*other**(-1)
 
-    def __rdiv__(self,other):
+    def __rdiv__(self, other):
         """
         other/self == other*self**-1
         """
@@ -151,14 +151,14 @@ class Matrix(numpy.matrix):
         """
         return numpy.array(self)
       
-    def approx(self,other = 0.0):
+    def approx(self, other = 0.0):
         """
         same function as :py:func:`numpy.allclose`, but elementwise
         """
-        return helpers.approx(self,other,atol=self.atol,rtol=self.rtol)
+        return helpers.approx(self, other, atol=self.atol, rtol=self.rtol)
 
     @classmethod
-    def eye(cls,*args,**kwargs):
+    def eye(cls, *args, **kwargs):
         """
         improved version of numpy.eye
         
@@ -170,42 +170,42 @@ class Matrix(numpy.matrix):
         see: :py:func:`numpy.eye`
         """
         #if isinstance(args[0],collections.Iterable):
-        if hasattr(args[0],'__iter__'):
-            args=itertools.chain(args[0],args[1:])
-        return cls(numpy.eye(*args,**kwargs))
+        if hasattr(args[0], '__iter__'):
+            args=itertools.chain(args[0], args[1:])
+        return cls(numpy.eye(*args, **kwargs))
 
     @classmethod
-    def ones(cls,shape=(),**kwargs):
+    def ones(cls, shape = (), **kwargs):
         """
         return a matrix filled with ones
         see: :py:func:`numpy.ones`
         """
-        return cls(numpy.ones(shape,**kwargs))
+        return cls(numpy.ones(shape, **kwargs))
 
     @classmethod
-    def zeros(cls,shape=(),**kwargs):
+    def zeros(cls, shape = (), **kwargs):
         """
         return a matrix filled with zeros
         see: :py:func:`numpy.zeros`
         """
-        return cls(numpy.zeros(shape,**kwargs))
+        return cls(numpy.zeros(shape, **kwargs))
 
     @classmethod
-    def infs(cls,shape=(),**kwargs):
+    def infs(cls, shape = (), **kwargs):
         """
         return a matrix filled with infs
         """
-        return numpy.inf*Matrix.ones(shape,**kwargs)
+        return numpy.inf*Matrix.ones(shape, **kwargs)
 
     @classmethod
-    def nans(cls,shape=(),**kwargs):
+    def nans(cls, shape = (), **kwargs):
         """
         return a matrix on filled with nans
         """
-        return numpy.nan*Matrix.ones(shape,**kwargs)
+        return numpy.nan*Matrix.ones(shape, **kwargs)
 
     @classmethod
-    def rand(cls,shape=()):
+    def rand(cls, shape = ()):
         """
         return a matrix of uniformly distributed random numbers on [0,1]
         see: :py:func:`numpy.random.rand`        
@@ -213,7 +213,7 @@ class Matrix(numpy.matrix):
         return cls(numpy.random.rand(*shape))
 
     @classmethod
-    def randn(cls,shape=()):
+    def randn(cls, shape = ()):
         """
         return a matrix of normally distributed random numbers with unit variance
         see: :py:func:`numpy.random.randn`        
@@ -221,7 +221,7 @@ class Matrix(numpy.matrix):
         return cls(numpy.random.randn(*shape))
         
     @classmethod
-    def stack(cls,rows,default = 0):
+    def stack(cls, rows, default = 0):
         """
         2d concatenation, expanding callables
         
@@ -235,7 +235,7 @@ class Matrix(numpy.matrix):
                 [ 0.,  0.,  1.,  0.],
                 [ 1.,  1.,  1.,  4.]])
         """
-        return cls(helpers.stack(rows,default))
+        return cls(helpers.stack(rows, default))
 
     def det(self):
         """
@@ -246,11 +246,15 @@ class Matrix(numpy.matrix):
         
 
     def null(self):   
-        (_,v,d) = numpy.linalg.svd(self, full_matrices = 1)
+        """
+        >>> R = Matrix.randn([5,10])
+        >>> assert R*R.null().T == Matrix.zeros
+        """
+        (_, v, d) = numpy.linalg.svd(self, full_matrices = 1)
 
         v = numpy.concatenate([v,numpy.zeros(len(d)-len(v))])        
         
-        zeros=type(self)(v).approx().squeeze()
+        zeros = type(self)(v).approx().squeeze()
     
         return d[zeros]
         
