@@ -9,7 +9,7 @@ import scipy
 import mvn.helpers as helpers
 from mvn.matrix import Matrix
 
-def square(vectors,var=None,full=False):
+def square(vectors, var=None, full=False):
     """
     calculates the eigen-vectors and eigen-values of the covariance matrix that 
     would be produced by multiplying out A.var*numpy.array(A.vectors.H)*A.vectors 
@@ -33,69 +33,69 @@ def square(vectors,var=None,full=False):
     the two possible covariance marixes and, and then it's eigen-stuff.
     """ 
     if var is None:
-        var =numpy.ones(vectors.shape[0]) 
+        var = numpy.ones(vectors.shape[0]) 
 
-    finite= numpy.isfinite(var) & numpy.isfinite(vectors.asarray()).all(1)  
+    finite = numpy.isfinite(var) & numpy.isfinite(vectors.asarray()).all(1)  
 
     infinite = ~finite
 
-    Ivar=numpy.array([])
-    Ivectors=Matrix(numpy.zeros((0,vectors.shape[1])))
+    Ivar = numpy.array([])
+    Ivectors = Matrix(numpy.zeros((0, vectors.shape[1])))
 
     if infinite.any():
         #square up the infinite vectors
         #Ivar is unused
 
-        (Ivar,Ivectors)=_subSquare(
-            vectors=vectors[infinite,:],
-            var=numpy.ones_like(var[infinite]),
-            full=True
+        (Ivar, Ivectors) = _subSquare(
+            vectors = vectors[infinite, :],
+            var = numpy.ones_like(var[infinite]),
+            full = True
         )
 
         #take the finite variances and vectors
-        var=var[~infinite]
-        vectors=vectors[~infinite,:]
+        var = var[~infinite]
+        vectors = vectors[~infinite, :]
         
-        small=helpers.approx(Ivar)
+        small = helpers.approx(Ivar)
         
         Ivar = Ivar[~small]
 
-        SIvectors = Ivectors[~small,:]
+        SIvectors = Ivectors[~small, :]
 
         if vectors.any():
             #revove the component parallel to each infinite vector
-            vectors= vectors-vectors*SIvectors.H*SIvectors            
+            vectors = vectors-vectors*SIvectors.H*SIvectors            
         elif var.size :
-            num= helpers.approx(var).sum()
+            num = helpers.approx(var).sum()
             #gab the extra vectors here, because if the vectors are all zeros eig will fail
-            vectors=Ivectors[small,:]
-            vectors=vectors[:num,:]
+            vectors = Ivectors[small, :]
+            vectors = vectors[:num, :]
 
-        Ivectors=SIvectors
+        Ivectors = SIvectors
         
     if var.size:
-        (var,vectors) = _subSquare(vectors,var)
+        (var, vectors) = _subSquare(vectors, var)
 
     if Ivar.size and var.size:
         #sort the finite variances
-        order=numpy.argsort(abs(var))    
-        var=var[order]
-        vectors=vectors[order,:]
+        order = numpy.argsort(abs(var))    
+        var = var[order]
+        vectors = vectors[order, :]
         
         #if there are more vectors than dimensions 
-        kill=var.size+Ivar.size-vectors.shape[1]
+        kill = var.size + Ivar.size - vectors.shape[1]
         if kill>0:
             #squeeze the vectors with the smallest variances 
-            var=var[kill:]
-            vectors=vectors[kill:,:]
+            var = var[kill:]
+            vectors = vectors[kill:, :]
     
     return (
-        numpy.concatenate((var,numpy.inf*numpy.ones_like(Ivar))),
-        numpy.vstack([vectors,Ivectors])
+        numpy.concatenate((var, numpy.inf*numpy.ones_like(Ivar))),
+        numpy.vstack([vectors, Ivectors])
     )
     
 
-def _subSquare(vectors,var,full=False):
+def _subSquare(vectors, var, full=False):
     """
     given a series of vectors, this function calculates:
         (variances,vectors)=numpy.linalg.eigh(vectors.H*vectors)
@@ -113,42 +113,42 @@ def _subSquare(vectors,var,full=False):
     >>> vec = Xvec.H*vectors
     >>> assert vec.H*vec == cov
     """
-    vectors=Matrix(vectors)
-    shape=vectors.shape
+    vectors = Matrix(vectors)
+    shape = vectors.shape
 
     if not all(shape):
-        val=numpy.zeros([0])
-        vec=numpy.zeros([0,shape[1]])
-        return (val,vec)
+        val = numpy.zeros([0])
+        vec = numpy.zeros([0, shape[1]])
+        return (val, vec)
     
     eig = numpy.linalg.eigh
 
-    if shape[0]>=shape[1] or full or not vectors.any() or (var<0).any():
-        scaled=Matrix(var[:,None]*numpy.array(vectors))
+    if shape[0] >= shape[1] or full or not vectors.any() or (var < 0).any():
+        scaled = Matrix(var[:, None]*numpy.array(vectors))
         
-        cov=vectors.H*scaled
+        cov = vectors.H*scaled
         
-        (val,vec)=eig(cov)
-        vec=vec.H
+        (val, vec) = eig(cov)
+        vec = vec.H
 
     elif not var.any():
-        cov=vectors.H*vectors
-        (_,vec)=eig(cov)
-        vec=vec.H
-        val=numpy.zeros(vec.shape[0])
+        cov = vectors.H*vectors
+        (_,vec) = eig(cov)
+        vec = vec.H
+        val = numpy.zeros(vec.shape[0])
 
     else:
-        scaled=Matrix(scipy.sqrt(var)[:,None]*numpy.array(vectors))
+        scaled = Matrix(scipy.sqrt(var)[:, None]*numpy.array(vectors))
         Xcov = scaled*scaled.H        
-        #Xcov=var[:,None]*numpy.array(vectors)*vectors.H
+        #Xcov = var[:,None]*numpy.array(vectors)*vectors.H
         
-        (_,Xvec)=eig(Xcov)
+        (_, Xvec) = eig(Xcov)
         
-        Xscaled=(Xvec.H*scaled)
-        val=helpers.mag2(Xscaled)
+        Xscaled = (Xvec.H*scaled)
+        val = helpers.mag2(Xscaled)
 
-        vec=numpy.array(Xscaled)/scipy.sqrt(val[:,numpy.newaxis])
+        vec = numpy.array(Xscaled)/scipy.sqrt(val[:, numpy.newaxis])
 
     
-    return (val,vec)
+    return (val, vec)
 

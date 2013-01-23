@@ -38,7 +38,8 @@ class Plotter(object):
     @property
     def _plotter(self):
         """
-        >>> if ndims >= 4:
+        >>> A = mvn.A
+        >>> if A.ndim >= 4:
         ...     assert A[:,:0]._plotter.im_func is Mvn.plotND
         ...     assert A[:,:1]._plotter.im_func is Mvn.plot1D
         ...     assert A[:,:2]._plotter.im_func is Mvn.plot2D

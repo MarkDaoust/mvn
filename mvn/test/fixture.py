@@ -20,11 +20,11 @@ from mvn.helpers import randint
 
 (fileDir, _) = os.path.split(os.path.abspath(__file__))
 
-pickleName =os.path.join(fileDir,'testObjects.pkl')
+pickleName = os.path.join(fileDir, 'testObjects.pkl')
 
-lookup ={}
+lookup = {}
 try:
-    lookup =pickle.load(open(pickleName,"r"))
+    lookup = pickle.load(open(pickleName, "r"))
     locals().update(lookup['last'])
 except EOFError:
     pass
@@ -38,43 +38,73 @@ except KeyError:
     
 def parse(argv):
     #make parser
-    parser=optparse.OptionParser()
+    parser = optparse.OptionParser()
 
-    new=optparse.OptionGroup(parser,'new')    
-    new.add_option('-n','--new',action='store_true',default=False,help='force creation of new test objects')
+    new = optparse.OptionGroup(parser,'new')    
+    new.add_option(
+        '-n', '--new', 
+        action='store_true', default=False, 
+        help='force creation of new test fixture'
+    )
     parser.add_option_group(new)
 
-    general=optparse.OptionGroup(parser,'general')
-    general.add_option('-s','--seed',action='store',type=int,help='set the random seed')
-    general.add_option('-d','--ndim',action='store',type=int,help='set the number of data dimensions')
+    general = optparse.OptionGroup(parser,'general')
+
+    general.add_option(
+        '--seed', 
+        action='store', type=int, help='set the random seed (int)'
+    )
+    
+    general.add_option(
+        '--ndim', 
+        action='store', type=int,
+        help='set the number of data dimensions'
+    )
+
     parser.add_option_group(general)
 
-    flatness=optparse.OptionGroup(parser,'Flatness')
-    flatness.add_option('-f','--flat',dest='flat',action='store_const',const=True,help='set all the objects to flat')
-    flatness.add_option('-F','--full',dest='flat',action='store_const',const=False,help='set no objects to flat')
-    flatness.add_option('--flatness',nargs=3,dest='flat',type=int,help='set flatness individually')
+    flatness=optparse.OptionGroup(parser, 'Flatness')
+
+    flatness.add_option(
+        '-f', '--flat', 
+        dest='flat', action='store_const', const=True, 
+        help='set all the fixtures (A,B,C) to flat'
+    )
+
+    flatness.add_option(
+        '-F', '--full', 
+        dest='flat', action='store_const', const=False, 
+        help='set all the fixtures (A,B,C) to full'
+    )
+
+    flatness.add_option(
+        '--flatness', 
+        dest='flat', nargs=3, type=int, 
+        help='set flatness of (A,B,C) individually'
+    )
+
     parser.add_option_group(flatness)
 
     #parse
-    (settings,remainder) = parser.parse_args(argv)
+    (settings, remainder) = parser.parse_args(argv)
     assert not remainder
     return settings    
 
 class MvnFixture(object):
-    def __init__(self,args):
-        if isinstance(args,dict):
+    def __init__(self, args):
+        if isinstance(args, dict):
             fixDict = args
         else:
             settings = parse(args)
             fixDict = self.getObjects(settings)
             
-        object.__setattr__(self,'contents',{})
+        object.__setattr__(self, 'contents', {})
         
         #this manual unpacking is for pylint, 
         #    so it can see what is in the test fixture
         self.ndim = fixDict['ndim'] 
         self.A = fixDict['A']
-        self.B =fixDict['B']
+        self.B = fixDict['B']
         self.C = fixDict['C']
         self.M = fixDict['M']
         self.M2 = fixDict['M2']
@@ -86,10 +116,10 @@ class MvnFixture(object):
            
     @staticmethod
     def getObjects(values):
-        drop = ['new','seed']
+        drop = ['new', 'seed']
         frozenValues=frozenset(
-            (key,value) 
-            for (key,value) in values.__dict__.iteritems() 
+            (key, value) 
+            for (key, value) in values.__dict__.iteritems() 
             if key not in drop
         )
     
@@ -112,58 +142,55 @@ class MvnFixture(object):
         lookup['last']=objects
         globals().update(objects)
     
-        pickle.dump(lookup,open(pickleName,'w'))
+        pickle.dump(lookup, open(pickleName, 'w'))
     
         return objects
     
     @staticmethod
-    def makeObjects(flat=None,ndim=None,seed=None):        
+    def makeObjects(flat=None, ndim=None, seed=None):        
         if seed is None:
-            seed=randint(1,1e6)
+            seed = randint(1, 1e6)
             
-        assert isinstance(seed,int),'seed must be an int'
-
         numpy.random.seed(seed)
-        randn=numpy.random.randn
+        randn = numpy.random.randn
     
         if ndim is None:
-            ndim=randint(0,20)
+            ndim = randint(0, 20)
             
-        assert isinstance(ndim,int),'ndim must be an int'
-    
-        shapes={
-            None:lambda :max(randint(-ndim,ndim),0),
-            True:lambda :randint(1,ndim),
+        shapes = {
+            None:lambda :max(randint(-ndim, ndim), 0),
+            True:lambda :randint(1, ndim),
             False:lambda :0,
         }
     
-        triple=lambda x:[x,x,x]
+        triple = lambda x:[x, x, x]
         
         if flat in shapes:
-            flat=[item() for item in triple(shapes[flat])]
-        elif isinstance(flat,int):
-            flat=triple(flat)
+            flat = [item() for item in triple(shapes[flat])]
+
+        elif isinstance(flat, int):
+            flat = triple(flat)
         
-        assert all(f<=ndim for f in flat), "flatness can't be larger than ndim"
+        assert all(f <= ndim for f in flat), "flatness can't be larger than ndim"
         
-        rvec= lambda n=1,ndim=ndim:Matrix(randn(n,ndim))
+        rvec = lambda n=1, ndim=ndim:Matrix(randn(n ,ndim))
                 
-        A,B,C=[
-            Mvn.rand([ndim-F,ndim])
+        A,B,C = [
+            Mvn.rand([ndim-F, ndim])
             for F in flat
         ]
     
     
-        n=randint(1,2*ndim)
-        M=rvec(n).H
-        M2=rvec(n).H    
+        n = randint(1, 2*ndim)
+        M = rvec(n).H
+        M2 = rvec(n).H    
     
-        E=Matrix.eye(ndim)
+        E = Matrix.eye(ndim)
         
         K1 = (numpy.random.randn())
         K2 = (numpy.random.randn())
     
-        N=randint(-5,5)
+        N = randint(-5, 5)
         
         return {
             'ndim' : ndim,
@@ -179,10 +206,10 @@ class MvnFixture(object):
         }
 
         
-    def __setattr__(self,name,value):
+    def __setattr__(self, name, value):
         assert name not in self.contents
         
-        object.__setattr__(self,name,value)
+        object.__setattr__(self, name, value)
         self.contents[name] = value
         
     def reset(self):

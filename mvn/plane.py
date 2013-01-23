@@ -9,13 +9,11 @@ import numpy
 import mvn.helpers as helpers
 import mvn.decorate as decorate
 from mvn.matrix import Matrix 
-from mvn.square import square
 
 
 Plane = decorate.underConstruction('Plane')
 
 @decorate.MultiMethod.sign(Plane)
-
 @decorate.automath.automath
 @decorate.automath.right
 class Plane(object):
@@ -29,32 +27,32 @@ class Plane(object):
     relative tolerence
     
     see :py:func:`mvn.helpers.approx`
-    """#pylint: disable-msg=w0105
+    """
     
     atol = 1e-8
     """
     absolute tolerence
     
     see :py:func:`mvn.helpers.approx`
-    """#pylint: disable-msg=w0105    
+    """
     
     
     def __init__(
         self,
-        vectors=Matrix.eye,
-        mean=numpy.zeros,
+        vectors= Matrix.eye,
+        mean= numpy.zeros,
     ):
-        mean= mean if callable(mean) else numpy.array(mean).flatten()[None,:]
-        vectors= vectors if callable(vectors) else Matrix(vectors)
+        mean = mean if callable(mean) else numpy.array(mean).flatten()[None, :]
+        vectors = vectors if callable(vectors) else Matrix(vectors)
 
         stack=helpers.autoshape([
             [vectors],
             [mean   ],
-        ],default=1)
+        ],default= 1)
         
         #unpack the stack into the object's parameters
-        self.vectors = Matrix(numpy.real_if_close(stack[0,0]))
-        self.mean    = Matrix(numpy.real_if_close(stack[1,0]))
+        self.vectors = Matrix(numpy.real_if_close(stack[0, 0]))
+        self.mean    = Matrix(numpy.real_if_close(stack[1, 0]))
 
     def __repr__(self):
         """
@@ -63,23 +61,23 @@ class Plane(object):
         return '\n'.join([
             '%s(' % self.__class__.__name__,
             '    mean=',
-           ('        %r,' % self.mean).replace('\n','\n'+8*' '),
+           ('        %r,' % self.mean).replace('\n', '\n'+8*' '),
             '    vectors=',
-           ('        %r' % self.vectors).replace('\n','\n'+8*' '),
+           ('        %r' % self.vectors).replace('\n', '\n'+8*' '),
             ')',
         ])
 
     __str__ = __repr__
     
-    def __getitem__(self,index):
+    def __getitem__(self, index):
         """
         project the plane into the selected dimensions
         """
-        assert not isinstance(index,tuple),'1-dimensional index only'
+        assert not isinstance(index, tuple),'1-dimensional index only'
         
         return type(self)(
-            mean=self.mean[:,index],
-            vectors=self.vectors[:,index],
+            mean= self.mean[:, index],
+            vectors= self.vectors[:, index],
         )
 
     copy = decorate.automath.Automath.__dict__['copy']
@@ -122,7 +120,7 @@ class Plane(object):
         """
         >>> assert bool(A.flat) == bool(A.vectors.shape[1] > A.vectors.shape[0]) 
         """
-        return max(self.vectors.shape[1] - self.vectors.shape[0],0)
+        return max(self.vectors.shape[1] - self.vectors.shape[0], 0)
             
     def __nonzero__(self):
         """
@@ -135,59 +133,61 @@ class Plane(object):
         return bool(self.ndim)
 
     @decorate.MultiMethod
-    def __add__(self,other):
+    def __add__(self, other):
         """
         add two planes together
         """
         raise TypeError("No Apropriate Method Found")
 
     @__add__.register(Plane)
-    def __add__(self,other):
+    def __add__(self, other):
         result = self.copy()
         result.mean = result.mean+other
         return result
 
-    @__add__.register(Plane,Plane)
-    def __add__(self,other):
+    @__add__.register(Plane, Plane)
+    def __add__(self, other):
         return Plane(
-            mean=self.mean+other.mean,
-            vectors=numpy.vstack([self.vectors,other.vectors])
+            mean = self.mean+other.mean,
+            vectors = numpy.vstack([self.vectors, other.vectors])
         )
 
         
-    def approx(self,*args):
-        return helpers.approx(*args,atol = self.atol,rtol = self.rtol)
+    def approx(self, *args):
+        return helpers.approx(*args, atol = self.atol, rtol = self.rtol)
 
 
-    def __and__(self,other):
+    def __and__(self, other):
         """
         plane intersection
         """
-        Nself=self.vectors.null()
-        Nother=other.vectors.null()
+        Nself = self.vectors.null()
+        Nother = other.vectors.null()
 
         #and stack them
-        null=numpy.vstack([
+        null = numpy.vstack([
             Nself,
             Nother,
         ])
 
-        mean = numpy.hstack([self.mean,other.mean])
+        mean = numpy.hstack([self.mean, other.mean])
 
         #get length of the component of the means along each null vector
-        r=numpy.vstack([Nself*self.mean.H,Nother*other.mean.H])
+        r = numpy.vstack([Nself*self.mean.H, Nother*other.mean.H])
 
         
-        mean = (numpy.linalg.pinv(null,1e-6)*r).H
+        mean = (numpy.linalg.pinv(null, 1e-6)*r).H
 
-        return type(self)(vectors=null.null(),mean=mean)
+        return type(self)(vectors= null.null(), mean=mean)
 
 
 if __debug__:
-    ndim = helpers.randint(1,10)
-    ndim2 = helpers.randint(1,ndim)    
+    ndim = helpers.randint(1, 10)
     
     A = Plane(
-        mean = numpy.random.randn(1,ndim),
-        vectors = numpy.random.randn(ndim2,ndim)
+        mean = numpy.random.randn(1, ndim),
+        vectors = numpy.random.randn(helpers.randint(1, ndim), ndim)
     )
+    
+if __name__ == '__main__':
+    pass

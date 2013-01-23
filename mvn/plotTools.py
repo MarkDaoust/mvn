@@ -21,8 +21,15 @@ from matplotlib.gridspec import GridSpec
 from mvn.decorate import curry
 
 
-class my_axis(mpl_toolkits.axisartist.Axes):
+class TransformedAxis(mpl_toolkits.axisartist.Axes):
+    """
+    this is to make simple projections easier
+    """
     def __init__(self,*args,**kwargs):
+        """
+        use the optional key-word arg 'transform' to supply a 
+        2x2 transform-matrix
+        """
         try:
             transform = kwargs.pop('transform')
         except KeyError:
@@ -69,7 +76,7 @@ class my_axis(mpl_toolkits.axisartist.Axes):
 
 matplotlib.projections.projection_registry._all_projection_types[
         'custom'
-    ] = my_axis  
+    ] = TransformedAxis  
 # End Monkey Patch        #
 ###########################    
 
@@ -80,29 +87,27 @@ def triax():
     """
 
     #use a grid of 4x4 cells
-    grid = GridSpec(4,4)
-    ax = numpy.empty([2,2],dtype = object)
+    grid = GridSpec(4, 4)
+    ax = numpy.empty([2, 2], dtype = object)
 
     #create and return the axes
-    ax[1,0]   = pylab.subplot(grid[1:,:-1])
-    ax[1,0].grid('on')
+    ax[1, 0]   = pylab.subplot(grid[1:, :-1])
+    ax[1, 0].grid('on')
     
     
     #connect the long axes of the marginals to the mainax
-    ax[0,0] = pylab.subplot(grid[0 ,:-1],sharex=ax[1,0])
-    ax[0,0].grid('on')
+    ax[0, 0] = pylab.subplot(grid[0, :-1],sharex=ax[1, 0])
+    ax[0, 0].grid('on')
     #reduce the number of ticks on the short axis
-    ax[0,0].yaxis.get_major_locator()._nbins = 3
+    ax[0, 0].yaxis.get_major_locator()._nbins = 3
     #and hide the ticks on the long axis    
-    pylab.setp(ax[0,0].xaxis.get_ticklabels(),visible=False)    
+    pylab.setp(ax[0, 0].xaxis.get_ticklabels(), visible=False)    
     
-    ax[1,1]  = pylab.subplot(grid[1:, -1],sharey=ax[1,0])
-    ax[1,1].grid('on')
+    ax[1, 1]  = pylab.subplot(grid[1:, -1], sharey=ax[1, 0])
+    ax[1, 1].grid('on')
     #reduce the number of ticks on the short axis
-    ax[1,1].xaxis.get_major_locator()._nbins = 3
+    ax[1, 1].xaxis.get_major_locator()._nbins = 3
     #and hide the ticks on the long axis    
-    pylab.setp(ax[1,1].yaxis.get_ticklabels(),visible=False)
-
-    
+    pylab.setp(ax[1, 1].yaxis.get_ticklabels(), visible=False)
 
     return ax
