@@ -6,11 +6,13 @@ verious helper functions
 
 import itertools
 import copy
-import operator
 
 import numpy
 
-def randint(low,high):
+def randint(low, high):
+    """
+    randint that accepts low == high
+    """
     assert int(low) == low
     assert int(high) == high
     
@@ -36,7 +38,7 @@ def sqrt(data):
         return numpy.sqrt(data)
     return data**(0.5+0j)
 
-def mag2(vectors,axis=-1):
+def mag2(vectors, axis=-1):
     """
     sum of squares along an axis
     
@@ -90,18 +92,18 @@ def sign(self):
     """
     zeros = (self == 0)
     
-    self = numpy.divide(self,numpy.abs(self))
+    self = numpy.divide(self, numpy.abs(self))
 
     self = numpy.asarray(self)
     
     if self.ndim:
-        self[zeros] = 0;
+        self[zeros] = 0
     elif zeros:
         return 0
         
     return self
  
-def unit(self,axis=-1):
+def unit(self, axis=-1):
     """
     along a given axis, make vectors unit length
     
@@ -120,13 +122,13 @@ def unit(self,axis=-1):
     if axis < 0:
         axis = self.ndim+axis
     
-    mag = mag2(self,axis)**(0.5)
+    mag = mag2(self, axis)**(0.5)
 
     mag = mag.reshape(mag.shape[:axis]+(1,)+mag.shape[axis:])
 
-    return numpy.divide(self,mag)
+    return numpy.divide(self, mag)
 
-def ascomplex(self,axis=-1):
+def ascomplex(self, axis=-1):
     """
     return an array pointing to the same data (if possible), 
     but interpreting it as a complex type
@@ -149,22 +151,23 @@ def ascomplex(self,axis=-1):
     >>> assert (C.real == A.squeeze() ).all()
     >>> assert (C.imag == B.squeeze() ).all()    
     """
-    self = numpy.asarray(self,float)
+    self = numpy.asarray(self, float)
     
-    if axis<0:
+    if axis < 0:
         axis = self.ndim+axis
         
-    assert self.shape[axis] == 2,"can only convert to complex if the target axis has a length of 2"
+    assert self.shape[axis] == 2,"""
+        can only convert to complex if the target axis has a length of 2"""
     
     axes = numpy.arange(self.ndim)
-    newAxes = numpy.concatenate([axes[:axis],axes[axis+1:],[axis]])
+    newAxes = numpy.concatenate([axes[:axis], axes[axis+1:], [axis]])
     
     self = self.transpose(newAxes)
     
-    duplicate=copy.copy(self)
-    duplicate.dtype=complex
+    duplicate = copy.copy(self)
+    duplicate.dtype = complex
     
-    duplicate.shape=self.shape[:-1]
+    duplicate.shape = self.shape[:-1]
         
     return duplicate
 
@@ -181,70 +184,74 @@ def diagstack(arrays):
     """
     #make a nested matrix, with the inputs on the diagonal, and the numpy.zeros
     #function everywhere else
-    E=numpy.eye(len(arrays),dtype=bool)
-    result=numpy.zeros(E.shape,dtype=object)
-    for index,array in zip(numpy.argwhere(E),arrays):
-        index=tuple(index)
-        result[index]=array
+    eye = numpy.eye(len(arrays), dtype=bool)
     
-    result[~E]=numpy.zeros    
+    result = numpy.zeros(eye.shape, dtype=object)
+
+    for index, array in zip(numpy.argwhere(eye), arrays):
+        index = tuple(index)
+        result[index] = array
+    
+    result[~eye] = numpy.zeros    
     
     return stack(result)
 
-
 _vectorizedShape = numpy.vectorize(lambda x:x.shape)
 
-def autoshape(rows,default=0):
+def autoshape(rows, default=0):
     """
     >>> A = autoshape([
     ...     [    [1,2,3],   numpy.ones],
     ...     [numpy.zeros,[[1],[2],[3]]],
     ... ]) 
-    >>> assert (numpy.vectorize(lambda x:x.size)(A) == numpy.array([[3, 1],[9, 3]])).all()
+    >>> assert (
+    ...     numpy.vectorize(lambda x:x.size)(A) == 
+    ...     numpy.array([[3, 1],[9, 3]])
+    ... ).all()
     """
     #first make sure everything is a 2 dimensional array
     data = [
-        [[numpy.array(item,ndmin=2),callable(item)] for item in row]
+        [[numpy.array(item, ndmin=2), callable(item)] for item in row]
         for row in rows      
     ]
 
     #make a 2d numpy array out of the data blocks
     data = numpy.array([
-        list(itertools.chain([[None,None]],row)) 
-        for row in data
-    ],dtype = object
-    )[:,1:,:]
+            list(itertools.chain([[None, None]], row)) 
+            for row in data
+        ], dtype = object
+    )[:, 1:, :]
 
-    rows = data[...,0]
-    calls = numpy.asarray(data[...,1],dtype = bool)
+    rows = data[..., 0]
+    calls = numpy.asarray(data[..., 1], dtype = bool)
 
     #if anything is callable
     if calls.any():
         #make an array of shapes
 
-        [heights,widths] = _vectorizedShape(rows)
+        [heights, widths] = _vectorizedShape(rows)
 
-        heights[calls]= -1
-        widths[calls]= -1
+        heights[calls] = -1
+        widths[calls] = -1
 
-        maxheight=heights.max(1)
-        maxwidth=widths.max(0)
+        maxheight = heights.max(1)
+        maxwidth = widths.max(0)
         
         #replace the -1 with the default value
-        maxheight[maxheight==-1] = default
-        maxwidth[maxwidth==-1] = default
+        maxheight[maxheight == -1] = default
+        maxwidth[maxwidth == -1] = default
 
-        for (down,right) in numpy.argwhere(calls):
+        for (down, right) in numpy.argwhere(calls):
             #call the callable with (height,width) as the only argument
             #and drop it into the data slot,
-            rows[down,right] = numpy.matrix(rows[down,right][0,0](
-                (maxheight[down],maxwidth[right])
+            rows[down, right] = numpy.matrix(rows[down, right][0, 0](
+                (maxheight[down], maxwidth[right])
             ))
         
     return rows
 
 
-def stack(rows,default = 0):
+def stack(rows, default = 0):
     """
     simplify matrix stacking
     vertically stack the results of horizontally stacking each row in rows, 
@@ -289,7 +296,7 @@ def stack(rows,default = 0):
             [ 0.,  1.,  0.,  1.]])
     """
     #do the stacking    
-    rows = autoshape(rows,default = default)
+    rows = autoshape(rows, default = default)
     return numpy.vstack([
         numpy.hstack(row) 
         for row in rows
@@ -303,10 +310,10 @@ def parallel(*items):
     
     >>> assert parallel(1.0,2.0) == 1/(1/1.0+1/2.0)
     """
-    inverted=[item**(-1) for item in items]
-    return sum(inverted[1:],inverted[0])**(-1)
+    inverted = [item**(-1) for item in items]
+    return sum(inverted[1:], inverted[0])**(-1)
 
-def approx(self,other = 0.0,rtol=1e-5,atol=1e-8):
+def approx(self, other = 0.0, rtol=1e-5, atol=1e-8):
     """
     element-wise version of :py:func:`numpy.allclose`
     
@@ -317,14 +324,14 @@ def approx(self,other = 0.0,rtol=1e-5,atol=1e-8):
     >>> assert (approx(ones,eye) == numpy.eye(3)).all()
     """
     if callable(other):
-        other=other(self.shape)
+        other = other(self.shape)
             
     delta = numpy.abs(self-other)
         
     if not delta.size:
-        return numpy.empty(delta.shape,delta.dtype)
+        return numpy.empty(delta.shape, delta.dtype)
         
-    infs = numpy.multiply(~numpy.isfinite(self),~numpy.isfinite(other))
+    infs = numpy.multiply(~numpy.isfinite(self), ~numpy.isfinite(other))
     
     tol = atol + rtol*abs(other)
     
@@ -340,29 +347,38 @@ def dots(*args):
     like numpy.dot but takes any number or arguments
     """
     assert len(args)>1
-    return reduce(numpy.dot,args)
 
-def sortrows(data,column=0):
-    return data[numpy.argsort(data[:,column].flatten()),:] if data.size else data
+    return reduce(numpy.dot, args)
+
+def sortrows(data, column=0):
+    """
+    sort the rows of a 2d array based on a single column 
+    """
+    return data[
+        numpy.argsort(data[:, column].flatten()), :
+    ] if data.size else data
 
 def rotation2d(angle):
+    """
+    convert an angle (rads) to a rotation matrix
+    """
     return numpy.array([
-        [ numpy.cos(angle),numpy.sin(angle)],
-        [-numpy.sin(angle),numpy.cos(angle)],
+        [ numpy.cos(angle), numpy.sin(angle)],
+        [-numpy.sin(angle), numpy.cos(angle)],
     ])
 
 
-def binindex(index,size):
+def binindex(index, size):
     """
     :param index:
     :param size:
         
     convert an index to binary so it can be easily inverted
     """
-    if hasattr(index,'dtype') and index.dtype==bool:
+    if hasattr(index,'dtype') and index.dtype == bool:
         return index
     
-    binindex=numpy.zeros(size,dtype=bool)
-    binindex[index]=True
+    bindex = numpy.zeros(size, dtype=bool)
+    bindex[index] = True
 
-    return binindex
+    return bindex
