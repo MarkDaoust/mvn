@@ -38,7 +38,9 @@ load-plugins=
 # I0011 : Locally disabled message
 # W0511 : fixme
 # W0142 : star-args
-disable=I0011,W0511,W0142
+# w0105 : pointless-string-statement
+
+disable=I0011,W0511,W0142,w0105
 
 
 [REPORTS]
@@ -125,7 +127,7 @@ bad-functions=map,filter,apply,input
 module-rgx=(([a-z_][a-z0-9_]*)|([A-Z][a-zA-Z0-9]+))$
 
 # Regular expression which should only match correct module level names
-const-rgx=(([A-Z_][A-Z0-9_]*)|(__.*__))$
+const-rgx=(([A-Z_][A-Z0-9_]*)|(_.*))$
 
 # Regular expression which should only match correct class names
 class-rgx=[A-Z_][a-zA-Z0-9]+$
@@ -150,7 +152,7 @@ variable-rgx=[a-z_][a-zA-Z0-9_]{2,30}$
 inlinevar-rgx=[A-Za-z_][a-zA-Z0-9_]*$
 
 # Good variable names which should always be accepted, separated by a comma
-good-names=i,j,k,n,ex,Run,_
+good-names=i,j,k,n,x,y,z,ex,Run,_
 
 # Bad variable names which should always be refused, separated by a comma
 bad-names=foo,bar,baz,toto,tutu,tata
