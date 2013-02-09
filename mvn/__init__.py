@@ -918,7 +918,7 @@ class Mvn(Plane):
         return helpers.sign(self.var)
 
     ########## Utilities
-    def stack(self,mvns, **kwargs):
+    def stack(*mvns, **kwargs):
         """
         :param * mvns:
         :param ** kwargs:
@@ -938,8 +938,6 @@ class Mvn(Plane):
         
         see also Mvn.chain
         """
-        mvns = [self]+mvns
-
         #no 'square' is necessary here because the rotation matrixes are in 
         #entierly different dimensions
         return type(mvns[0])(
@@ -1763,7 +1761,7 @@ class Mvn(Plane):
         
 #TODO: add tolerence on this comparison 
 #        (the cdf calculation fails if upper-lower < ~1e-8)
-        if (Matrix(lower) == Matrix(upper)).any():
+        if Matrix(lower).approx(upper).any():
             return 0.0
             
         upper = upper.squeeze()
