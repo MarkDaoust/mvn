@@ -214,8 +214,15 @@ class signTester(myTests):
         self.assertTrue( (fix.A+fix.A).mean == 2*fix.A.mean )
 
         n=abs(fix.N)
-        self.assertTrue( sum(itertools.repeat(fix.A,n),Mvn.zeros(fix.A.ndim)) == fix.A*n )
-        self.assertTrue( sum(itertools.repeat(-fix.A,n),Mvn.zeros(fix.A.ndim)) == fix.A*(-n) )
+        self.assertTrue( 
+            sum(itertools.repeat(fix.A,n),Mvn.zeros(fix.A.ndim)) == 
+            fix.A*n 
+        )
+
+        self.assertTrue( 
+            sum(itertools.repeat(-fix.A,n),Mvn.zeros(fix.A.ndim)) == 
+            fix.A*(-n) 
+        )
         
 
         self.assertTrue( fix.A+fix.B == Mvn(
@@ -234,12 +241,18 @@ class signTester(myTests):
         self.assertTrue( fix.B+(-fix.A) == fix.B+(-1)*fix.A == fix.B-fix.A )
         self.assertTrue( (fix.B-fix.A)+fix.A == fix.B )
 
-        self.assertTrue( fix.A-fix.A == Mvn(mean= numpy.zeros_like(fix.A.mean)) )
+        self.assertTrue( 
+            fix.A-fix.A == 
+            Mvn(mean= numpy.zeros_like(fix.A.mean)) 
+        )
         self.assertTrue( (fix.A-fix.B)+fix.B == fix.A )
         self.assertTrue( (fix.A-fix.B).mean == fix.A.mean - fix.B.mean )
         self.assertTrue( (fix.A-fix.B).cov== fix.A.cov - fix.B.cov )
 
-        self.assertTrue( (fix.A+fix.B*(-fix.E)).mean == fix.A.mean - fix.B.mean )
+        self.assertTrue( 
+            (fix.A+fix.B*(-fix.E)).mean == 
+            fix.A.mean - fix.B.mean 
+        )
         self.assertTrue( (fix.A+fix.B*(-fix.E)).cov == fix.A.cov + fix.B.cov )
 
         self.assertTrue( fix.A-fix.B == -(fix.B-fix.A) )
@@ -275,7 +288,10 @@ class productTester(myTests):
             self.assertTrue( fix.A**2 == fix.A*fix.A.transform() )
 
         self.assertTrue( fix.A*(fix.B**0+fix.B**0) == fix.A*(2*fix.B**0) )
-        self.assertTrue( (fix.A*fix.B**0 + fix.A*fix.B**0).cov == (2*fix.A*fix.B**0).cov )
+        self.assertTrue( 
+            (fix.A*fix.B**0 + fix.A*fix.B**0).cov == 
+            (2*fix.A*fix.B**0).cov 
+        )
 
         self.assertTrue( fix.A*fix.A == fix.A**2 )
         self.assertTrue( fix.A*fix.B == fix.B*fix.A )
@@ -291,10 +307,13 @@ class productTester(myTests):
         self.assertTrue( fix.A*(fix.K1+fix.K2) == fix.A*fix.K1+fix.A*fix.K2 )
 
         self.assertTrue( (fix.A*(fix.K1*fix.E)).mean == fix.K1*fix.A.mean )
-        self.assertTrue( (fix.A*(fix.K1*fix.E)).cov == fix.A.cov*abs(fix.K1)**2 )
+        self.assertTrue( 
+            (fix.A*(fix.K1*fix.E)).cov == fix.A.cov*abs(fix.K1)**2 )
         self.assertTrue( (fix.K1*fix.A)*fix.K2 == fix.K1*(fix.A*fix.K2) )
 
-        self.assertTrue( (2*fix.B**0).transform() == sqrt(2)*(fix.B**0).transform() )
+        self.assertTrue( 
+            (2*fix.B**0).transform() == sqrt(2)*(fix.B**0).transform() 
+        )
         
         self.assertTrue( fix.A*fix.K1 == fix.K1*fix.A )
 
@@ -302,7 +321,10 @@ class productTester(myTests):
         self.assertTrue( (fix.A*fix.K1).cov == (fix.A.cov)*fix.K1 )
 
         self.assertTrue( (fix.A*(fix.E*fix.K1)).mean == fix.A.mean*fix.K1 )
-        self.assertTrue( (fix.A*(fix.E*fix.K1)).cov ==(fix.E*fix.K1).H*fix.A.cov*(fix.E*fix.K1) )
+        self.assertTrue( 
+            (fix.A*(fix.E*fix.K1)).cov ==
+            (fix.E*fix.K1).H*fix.A.cov*(fix.E*fix.K1) 
+        )
 
 
     def testMixedMul(self):
@@ -342,11 +364,17 @@ class propertyTester(myTests):
         self.assertTrue( fix.A.shape[1] == fix.A.ndim )
 
     def testCov(self):
-        self.assertTrue( fix.A.vectors.H*numpy.diagflat(fix.A.var)*fix.A.vectors == fix.A.cov )
+        self.assertTrue( 
+            fix.A.vectors.H*numpy.diagflat(fix.A.var)*fix.A.vectors == 
+            fix.A.cov 
+        )
         self.assertTrue( fix.A.transform()**2 == abs(fix.A).cov )
         self.assertTrue( fix.A.transform(2) == abs(fix.A).cov )
         if not(fix.A.flat and fix.N<0):
-            self.assertTrue( fix.A.transform()**fix.N == fix.A.transform(fix.N) )
+            self.assertTrue( 
+                fix.A.transform()**fix.N == 
+                fix.A.transform(fix.N) 
+            )
             
     def testCov2(self):
         self.assertTrue( fix.A.cov == (fix.A**2).transform() )
@@ -375,7 +403,10 @@ class propertyTester(myTests):
         
         self.assertTrue(fix.A.vectors*fix.A.vectors.H == Matrix.eye)
         self.assertTrue((fix.A*fix.M).cov == fix.M.H*fix.A.cov*fix.M)
-        self.assertTrue((fix.A*fix.M).vectors*(fix.A*fix.M).vectors.H == Matrix.eye)
+        self.assertTrue(
+            (fix.A*fix.M).vectors*(fix.A*fix.M).vectors.H == 
+            Matrix.eye
+        )
 
 
     def testTransform(self):
@@ -405,7 +436,10 @@ class powerTester(myTests):
 
 
     def testMorePowers(self):
-        self.assertTrue( (fix.A**fix.K1).transform()**2 == fix.A.transform(fix.K1)**2 )
+        self.assertTrue( 
+            (fix.A**fix.K1).transform()**2 == 
+            fix.A.transform(fix.K1)**2 
+        )
 
         self.assertTrue( fix.A**fix.K1*fix.A**fix.K2 == fix.A**(fix.K1+fix.K2))
         self.assertTrue( fix.A**fix.K1/fix.A**fix.K2 == fix.A**(fix.K1-fix.K2))
@@ -427,8 +461,16 @@ class powerTester(myTests):
             self.assertTrue( fix.A**0 == fix.A**(-1)*fix.A )
             self.assertTrue( fix.A**0 == fix.A*fix.A**(-1) )
             self.assertTrue( fix.A**0 == fix.A/fix.A )
-            self.assertTrue( (fix.A**0).mean == fix.A.mean*(fix.A**-1).transform() )
-            self.assertTrue( (fix.A**0).mean == fix.A.mean*fix.A.transform(-1) )
+
+            self.assertTrue( 
+                (fix.A**0).mean == 
+                fix.A.mean*(fix.A**-1).transform() 
+            )
+
+            self.assertTrue( 
+                (fix.A**0).mean == 
+                fix.A.mean*fix.A.transform(-1) 
+            )
 
 
     def testOnePow(self):
@@ -442,7 +484,10 @@ class powerTester(myTests):
         self.assertTrue( fix.A*fix.A == fix.A**2 )
         self.assertTrue( fix.A/fix.A**-1 == fix.A**2 )
         
-        self.assertTrue( fix.A.mean*fix.A.transform(0) == ((fix.A**-1)**-1).mean )
+        self.assertTrue( 
+            fix.A.mean*fix.A.transform(0) == 
+            ((fix.A**-1)**-1).mean 
+        )
 
         k1 = fix.K1
         k2 = fix.K2
@@ -490,7 +535,11 @@ class widthTester(myTests):
 
 class linalgTester(myTests):
     def testTrace(self):
-        self.assertTrue( Matrix(numpy.trace(fix.A.transform(0))) == fix.A.shape[0] )
+        self.assertTrue( 
+            Matrix(numpy.trace(fix.A.transform(0))) == 
+            fix.A.shape[0] 
+        )
+
         self.assertTrue( Matrix(fix.A.trace()) == fix.A.var.sum() )
         self.assertTrue( Matrix(fix.A.trace()) == numpy.trace(fix.A.cov) )
 
@@ -544,11 +593,15 @@ class givenTester(myTests):
         self.assertTrue( Y.given(dims=0, value=x) == X&Y )
 
     def testGivenVector(self):
-        self.assertTrue( givenVector(fix.A, dims=0, value=1) == fix.A.given(dims=0, value=1) )
+        self.assertTrue( 
+            givenVector(fix.A, dims=0, value=1) == 
+            fix.A.given(dims=0, value=1) 
+        )
 
 class chainTester(myTests):
     def testBasic(self):
         self.assertTrue( fix.A.chain() == fix.A*numpy.hstack([fix.E, fix.E]) ) 
+
         self.assertTrue( 
             fix.A.chain(transform=fix.M) ==
             fix.A*numpy.hstack([fix.E, fix.M])
@@ -636,7 +689,11 @@ class inversionTester(myTests):
 
 
     def testParadoxes(self):
-        self.assertTrue( (fix.A & ~fix.A) == Mvn(mean= fix.A.mean, vectors= fix.A.vectors, var= Matrix.infs) )
+        self.assertTrue( 
+            (fix.A & ~fix.A) == 
+            Mvn(mean= fix.A.mean, vectors= fix.A.vectors, var= Matrix.infs) 
+        )
+        
         self.assertTrue( (fix.A & ~fix.A)*fix.A.vectors.H == Mvn.infs )
 
         self.assertTrue(  
@@ -685,12 +742,24 @@ class blendTester(myTests):
     def testNotFlat(self):
         if not (fix.A.flat or fix.B.flat):
             self.assertTrue( fix.A & fix.B == 1/(1/fix.A+1/fix.B))
-            self.assertTrue( fix.A & -fix.A == Mvn(mean= numpy.zeros(fix.ndim))**-1)
-            self.assertTrue( fix.A & ~fix.A == Mvn(mean= numpy.zeros(fix.ndim))**-1)
+            
+            self.assertTrue( 
+                fix.A & -fix.A == 
+                Mvn(mean= numpy.zeros(fix.ndim))**-1
+            )
+    
+            self.assertTrue( 
+                fix.A & ~fix.A == 
+                Mvn(mean= numpy.zeros(fix.ndim))**-1
+            )
             self.assertTrue( fix.A & fix.B == wiki(fix.A,fix.B))
                
             self.assertTrue( fix.A**-1 == fix.A*fix.A**-2)
-            self.assertTrue( fix.A & fix.B == (fix.A*fix.A**-2+fix.B*fix.B**-2)**-1)
+            
+            self.assertTrue( 
+                fix.A & fix.B == 
+                (fix.A*fix.A**-2+fix.B*fix.B**-2)**-1
+            )
 
             D = fix.A*(fix.A.cov)**(-1) + fix.B*(fix.B.cov)**(-1)
             self.assertTrue( wiki(fix.A,fix.B) == D*(D.cov)**(-1))
@@ -699,9 +768,15 @@ class blendTester(myTests):
         if not (fix.A.flat or fix.B.flat or fix.C.flat):
             abc=numpy.random.permutation([fix.A, fix.B, fix.C])
             self.assertTrue( fix.A & fix.B & fix.C == helpers.parallel(*abc))
-            self.assertTrue( fix.A & fix.B & fix.C == reduce(operator.and_, abc))
+            self.assertTrue( 
+                fix.A & fix.B & fix.C == 
+                reduce(operator.and_, abc)
+            )
     
-            self.assertTrue( (fix.A & fix.B) & fix.C == fix.A & (fix.B & fix.C))
+            self.assertTrue( 
+                (fix.A & fix.B) & fix.C == 
+                fix.A & (fix.B & fix.C)
+            )
 
 
     def testKnownValues1(self):
@@ -748,7 +823,12 @@ class quadTester(myTests):
         self.assertTrue( A.cov+A.mean.H*A.mean == (Da.H*Da)/Na )
 
         self.assertTrue( Mean == numpy.trace(A.mean.H*A.mean + A.cov) )
-        self.assertTrue( Mean == numpy.trace(A.mean.H*A.mean)+numpy.trace(A.cov) )
+
+        self.assertTrue( 
+            Mean == 
+            numpy.trace(A.mean.H*A.mean)+numpy.trace(A.cov) 
+        )
+
         self.assertTrue( Mean == A.mean*A.mean.H + A.trace() )
 
         #definition of variance
@@ -763,7 +843,9 @@ class quadTester(myTests):
         )
 
         #distribute the calls to mean()
-        self.assertTrue( Var == Mean**2 - 2*Mean*dots.mean() + (dots**2).mean() )
+        self.assertTrue( 
+            Var == Mean**2 - 2*Mean*dots.mean() + (dots**2).mean() 
+        )
 
         #but Mean == dot.mean(), so
         self.assertTrue( Var == (dots**2).mean() - Mean**2 )
@@ -793,7 +875,7 @@ class quadTester(myTests):
 
         self.assertTrue( 
             Mean**2 == 
-            Matrix((Da*Da.H).diagonal()
+            Matrix((Da*Da.H).diagonal() *
             Matrix.ones((Na,1))/Na) *
             Matrix((Da*Da.H).diagonal() *
             Matrix.ones((Na,1))/Na)
@@ -830,9 +912,9 @@ class quadTester(myTests):
             Matrix((Da*Da.H).diagonal())/Na *
             Matrix((Da*Da.H).diagonal()).H
             -
-            Matrix((Da*Da.H).diagonal())/Na
+            Matrix((Da*Da.H).diagonal())/Na *
             (numpy.trace(Da*Da.H) *
-            Matrix.ones((Na,1)))/Na *
+            Matrix.ones((Na,1)))/Na 
         )
 
         self.assertTrue( 
@@ -894,9 +976,9 @@ class quadTester(myTests):
                 *A.vectors.H*numpy.diagflat(A.var)*A.vectors
             ) + 
             numpy.trace(
-                4*A.mean
-                A.vectors.H*numpy.diagflat(A.var)*A.vectors*
-                A.mean.H*
+                4*A.mean *
+                A.vectors.H*numpy.diagflat(A.var)*A.vectors *
+                A.mean.H
             )
         )
 
@@ -1113,7 +1195,10 @@ class outerTester(myTests):
 
         out = numpy.outer(Da, Db).reshape((Na, A.ndim, Nb, B.ndim))
 
-        self.assertTrue( Matrix(numpy.outer(Da[0, :], Db[0, :])) == out[0, :, 0, :] )
+        self.assertTrue( 
+            Matrix(numpy.outer(Da[0, :], Db[0, :])) == 
+            out[0, :, 0, :] 
+        )
 
         result = out.mean(2).mean(0)
 
@@ -1233,7 +1318,10 @@ class refereceTester(myTests):
         #The quickest way to prove it's equivalent is by examining these:
 
             self.assertTrue( fix.A**-1 == fix.A*fix.A**-2 )
-            self.assertTrue( fix.A & fix.B == (fix.A*fix.A**-2+fix.B*fix.B**-2)**-1 )
+            self.assertTrue( 
+                fix.A & fix.B == 
+                (fix.A*fix.A**-2+fix.B*fix.B**-2)**-1 
+            )
         
             D = fix.A*(fix.A.cov)**(-1) + fix.B*(fix.B.cov)**(-1)
             self.assertTrue( wiki(fix.A, fix.B) == D*(D.cov)**(-1) )
