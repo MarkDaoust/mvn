@@ -76,11 +76,7 @@ class Matrix(numpy.matrix):
             >>> assert Matrix([[1,0],[0,1]]) == Matrix.eye
             >>> assert Matrix([1,2,3])+Matrix.atol/2 == Matrix([1,2,3])
         """
-        other = Matrix(other)
-        try:
-            return numpy.allclose(self, other, self.rtol, self.atol)
-        except:
-            raise ValueError(repr(self), repr(other))
+        return numpy.allclose(self,type(self)(other,copy=False))
             
         
     @expandCallable
@@ -155,7 +151,8 @@ class Matrix(numpy.matrix):
         """
         same function as :py:func:`numpy.allclose`, but elementwise
         """
-        return helpers.approx(self, other, atol=self.atol, rtol=self.rtol)
+        other = type(self)(other,copy = False)
+        return helpers.approx(self,other, atol=self.atol, rtol=self.rtol)
 
     @classmethod
     def eye(cls, *args, **kwargs):
