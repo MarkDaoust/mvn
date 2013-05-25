@@ -16,7 +16,7 @@ Example application: <http://en.wikipedia.org/wiki/Talk:Kalman_filter#Example_An
 
 ## Target API     
 The goal is to make these probability distributions 'easy'. 
-Not all of this works yet
+Not all of this works yet. Some of it is more general than just the MVN distribution.
 
 ### Principal Components:
 
@@ -47,7 +47,7 @@ Not all of this works yet
 ### Regression & uncertainty:
 
     M = mvn.Mvn(data)
-    y = regression.given(x = 10)
+    y = M.given(x = 10)
 
 ### Statistics:
 
