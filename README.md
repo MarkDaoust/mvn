@@ -43,12 +43,6 @@ Not all of this works yet.
     M = mvn.Mvn(data)
     M[0] = 10
 
-### Statistics:
-
-    dist = mvn.Mvn(data)
-    dist.mean == data.mean()
-    dist.cov == data.cov()
-
 ### Projection
 
     T = np.Matrix(...)
