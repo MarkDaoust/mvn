@@ -8,10 +8,11 @@ Example application: <http://en.wikipedia.org/wiki/Talk:Kalman_filter#Example_An
 
 ### WARNING:
 
-    1) I was learning all of this as I did it, I may have made some mistakes.
-        If it doesn't have automated tests, it doesn't work.
+1. I was learning all of this as I did it, I may have made some mistakes.
+    If it doesn't have automated tests, it doesn't work.
 
-    2) Second system effect: what's here currently is the "first-system".
+2. Second system effect: what's here currently is the "first-system".
+
 
 ## Target API     
 The goal is to make these probability distributions 'easy'. 
@@ -49,6 +50,17 @@ Not all of this works yet.
     dist.mean == data.mean()
     dist.cov == data.cov()
 
+### Projection
+
+    T = np.Matrix(...)
+    dist = mvn.Mvn(data)
+    dist*T == mvn.Mvn(data*T)
+
+    dist2d = dist[:2]
+
+### Integration
+    
+    p = dist.inBox(corner_1,corner_2)
 
 ### Plotting (matplotlib):
 

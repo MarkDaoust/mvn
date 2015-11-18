@@ -1,9 +1,11 @@
 from distutils.core import setup
 
 setup(
-    name='Mvn',
+    name='mvn',
     version='0.0.0dev',
     packages=['mvn'],
     license='BSD',
-    long_description=open('README.txt').read(),
+    install_requires=[
+          'numpy','scipy','matplotlib','decorator'
+      ]
 )
