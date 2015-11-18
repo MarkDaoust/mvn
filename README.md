@@ -8,20 +8,14 @@ Example application: <http://en.wikipedia.org/wiki/Talk:Kalman_filter#Example_An
 
 ### WARNING:
 
-    1) I'm learning all of this as I do it, I may have made some mistakes.
+    1) I was learning all of this as I did it, I may have made some mistakes.
         If it doesn't have automated tests, it doesn't work.
 
     2) Second system effect: what's here currently is the "first-system".
-        Expect everything to change
 
 ## Target API     
 The goal is to make these probability distributions 'easy'. 
-Not all of this works yet. Some of it is more general than just the MVN distribution.
-
-### Principal Components:
-
-    M = mvn.Mvn(data)
-    P = M(1:3)
+Not all of this works yet. 
 
 ### Sensor fusion
 
@@ -37,7 +31,7 @@ Not all of this works yet. Some of it is more general than just the MVN distribu
 
     # Particle Filter 
     # (states are mixtures of points)
-    state[t+1] = stateupdate(state[t]) & measurement
+    state[t+1] = (stateupdate(state[t]) & measurement).resample()
 
 ### Expectation Maximization:
 
@@ -47,17 +41,14 @@ Not all of this works yet. Some of it is more general than just the MVN distribu
 ### Regression & uncertainty:
 
     M = mvn.Mvn(data)
-    y = M.given(x = 10)
+    M[0] = 10
 
 ### Statistics:
 
     dist = mvn.Mvn(data)
-    dist.mean == data.mean
-    dist.cov == data.cov
+    dist.mean == data.mean()
+    dist.cov == data.cov()
 
-    quadrant = (dist > 0).all()
-    dist.min()
-    dist.max()
 
 ### Plotting (matplotlib):
 
