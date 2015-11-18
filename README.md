@@ -9,9 +9,8 @@ Example application: <http://en.wikipedia.org/wiki/Talk:Kalman_filter#Example_An
 ### WARNING:
 
 1. I was learning all of this as I did it, I may have made some mistakes.
-    If it doesn't have automated tests, it doesn't work.
-
-2. Second system effect: what's here currently is the "first-system".
+2. Often I was more interested in whether *I could* than whether *I should*.
+3. If it doesn't have automated tests, it probably doesn't work.
 
 
 ## Target API     
